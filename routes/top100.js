@@ -5,7 +5,7 @@ var BigNumber = require('bignumber.js');
 var async = require('async');
 var redis = require("redis"),
 	client = redis.createClient();
-var max = 0, min = 1000;
+var max = 0, min = 1500;
 var redis_args = [ 'esn', max, min, 'WITHSCORES' ];
 
 router.get('/:offset?', function(req, res, next) {
@@ -22,26 +22,38 @@ router.get('/:offset?', function(req, res, next) {
 			});
 		}, 
 		function(accounts, callback) {
-			var data = {};
+			var data_special = {};
+			var data_normal = {};
 			var idx = 0;
+			var rank_normal = 1;
+			var rank_special = 1;
 			async.eachSeries(accounts, function(account, eachCallback) {
-				if(idx < (min*2)) {
-					data[accounts[idx]] = {};
-					data[accounts[idx]].address = accounts[idx];
-					data[accounts[idx]].type = "Account";
-					var ret = new BigNumber(accounts[idx+1]);
-					data[accounts[idx]].balance = ret.toFormat(6) + " ESN";;
-					data[accounts[idx]].rank = "Rank " + (idx/2+1);
+				if(rank_normal < 1001) {
+					if (config.names[accounts[idx]]) {
+						data_special[accounts[idx]] = {};
+						data_special[accounts[idx]].address = accounts[idx];
+						data_special[accounts[idx]].type = "Account";
+						var ret = new BigNumber(accounts[idx+1]);
+						data_special[accounts[idx]].balance = ret.toFormat(6) + " ESN";;
+						data_special[accounts[idx]].rank = "Rank " + rank_special++;
+					} else {
+						data_normal[accounts[idx]] = {};
+						data_normal[accounts[idx]].address = accounts[idx];
+						data_normal[accounts[idx]].type = "Account";
+						var ret = new BigNumber(accounts[idx+1]);
+						data_normal[accounts[idx]].balance = ret.toFormat(6) + " ESN";;
+						data_normal[accounts[idx]].rank = "Rank " + rank_normal++;
+					}
 					idx = idx + 2;
 				}
 				eachCallback();
 			}, function(err) {
-				callback(err, data);
+				callback(err, data_special, data_normal);
 			});
 		}
 	], 
-	function(err, accounts) {
-		res.render("top100", { "accounts": accounts });
+	function(err, accounts_special, accounts_normal) {
+		res.render("top100", { "accounts_special": accounts_special, "accounts_normal": accounts_normal });
 	});
 });
 
