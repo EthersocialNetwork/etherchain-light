@@ -1,0 +1,22 @@
+extends layout
+
+block content
+  h3 Miners
+  p Miners in EtherSocialNetwork for the past week. See #[a(href="https://escpoolstats.gonsmine.com/") Mining in EtherSocialNetwork] for more information.
+  table.table
+    thead
+      tr
+        th Address
+        th Weekly Blocks
+        th Daily Blocks
+        th Real-time Miners
+        th Real-time Hashrate
+    tbody
+      for miner in miners
+        tr
+          td
+            a(href="/account/" + miner.address) #{nameformatter.format(miner.address)}
+          td #{formatBlocks(miner.minedWeek, 43200)}
+          td #{formatBlocks(miner.minedDay, 6171)}
+          td #{formatMinersTotal(miner)}
+          td #{formatMinersHashrate(miner)}

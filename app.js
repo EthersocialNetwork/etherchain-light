@@ -17,12 +17,14 @@ var contract = require('./routes/contract');
 var signature = require('./routes/signature');
 var search = require('./routes/search');
 var top100 = require('./routes/top100');
+var miners = require('./routes/miners');
 var top100_settingup = require('./routes/top100_settingup');
+var api = require('./routes/api');
 
 var config = new(require('./config.js'))();
 
 var levelup = require('levelup');
-var db = levelup('./data');
+var db = levelup(process.env.DATA || '/var/lib/explorer/data');
 
 var app = express();
 app.use(compression({filter: shouldCompress}))
@@ -60,7 +62,9 @@ app.use('/contract', contract);
 app.use('/signature', signature);
 app.use('/search', search);
 app.use('/top100', top100);
+app.use('/miners', miners);
 app.use('/blocks', blocks);
+app.use('/api', api);
 app.use('/tx_recent', tx_recent);
 app.use('/top100_settingup', top100_settingup);
 

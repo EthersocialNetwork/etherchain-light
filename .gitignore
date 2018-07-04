@@ -61,4 +61,5 @@ typings/
 data/
 
 # Configuration file
-config.js
+#config.js
+*.bak
