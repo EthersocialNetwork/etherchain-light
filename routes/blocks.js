@@ -19,7 +19,7 @@ router.get('/', function(req, res, next) {
     }, function(lastBlock, callback) {
       var blocks = [];
       
-      var blockCount = 5;
+      var blockCount = 100;
       
       if (lastBlock.number - blockCount < 0) {
         blockCount = lastBlock.number + 1;
@@ -41,13 +41,13 @@ router.get('/', function(req, res, next) {
     var txs = [];
     blocks.forEach(function(block) {
       block.transactions.forEach(function(tx) {
-        if (txs.length === 5) {
+        if (txs.length === 100) {
           return;
         }
         txs.push(tx);
       });
     });
-    res.render('index', { blocks: blocks, txs: txs });
+    res.render('blocks', { blocks: blocks, txs: txs });
   });
   
 });

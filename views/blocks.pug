@@ -1,0 +1,22 @@
+extends layout
+
+block content
+  h3 Recent blocks
+  table.table
+    thead
+      tr
+        th Number
+        th Miner
+        th Timestamp
+        th # Tx
+        th # Uncles
+    tbody
+      for block in blocks
+        tr
+          td
+            a(href="/block/" + block.number) #{block.number}
+          td 
+            a(href="/account/" + block.author) #{nameformatter.format(block.author)}
+          td #{moment.unix(block.timestamp).format()}
+          td #{block.transactions.length}
+          td #{block.uncles.length}

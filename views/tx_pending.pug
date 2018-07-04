@@ -26,5 +26,5 @@ block content
                 a(href="/account/" + tx.to) #{nameformatter.format(tx.to)}
               else
                 | New Contract
-            td #{ethformatter(tx.value)}
-            td #{ethformatter(tx.gasPrice)}
+            td(style="text-align: right;") #{ethformatter(tx.value)}
+            td(style="text-align: right;") #{ethformatter(tx.gasPrice)}

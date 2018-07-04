@@ -7,8 +7,10 @@ block content
     h3 Account #{account.address}
   table.table
     tr
-      td Balance:
-      td #{ethformatter(account.balance)}
+      td
+        h3 Balance:
+      td
+        h3 #{ethformatter(account.balance)}
     if account.name
       tr
         td Name:

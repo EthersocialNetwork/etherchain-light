@@ -1,0 +1,21 @@
+extends layout
+
+block content
+  h3 Top 1000!
+  p 기준시간 : 2018/03/24 15:46:00
+  table.table
+    thead
+      tr
+        th Rank
+        th Address
+        th Type
+        th Balance
+    tbody
+      for account in accounts
+        tr
+          td #{account.rank}
+          td
+            a(href="/account/" + account.address) #{nameformatter.format(account.address)}
+          td #{account.type}
+          td(style="text-align: right;") #{account.balance}
+
