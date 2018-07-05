@@ -15,6 +15,13 @@ html(lang="en")
     link(rel='stylesheet', href='/stylesheets/style.css')
     link(rel='stylesheet', href='/font-awesome/css/font-awesome.min.css')
     link(rel='stylesheet', href='/bootstrap-3.3.7-dist/css/bootstrap.min.css', crossorigin="anonymous")
+    // -- Global site tag (gtag.js) - Google Analytics
+    script(async, src='https://www.googletagmanager.com/gtag/js?id=UA-120936757-2')
+    script.
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'UA-120936757-2');
   body
     nav.navbar.navbar-inverse.navbar-fixed-top
       .container
@@ -31,15 +38,22 @@ html(lang="en")
             li
               a(href='/') Home<br/>홈페이지
             li
-              a(href='/blocks') Blocks<br/>최근생성블록
-            li
-              a(href='/tx_recent') Transactions<br/>최근거래내역
-            li
               a(href='/top100') ESN Rank<br/>전체지갑주소
             li
               a(href='/peers') Nodes Info<br/>노드 정보
             li
               a(href='http://pool.sejun.info') ESN Mining<br/>채굴하기
+            li.dropdown
+              a.dropdown-toggle(href='#', data-toggle='dropdown', role='button', aria-haspopup='true', aria-expanded='false')
+                | Tools<br/>추가 도구들
+                span.caret
+              ul.dropdown-menu
+                li
+                  a(href='/blocks') Blocks<br/>최근생성블록
+                li
+                  a(href='/tx_recent') Transactions<br/>최근거래내역
+                li
+                  a(href='/tx/pending') Pending Tx<br/>대기거래목록
           form.navbar-form.navbar-right(action="/search", method="POST")
             .form-group
               .input-group

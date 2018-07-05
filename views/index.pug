@@ -36,6 +36,8 @@ block content
           span(style="font-size:1.5em; color:#008cba")
             br/
             strong DIFFICULTY
+  h3 BlockTime Chart 블럭 생성시간 차트
+    div#chart_BlockTime(style="min-width: 480px; max-width: 1200px; height: 400px; margin: 0 auto")
   h3 Recent blocks
   table.table
     thead
@@ -79,3 +81,143 @@ block content
               else
                 | New Contract
             td(style="text-align: right;") #{ethformatter(tx.value)}
+  script(type='text/javascript', src="/highcharts-6.1.0/highcharts.js")
+  script(type='text/javascript', src="/highcharts-6.1.0/modules/series-label.js")
+  script(type='text/javascript', src="/highcharts-6.1.0/modules/exporting.js")
+  script(type='text/javascript', src="/highcharts-6.1.0/modules/export-data.js")
+  script.
+    const opt_chart = {
+      zoomType: 'x',
+      scrollablePlotArea: {
+        minWidth: 360
+      }
+    };
+    Highcharts.chart('chart_BlockTime', {
+      chart: opt_chart,
+      title: {
+        text: 'Chart of the last 100 blocks'
+      },
+      exporting: {
+        enabled: false
+      },
+      credits: {
+        enabled: false
+      },
+      xAxis: [{
+        categories: !{chartBlockNumber},
+        crosshair: true,
+        labels: {
+          formatter: function() {
+            return this.value.toLocaleString();
+          }
+        },
+        title: {
+          text: null
+        }
+      }],
+      yAxis: [{
+        min: !{chartBlockTimeMin},
+        title: {
+          text: 'BlockTime',
+          style: {
+            color: Highcharts.getOptions().colors[0]
+          }
+        },
+        labels: {
+          formatter: function() {
+            return this.value.toLocaleString() + 's';
+          },
+          style: {
+            color: Highcharts.getOptions().colors[0]
+          }
+        },
+        opposite: true
+      }, { // Secondary yAxis
+        gridLineWidth: 0,
+        min: !{chartDifficultyMin},
+        title: {
+          text: 'Difficulty',
+          style: {
+              color: Highcharts.getOptions().colors[1]
+          }
+        },
+        labels: {
+          formatter: function() {
+            return this.value.toLocaleString(undefined, {maximumFractionDigits:4}) + 'TH';
+          },
+          style: {
+              color: Highcharts.getOptions().colors[1]
+          }
+        }
+      }, { // Tertiary yAxis
+        gridLineWidth: 0,
+        min: !{chartNetHashrateMin},
+        max: !{chartNetHashrateMax},
+        title: {
+          text: 'NetworkHashrate',
+          style: {
+            color: Highcharts.getOptions().colors[6]
+          }
+        },
+        labels: {
+          formatter: function() {
+            return this.value.toLocaleString(undefined, {maximumFractionDigits:4}) + 'GH/s';
+          },
+          style: {
+            color: Highcharts.getOptions().colors[6]
+          }
+        },
+        opposite: true
+      }],
+      tooltip: {
+        formatter: function() {
+          return '<b>BlockNumber</b>: ' + this.points[0].x.toLocaleString() + '<br/><b>' + this.points[0].series.name + '</b>: ' + this.points[0].y.toLocaleString() + ' s<br/><b>' + this.points[1].series.name + '</b>: ' + this.points[1].y.toLocaleString(undefined, {maximumFractionDigits:4}) + 'TH<br/><b>' + this.points[2].series.name + '</b>: ' + this.points[2].y.toLocaleString(undefined, {maximumFractionDigits:4}) + 'GH/s<br/>';
+        },
+        shared: true
+      },
+      series: [{
+        name: 'BlockTime',
+        yAxis: 0,
+        type: 'spline',
+        data: !{chartBlockTime},
+        marker: {
+          enabled: true
+        },
+        tooltip: {
+          valueSuffix: ' s'
+        },
+        dataLabels: {
+          enabled: true,
+          style: {
+            fontSize: '8px'
+          }
+        },
+      },{
+        name: 'Difficulty',
+        type: 'spline',
+        yAxis: 1,
+        data: !{chartDifficulty},
+        marker: {
+          enabled: true
+        },
+        tooltip: {
+          valueSuffix: ' TH'
+        }
+      },{
+        name: 'NetworkHashrate',
+        type: 'spline',
+        dashStyle: 'shortdot',
+        yAxis: 2,
+        color: Highcharts.getOptions().colors[6],
+        lineColor: Highcharts.getOptions().colors[6],
+        marker: {
+          enabled: false
+        },
+        data: !{chartNetHashrate},
+        tooltip: {
+          valueSuffix: ' GH/s'
+        }
+      }]
+    }, function (chart) {
+      chart.tooltip.refresh([chart.series[0].points[0], chart.series[1].points[0], chart.series[1]. points[0]]); // Show tooltip of the first point on load
+    });
