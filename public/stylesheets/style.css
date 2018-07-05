@@ -13,11 +13,13 @@ body {
   margin-left: 10px;
 }
 
-.btn-small {
-  font: 11px "Lucida Grande", Helvetica, Arial, sans-serif;
-  padding-bottom: 4px;
+#navbar>form>div>div>span {
+  padding-left: 4px;
+}
+
+#navbar>form>div>div>span>button {
   padding-top: 4px;
-  margin-left: 5px;
+  padding-bottom: 4px;
 }
 
 .navbar-form {
@@ -79,10 +81,10 @@ body {
   .navbar-collapse.collapsing {
     height: 0 !important;
   }
-  .navbar-collapse.collapse.in{
+  .navbar-collapse.collapse.in {
     max-height: none;
     height: 100vh;
-}
+  }
   .navbar-nav {
     float: none !important;
     margin-top: 7.5px;

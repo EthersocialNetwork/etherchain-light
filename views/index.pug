@@ -1,14 +1,14 @@
 extends layout
 
 block content
-  h3 Block Chain Summary
+  h3 Block Chain Summary(Calculated in the last 100 blocks)
   table.table
     tr
       td(style="padding-right:20px") 
         center
           span(style="font-size:2em; color:#008cba")
             i.fa.fa-th
-          span(style="font-size:2em; color:#000000") &nbsp;&nbsp;123,456
+          span(style="font-size:2em; color:#000000") &nbsp;&nbsp;#{lastblock}
           span(style="font-size:1.5em; color:#008cba")
             br/
             strong BLOCK HEIGHT
@@ -16,7 +16,7 @@ block content
         center
           span(style="font-size:2em; color:#008cba")
             i.fa.fa-hourglass-end
-          span(style="font-size:2em; color:#000000") &nbsp;&nbsp;14.4s
+          span(style="font-size:2em; color:#000000") &nbsp;&nbsp;#{blocktime}
           span(style="font-size:1.5em; color:#008cba")
             br/
             strong BLOCK TIME
@@ -24,7 +24,7 @@ block content
         center
           span(style="font-size:2em; color:#008cba")
             i.fa.fa-tachometer
-          span(style="font-size:2em; color:#000000") &nbsp;&nbsp;200 GH/s
+          span(style="font-size:2em; color:#000000") &nbsp;&nbsp;#{hashrate}
           span(style="font-size:1.5em; color:#008cba")
             br/
             strong NETWORK HASHRATE
@@ -32,7 +32,7 @@ block content
         center
           span(style="font-size:2em; color:#008cba")
             i.fa.fa-braille
-          span(style="font-size:2em; color:#000000") &nbsp;&nbsp;2.8 TH
+          span(style="font-size:2em; color:#000000") &nbsp;&nbsp;#{difficulty}
           span(style="font-size:1.5em; color:#008cba")
             br/
             strong DIFFICULTY

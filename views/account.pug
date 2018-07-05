@@ -18,9 +18,9 @@ block content
     tr
       td Block Range:
       td 
-        a.btn.btn-small(href="/account/" + account.address + "/" + account.previousBlockNumber) Previous
-        | |    from:#{account.fromBlock} ~ to:#{account.lastBlock} 정보 추출 범위    |
-        a.btn.btn-small(href="/account/" + account.address + "/" + account.nextBlockNumber) Next
+        a.btn.btn-primary.btn-sm(href="/account/" + account.address + "/" + account.previousBlockNumber, style="padding: 4px;") Previous
+        | &nbsp;&nbsp;&nbsp;&nbsp;from:#{account.fromBlock} ~ to:#{account.lastBlock} 정보 추출 범위 &nbsp;&nbsp;&nbsp;&nbsp;
+        a.btn.btn-primary.btn-sm(href="/account/" + account.address + "/" + account.nextBlockNumber, style="padding: 4px;") Next
     tr
       td More Infomation:
       td

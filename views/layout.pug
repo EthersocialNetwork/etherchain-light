@@ -12,9 +12,9 @@ html(lang="en")
         
     title ESN Block Explorer
     
-    link(href=config.bootstrapUrl, rel="stylesheet", crossorigin="anonymous")    
     link(rel='stylesheet', href='/stylesheets/style.css')
     link(rel='stylesheet', href='/font-awesome/css/font-awesome.min.css')
+    link(rel='stylesheet', href='/bootstrap-3.3.7-dist/css/bootstrap.min.css', crossorigin="anonymous")
   body
     nav.navbar.navbar-inverse.navbar-fixed-top
       .container
@@ -43,14 +43,14 @@ html(lang="en")
           form.navbar-form.navbar-right(action="/search", method="POST")
             .form-group
               .input-group
-                input.form-control#search(type='text', placeholder='Block / Tx / Account', name='search')
+                input.form-control.mr-sm-2#search(type='text', placeholder='Block / Tx / Account', name='search')
                 span.input-group-btn
-                  button.btn.btn-default(type='submit') Submit
+                  button.btn.btn-secondary.my-2.my-sm-0(type='submit') Search
     div.container
       div.table-responsive
         block content
-    script(type='text/javascript', src='https://cdnjs.cloudflare.com/ajax/libs/jquery/3.1.1/jquery.js')
-    script(type='text/javascript', src='https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js', integrity='sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa', crossorigin='anonymous')
+    script(type='text/javascript', src='/jquery.js')
+    script(type='text/javascript', src='/bootstrap-3.3.7-dist/js/bootstrap.min.js', crossorigin='anonymous')
 
     script.
       $(function () {
