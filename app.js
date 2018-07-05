@@ -19,6 +19,7 @@ var search = require('./routes/search');
 var top100 = require('./routes/top100');
 var top100_settingup = require('./routes/top100_settingup');
 var peers = require('./routes/peers');
+var redisblock = require('./routes/redisblock');
 
 var config = new(require('./config.js'))();
 
@@ -72,6 +73,7 @@ app.use('/blocks', blocks);
 app.use('/tx_recent', tx_recent);
 app.use('/top100_settingup', top100_settingup);
 app.use('/peers', peers);
+app.use('/redisblock', redisblock);
 
 function shouldCompress(req, res) {
   if (req.headers['x-no-compression']) {

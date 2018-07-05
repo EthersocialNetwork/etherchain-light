@@ -5,7 +5,6 @@ var async = require('async');
 var Web3 = require('web3');
 
 router.get('/', function (req, res, next) {
-
   var config = req.app.get('config');
   var web3 = new Web3();
   web3.setProvider(config.provider);
@@ -18,15 +17,15 @@ router.get('/', function (req, res, next) {
       });
     },
     function (lastBlock, callback) {
-      var blockCount = 100;
+      data.blockCount = 150;
       data.lastBlock = new Intl.NumberFormat().format(lastBlock.number);
       data.difficulty = hashFormat(lastBlock.difficulty) + "H";
 
-      if (lastBlock.number - blockCount < 0) {
-        blockCount = lastBlock.number + 1;
+      if (lastBlock.number - data.blockCount < 0) {
+        data.blockCount = lastBlock.number + 1;
       }
 
-      async.times(blockCount, function (n, next) {
+      async.times(data.blockCount, function (n, next) {
         web3.eth.getBlock(lastBlock.number - n, true, function (err, block) {
           next(err, block);
         });
@@ -49,6 +48,7 @@ router.get('/', function (req, res, next) {
     var chartBlockTime = [];
     var chartNetHashrate = [];
     var chartDifficulty = [];
+    var miners = [];
 
     Array.prototype.max = function () {
       return Math.max.apply(null, this);
@@ -68,8 +68,9 @@ router.get('/', function (req, res, next) {
         chartBlockNumber.push(block.number);
         chartBlockTime.push(currentBlockTime);
         chartDifficulty.push(currentDifficulty / 1000000000000);
-        chartNetHashrate.push(currentNetHashrate / 1000000000);
+        chartNetHashrate.push(currentNetHashrate / 1000000000000);
         totaDifficulty += Number(block.difficulty);
+        miners.push(block.miner);
         countBlockTimes++;
       }
       lastBlockTimes = block.timestamp;
@@ -84,6 +85,7 @@ router.get('/', function (req, res, next) {
         }
       });
     });
+    data.miners = makeReturnSeries(miners, config);
     data.blockTime = new Intl.NumberFormat().format((totalBlockTimes / countBlockTimes).toFixed(4)) + "s";
     data.hashrate = hashFormat(totaDifficulty / totalBlockTimes) + "H/s";
 
@@ -94,6 +96,7 @@ router.get('/', function (req, res, next) {
       difficulty: data.difficulty,
       blocktime: data.blockTime,
       hashrate: data.hashrate,
+      chartMiners: data.miners,
       chartBlockNumber: JSON.stringify(chartBlockNumber.reverse()),
       chartBlockTime: JSON.stringify(chartBlockTime.reverse()),
       chartNetHashrate: JSON.stringify(chartNetHashrate.reverse()),
@@ -101,7 +104,8 @@ router.get('/', function (req, res, next) {
       chartNetHashrateMin: JSON.stringify(chartNetHashrate.min()),
       chartNetHashrateMax: JSON.stringify(chartNetHashrate.max()),
       chartDifficultyMin: JSON.stringify(chartDifficulty.min()),
-      chartBlockTimeMin: JSON.stringify(chartBlockTime.min())
+      chartBlockTimeMin: JSON.stringify(chartBlockTime.min()),
+      blockCount: data.blockCount
     });
   });
 
@@ -121,5 +125,54 @@ function hashFormat(number) {
   } else {
     return new Intl.NumberFormat().format((number).toFixed(4));
   }
+}
+
+function makeReturnSeries(arr, config) {
+  prcArray = [];
+  prcArray = arr.reduce(function (acc, curr) {
+    if (typeof acc[curr] == 'undefined') {
+      acc[curr] = 1;
+    } else {
+      acc[curr] += 1;
+    }
+    return acc;
+  }, {});
+  resArray = [];
+  for (var kcmd in prcArray) {
+    resArray.push({
+      name: config.names[kcmd] ? ((config.names[kcmd]).split("/"))[0] : (kcmd.substr(0, 8)+"..."),
+      value: prcArray[kcmd],
+      colorValue: 0,
+      address: kcmd
+    });
+  }
+  resArray.push({
+    name: '0',
+    value: 0,
+    colorValue: 0,
+    address: ''
+  });
+  resArray = resSortedReturn(resArray);
+  var idxColorValue = 1;
+  for (var kResArray in resArray) {
+    if (resArray.hasOwnProperty(kResArray)) {
+      resArray[kResArray].colorValue = idxColorValue++;
+    }
+  }
+
+  return JSON.stringify(resArray);
+}
+
+function resSortedReturn(arr) {
+  arr.sort(function (a, b) {
+    if (a.value > b.value) {
+      return -1;
+    }
+    if (a.value < b.value) {
+      return 1;
+    }
+    return 0;
+  });
+  return arr;
 }
 module.exports = router;

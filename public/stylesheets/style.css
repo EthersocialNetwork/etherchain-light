@@ -55,7 +55,7 @@ body {
   padding: 10px 8px;
 }
 
-@media (max-width: 1200px) {
+@media (max-width: 1000px) {
   .navbar-header {
     float: none;
   }
@@ -116,6 +116,9 @@ body {
 @media (min-width: 1200px) {
   .container {
     width: 1170px
+  }
+  .collapse {
+    display: none !important;
   }
 }
 

@@ -16,12 +16,23 @@ html(lang="en")
     link(rel='stylesheet', href='/font-awesome/css/font-awesome.min.css')
     link(rel='stylesheet', href='/bootstrap-3.3.7-dist/css/bootstrap.min.css', crossorigin="anonymous")
     // -- Global site tag (gtag.js) - Google Analytics
-    script(async, src='https://www.googletagmanager.com/gtag/js?id=UA-120936757-2')
     script.
-      window.dataLayer = window.dataLayer || [];
-      function gtag(){dataLayer.push(arguments);}
-      gtag('js', new Date());
-      gtag('config', 'UA-120936757-2');
+      (function() {
+        function async_load(){
+          var s = document.createElement('script');
+          s.type = 'text/javascript';
+          s.async = true;
+          s.src = 'https://www.googletagmanager.com/gtag/js?id=UA-120936757-2';
+          var x = document.getElementsByTagName('script')[0];
+          x.parentNode.insertBefore(s, x);
+
+          window.dataLayer = window.dataLayer || [];
+          function gtag(){dataLayer.push(arguments);}
+          gtag('js', new Date());
+          gtag('config', 'UA-120936757-2');
+        }
+        window.attachEvent ? window.attachEvent('onload', async_load) : window.addEventListener('load', async_load, false);
+      })();
   body
     nav.navbar.navbar-inverse.navbar-fixed-top
       .container
@@ -41,36 +52,41 @@ html(lang="en")
               a(href='/top100') ESN Rank<br/>전체지갑주소
             li
               a(href='/peers') Nodes Info<br/>노드 정보
-            li
-              a(href='http://pool.sejun.info') ESN Mining<br/>채굴하기
             li.dropdown
               a.dropdown-toggle(href='#', data-toggle='dropdown', role='button', aria-haspopup='true', aria-expanded='false')
                 | Tools<br/>추가 도구들
                 span.caret
               ul.dropdown-menu
                 li
+                  a(href='http://pool.sejun.info') ESN Mining<br/>채굴하기
+                li
                   a(href='/blocks') Blocks<br/>최근생성블록
                 li
                   a(href='/tx_recent') Transactions<br/>최근거래내역
                 li
                   a(href='/tx/pending') Pending Tx<br/>대기거래목록
-          form.navbar-form.navbar-right(action="/search", method="POST")
-            .form-group
-              .input-group
-                input.form-control.mr-sm-2#search(type='text', placeholder='Block / Tx / Account', name='search')
-                span.input-group-btn
-                  button.btn.btn-secondary.my-2.my-sm-0(type='submit') Search
-    div.container
-      div.table-responsive
-        block content
-    script(type='text/javascript', src='/jquery.js')
+            form.navbar-form.navbar-right(action="/search", method="POST")
+              .form-group
+                .input-group
+                  input.form-control.mr-sm-2#search(type='text', placeholder='Block / Tx / Account', name='search')
+                  span.input-group-btn
+                    button.btn.btn-secondary.my-2.my-sm-0(type='submit') Search
+    script(type='text/javascript', src='/jquery-3.3.1.min.js')
     script(type='text/javascript', src='/bootstrap-3.3.7-dist/js/bootstrap.min.js', crossorigin='anonymous')
+    script(type='text/javascript', src="/highcharts-6.1.0/highcharts.js")
+    script(type='text/javascript', src="/highcharts-6.1.0/modules/exporting.js")
+    script(type='text/javascript', src="/highcharts-6.1.0/modules/export-data.js")
+    script(type='text/javascript', src="/highcharts-6.1.0/modules/heatmap.js")
+    script(type='text/javascript', src="/highcharts-6.1.0/modules/treemap.js")
+    script(type='text/javascript', src="/highcharts-6.1.0/modules/series-label.js")
 
     script.
       $(function () {
         $('[data-toggle="tooltip"]').tooltip()
       })
-    
+    div.container
+      div.table-responsive
+        block content
     div.container
       hr
       footer
