@@ -21,8 +21,9 @@ var top100_settingup = require('./routes/top100_settingup');
 
 var config = new(require('./config.js'))();
 
+var leveldown = require('leveldown');
 var levelup = require('levelup');
-var db = levelup('./data');
+var db = levelup(leveldown('./data'));
 
 var app = express();
 app.use(compression({filter: shouldCompress}));
