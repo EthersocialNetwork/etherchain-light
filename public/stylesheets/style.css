@@ -46,7 +46,7 @@ body {
   padding: 10px 8px;
 }
 
-@media (max-width: 1200px) {
+@media (max-width: 991px) {
   .navbar-header {
     float: none;
   }
@@ -66,16 +66,8 @@ body {
     border-width: 0 0 1px;
   }
   .navbar-collapse.collapse {
-    transition: height 0.2s;
     display: none !important;
   }
-  .navbar-collapse.collapsing {
-    height: 0 !important;
-  }
-  .navbar-collapse.collapse.in{
-    max-height: none;
-    height: 100vh;
-}
   .navbar-nav {
     float: none !important;
     margin-top: 7.5px;
