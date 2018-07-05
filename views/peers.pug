@@ -103,6 +103,55 @@ block content
   script(type='text/javascript', src="https://code.highcharts.com/modules/export-data.js")
 
   script.
+    const opt_chart = {
+      polar: false,
+      plotBackgroundColor: null,
+      plotBorderWidth: null,
+      plotShadow: false,
+      type: 'pie'
+    };
+    const opt_tooltip = {
+      pointFormat: '{series.name}: <b>{point.y} peers, {point.percentage:.1f}%</b>',
+      enabled: true,
+    };
+    const opt_plotOptions = {
+      pie: {
+          allowPointSelect: true,
+          cursor: 'pointer',
+          showInLegend: true,
+          dataLabels: {
+              enabled: true,
+              format: '<b>{point.name}</b>: {point.y} peers, {point.percentage:.1f} %',
+              style: {
+                  color: (Highcharts.theme && Highcharts.theme.contrastTextColor) || 'black'
+              }
+          }
+      }
+    };
+    const opt_legend = {
+      align: 'right',
+      verticalAlign: 'top',
+      layout: 'vertical',
+      x: 0,
+      y: 100,
+      useHTML: true,
+      labelFormatter: function() {
+          return '<b>'+this.name+'</b>: '+this.y+' peers';
+      }
+    };
+
+    var commandsSeries = resSortedReturn(!{commands});
+    var versionSeries = resSortedReturn(!{versions});
+    var osSeries = resSortedReturn(!{oss});
+    var goVersionSeries = resSortedReturn(!{goversions});
+    var geoSeries = resSortedReturn(!{geo});
+    
+    Highcharts.chart('chart_exe', makeChartProperty('EXE Chart', 'exe', commandsSeries));
+    Highcharts.chart('chart_ver', makeChartProperty('Version Chart', 'Version', versionSeries));
+    Highcharts.chart('chart_os', makeChartProperty('OS Chart', 'OS', osSeries));
+    Highcharts.chart('chart_gover', makeChartProperty('Compiler Chart', 'Compiler', goVersionSeries));
+    Highcharts.chart('chart_geo', makeChartProperty('Location Chart', 'Location', geoSeries));
+    
     function switchDetails(target){
       const divById = document.getElementById(target);
       if(divById.style.display == 'none') {
@@ -111,140 +160,40 @@ block content
         divById.style.display = 'none';
       }
     }
+    function resSortedReturn(arr) {
+      arr.sort(function (a, b) {
+        if (a.y > b.y) {
+          return -1;
+        }
+        if (a.y < b.y) {
+          return 1;
+        }
+        return 0;
+      });
+      return arr;
+    }
 
-    var commandsSeries = [];
-    var versionSeries = [];
-    var osSeries = [];
-    var goVersionSeries = [];
-    var geoSeries = [];
-  for cmd, key in commands
-    script.
-      commandsSeries.push({
-              name: '#{key}',
-              y: #{cmd}
-      });
-  for cmd, key in versions
-    script.
-      versionSeries.push({
-              name: '#{key}',
-              y: #{cmd}
-      });
-  for cmd, key in oss
-    script.
-      osSeries.push({
-              name: '#{key}',
-              y: #{cmd}
-      });
-  for cmd, key in goversions
-    script.
-      goVersionSeries.push({
-              name: '#{key}',
-              y: #{cmd}
-      });
-  for cmd, key in geo
-    script.
-      geoSeries.push({
-              name: '#{key}',
-              y: #{cmd}
-      });
-  script.
-    const opt_chart = {
-          polar: false,
-          plotBackgroundColor: null,
-          plotBorderWidth: null,
-          plotShadow: false,
-          type: 'pie'
-      };
-    const opt_tooltip = {
-          pointFormat: '{series.name}: <b>{point.y} peers, {point.percentage:.1f}%</b>',
-          enabled: true,
-      };
-    const opt_plotOptions = {
-          pie: {
-              allowPointSelect: true,
-              cursor: 'pointer',
-              showInLegend: true,
-              dataLabels: {
-                  enabled: true,
-                  format: '<b>{point.name}</b>: {point.y} peers, {point.percentage:.1f} %',
-                  style: {
-                      color: (Highcharts.theme && Highcharts.theme.contrastTextColor) || 'black'
-                  }
-              }
-          }
-      };
-    //console.dir(commandsSeries);
-    Highcharts.chart('chart_exe', {
-      chart: opt_chart,
-      title: { text: 'EXE Chart' },
-      tooltip: opt_tooltip,
-      plotOptions: opt_plotOptions,
-      exporting: { enabled: false },
-      credits: { enabled: false },
-      series: [{
+    function makeChartProperty(title, seriesName, seriesData) {
+      var res = {
+        chart: opt_chart,
+        title: {
+          text: title
+        },
+        legend: opt_legend,
+        tooltip: opt_tooltip,
+        plotOptions: opt_plotOptions,
+        exporting: {
+          enabled: false
+        },
+        credits: {
+          enabled: false
+        },
+        series: [{
           animation: false,
-          name: 'exe',
+          name: seriesName,
           colorByPoint: true,
-          data: commandsSeries
-       }]
-    });
-    Highcharts.chart('chart_ver', {
-      chart: opt_chart,
-      title: {
-          text: 'Version Chart'
-      },
-      tooltip: opt_tooltip,
-      plotOptions: opt_plotOptions,
-      exporting: { enabled: false },
-      credits: { enabled: false },
-      series: [{
-          name: 'Version',
-          colorByPoint: true,
-          data: versionSeries
-       }]
-    });
-    Highcharts.chart('chart_os', {
-      chart: opt_chart,
-      title: {
-          text: 'OS Chart'
-      },
-      tooltip: opt_tooltip,
-      plotOptions: opt_plotOptions,
-      exporting: { enabled: false },
-      credits: { enabled: false },
-      series: [{
-          name: 'OS',
-          colorByPoint: true,
-          data: osSeries
-       }]
-    });
-    Highcharts.chart('chart_gover', {
-      chart: opt_chart,
-      title: {
-          text: 'Compiler Chart'
-      },
-      tooltip: opt_tooltip,
-      plotOptions: opt_plotOptions,
-      exporting: { enabled: false },
-      credits: { enabled: false },
-      series: [{
-          name: 'Compiler',
-          colorByPoint: true,
-          data: goVersionSeries
-       }]
-    });
-    Highcharts.chart('chart_geo', {
-      chart: opt_chart,
-      title: {
-          text: 'Location Chart'
-      },
-      tooltip: opt_tooltip,
-      plotOptions: opt_plotOptions,
-      exporting: { enabled: false },
-      credits: { enabled: false },
-      series: [{
-          name: 'Location',
-          colorByPoint: true,
-          data: geoSeries
-       }]
-    });
+          data: seriesData
+        }]
+      };
+      return res;
+    }

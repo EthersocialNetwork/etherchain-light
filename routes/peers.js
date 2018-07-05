@@ -181,52 +181,11 @@ router.get('/:offset?', function (req, res, next) {
 			arrGeo.push(data.peers[h].geo);
 		}
 
-		data.commands = arrExe.reduce(function (acc, curr) {
-			if (typeof acc[curr] == 'undefined') {
-				acc[curr] = 1;
-			} else {
-				acc[curr] += 1;
-			}
-			return acc;
-		}, {});
-
-		data.versions = arrVer.reduce(function (acc, curr) {
-			if (typeof acc[curr] == 'undefined') {
-				acc[curr] = 1;
-			} else {
-				acc[curr] += 1;
-			}
-			return acc;
-		}, {});
-
-		data.oss = arrOs.reduce(function (acc, curr) {
-			if (typeof acc[curr] == 'undefined') {
-				acc[curr] = 1;
-			} else {
-				acc[curr] += 1;
-			}
-			return acc;
-		}, {});
-
-		data.goversions = arrGover.reduce(function (acc, curr) {
-			if (typeof acc[curr] == 'undefined') {
-				acc[curr] = 1;
-			} else {
-				acc[curr] += 1;
-			}
-			return acc;
-		}, {});
-
-		data.geo = arrGeo.reduce(function (acc, curr) {
-			if (typeof acc[curr] == 'undefined') {
-				acc[curr] = 1;
-			} else {
-				acc[curr] += 1;
-			}
-			return acc;
-		}, {});
-
-		//console.dir(data.commands);
+		data.commands = makeReturnSeries(arrExe);
+		data.versions = makeReturnSeries(arrVer);
+		data.oss = makeReturnSeries(arrOs);
+		data.goversions = makeReturnSeries(arrGover);
+		data.geo = makeReturnSeries(arrGeo);
 
 		res.render('peers', {
 			peers: data.peers,
@@ -258,4 +217,24 @@ function printDateTime(currentDate) {
 	var currentMinute = addZeros(currentDate.getMinutes(), 2);
 	var currentSeconds = addZeros(currentDate.getSeconds(), 2);
 	return calendar + " " + currentHours + ":" + currentMinute + ":" + currentSeconds;
+}
+
+function makeReturnSeries(arr) {
+	prcArray = [];
+	prcArray = arr.reduce(function (acc, curr) {
+		if (typeof acc[curr] == 'undefined') {
+			acc[curr] = 1;
+		} else {
+			acc[curr] += 1;
+		}
+		return acc;
+	}, {});
+	resArray = [];
+	for (var kcmd in prcArray) {
+		resArray.push({
+			name: kcmd,
+			y: prcArray[kcmd]
+		});
+	}
+	return JSON.stringify(resArray);
 }
