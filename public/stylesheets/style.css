@@ -13,6 +13,13 @@ body {
   margin-left: 10px;
 }
 
+.btn-small {
+  font: 11px "Lucida Grande", Helvetica, Arial, sans-serif;
+  padding-bottom: 4px;
+  padding-top: 4px;
+  margin-left: 5px;
+}
+
 .navbar-form {
   margin-right: 20px;
   margin-left: 0px;

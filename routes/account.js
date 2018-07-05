@@ -4,7 +4,7 @@ var router = express.Router();
 var async = require('async');
 var Web3 = require('web3');
 
-router.get('/:account', function (req, res, next) {
+router.get('/:account/:offset?', function (req, res, next) {
 
     var config = req.app.get('config');
     var web3 = new Web3();
@@ -21,10 +21,27 @@ router.get('/:account', function (req, res, next) {
                 });
             },
             function (lastBlock, callback) {
-                data.lastBlock = lastBlock.number;
+                var blockNumber = lastBlock.number;
+                if (!req.params.offset) {
+                    blockNumber = lastBlock.number;
+                } else if (req.params.offset > 1000 && req.params.offset < lastBlock.number) {
+                    blockNumber = req.params.offset;
+                } else if (req.params.offset < 1001) {
+                    blockNumber = 1001;
+                } else {
+                    blockNumber = lastBlock.number;
+                }
+                web3.eth.getBlock(blockNumber, false, function (err, result) {
+                    callback(err, result); //마지막 블럭 정보를 받아서 전달
+                });
+            },
+            function (targetBlock, callback) {
+                data.lastBlock = targetBlock.number;
+                data.previousBlockNumber = data.lastBlock - 0x3E8;
+                data.nextBlockNumber = data.lastBlock + 0x3E8;
                 //limits the from block to -1000 blocks ago if block count is greater than 1000
-                if (data.lastBlock > 0x3E8) {
-                    data.fromBlock = data.lastBlock - 0x3E8;
+                if (data.lastBlock > 0x3E7) {
+                    data.fromBlock = data.lastBlock - 0x3E7;
                 } else {
                     data.fromBlock = 0x00;
                 } //범위를 마지막블럭에서 1,000블럭을 뺀 블럭까지 설정
