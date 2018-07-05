@@ -17,11 +17,11 @@ block content
         td #{account.name}
     tr
       td Block Range:
-      td from:#{account.fromBlock} ~ to:#{account.lastBlock}
+      td from:#{account.fromBlock} ~ to:#{account.lastBlock} 정보 추출 범위
     tr
       td More Infomation:
       td
-        a(href=account.officialurl) official BlockExplorer
+        a(href=account.officialurl target='_blank') Additional BlockExplorer 추가정보를 갖고 있는 다른 익스플로러
   div
     ul.nav.nav-tabs(role='tablist')
       li.active(role='presentation')
@@ -36,7 +36,7 @@ block content
           a(href='#contractState', aria-controls='source', role='tab', data-toggle='tab') Contract State
     .tab-content
       #transactions.tab-pane.active(role='tabpanel')
-        h3 Recent Activity
+        h3 Recent Activity 최근 활동 내역
         table.table
           thead
             tr
