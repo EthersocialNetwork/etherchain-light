@@ -60,8 +60,9 @@ html(lang="en")
                 input.form-control#search(type='text', placeholder='Block / Tx / Account', name='search')
                 span.input-group-btn
                   button.btn.btn-default(type='submit') Submit
-    .container
-      block content
+    div.container
+      div.table-responsive
+        block content
     script(src='https://cdnjs.cloudflare.com/ajax/libs/jquery/3.1.1/jquery.js')
     script(src='https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js', integrity='sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa', crossorigin='anonymous')
     script.
@@ -75,8 +76,7 @@ html(lang="en")
         p  
           a(href="https://github.com/gobitfly/etherchain-light") Etherchain Light
           |  | #{nodeStatus.version} | #{nodeStatus.nbrPeers} Peers connected
-    script(src="http://wcs.naver.net/wcslog.js")
-    script.
-      if(!wcs_add) var wcs_add = {};
-      wcs_add["wa"] = "78fd55d6b47424";
-      wcs_do();
+    //script.
+      $("ul.nav").on("click", function(){
+        $(".navbar-toggle").click(); //bootstrap 3.x by Richard
+      });

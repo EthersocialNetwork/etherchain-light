@@ -4,7 +4,7 @@ var net = require('net');
 var config = function () {
   
   this.logFormat = "combined";
-  this.ipcPath = process.env["HOME"] + "/.Ethersocial/gesc.ipc";
+  this.ipcPath = process.env.HOME + "/.Ethersocial/gesc.ipc";
   this.provider = new web3.providers.IpcProvider(this.ipcPath, net);
   
   this.bootstrapUrl = "https://maxcdn.bootstrapcdn.com/bootswatch/3.3.7/yeti/bootstrap.min.css";
@@ -132,7 +132,6 @@ var config = function () {
     "0xb3d1a2c0ab2d8987446d74f49e357adf5bf15986": "Owned by DDENGLE",
     "0x16987ad8e10dda7f9e5d95c0f0ee36f46b10e168": "Owned by DDENGLE",
     "0x81d4c3bf72837b21203b2a4f90bf42fda10acf48": "Owned by DDENGLE",
-    "0xfedced7aa1cf3f3a7eec321cc0274759b154ea8e": "ESN Alpha or Beta Testers",
     "0xfdbdaec57829f25ad48e18d94e0b8533f2801818": "ESN Alpha or Beta Testers",
     "0xf14338307bc5e6ab71fa202447ce240947568b3c": "ESN Alpha or Beta Testers",
     "0xf1960640b52af75fc71101aec2611499c17cd9c6": "ESN Alpha or Beta Testers",
@@ -500,7 +499,7 @@ var config = function () {
     "0xfb8b7efb02ea5292304c0f0abc8c555684653587": "ESN genesis allocation",
     "0xfde5a9911a10770d733db4d32ca9a5493478399c": "ESN genesis allocation",
     "0xffc7534b64a8fe8760e931a710883119d28ae106": "ESN genesis allocation"
-  }
-}
+  };
+};
 
 module.exports = config;

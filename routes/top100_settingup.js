@@ -43,7 +43,7 @@ router.get('/:offset?', function(req, res, next) {
 						var numBalance = new BigNumber(balance);
 						numBalance = numBalance.dividedBy(Ether);
 						if(code.length < 3 && numBalance > 0) {
-							client.zadd('esn_top100',numBalance,account);
+							client.zadd('esn_top100',numBalance.toString(),account);
 						}
 						eachCallback();
 					});
@@ -64,7 +64,7 @@ router.get('/:offset?', function(req, res, next) {
 
 module.exports = router;
 
-function addZeros(num, digit) { // 자릿수 맞춰주기
+function addZeros(num, digit) {
 	  var zero = '';
 	  num = num.toString();
 	  if (num.length < digit) {
@@ -76,15 +76,15 @@ function addZeros(num, digit) { // 자릿수 맞춰주기
 }
 
 function printDateTime() {
-			var currentDate = new Date();                                     // 현재시간
-			var calendar = currentDate.getFullYear() + "-" + (currentDate.getMonth()+1) + "-" + currentDate.getDate() // 현재 날짜
-			var amPm = 'AM'; // 초기값 AM
+			var currentDate = new Date(); 
+			var calendar = currentDate.getFullYear() + "-" + (currentDate.getMonth()+1) + "-" + currentDate.getDate();
+			var amPm = 'AM';
 			var currentHours = addZeros(currentDate.getHours(),2); 
 			var currentMinute = addZeros(currentDate.getMinutes(),2);
 			var currentSeconds =  addZeros(currentDate.getSeconds(),2);
-			if(currentHours >= 12){ // 시간이 12보다 클 때 PM으로 세팅, 12를 빼줌
+			if(currentHours >= 12){
 				amPm = 'PM';
 				currentHours = addZeros(currentHours - 12,2);
 			}
-			return calendar +" "+currentHours+":"+currentMinute+":"+currentSeconds+" "+amPm; //날짜를 출력해 줌
+			return calendar +" "+currentHours+":"+currentMinute+":"+currentSeconds+" "+amPm;
 }
