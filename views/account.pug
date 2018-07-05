@@ -15,7 +15,14 @@ block content
       tr
         td Name:
         td #{account.name}
-
+    tr
+      td Block Range:
+      td from:#{account.fromBlock} ~ to:#{account.lastBlock}
+    tr
+      td More Infomation:
+      td
+        var url = "https://ethersocial.net/addr/" + #{account.address};
+        a(href=url) official BlockExplorer
   div
     ul.nav.nav-tabs(role='tablist')
       li.active(role='presentation')
@@ -30,17 +37,7 @@ block content
           a(href='#contractState', aria-controls='source', role='tab', data-toggle='tab') Contract State
     .tab-content
       #transactions.tab-pane.active(role='tabpanel')
-        if isAll
-          h3 All Transactions
-          if account.nonce > 100
-            p There are more than 100 transactions in this account. The transaction history has been pruned.
-          else if account.isContract
-            p This account is a contract. The transaction history has been pruned.
-        else
-          h3 Recent Transactions
-            if account.nonce <= 100 && !account.isContract
-              small &nbsp;&nbsp;
-                a(href="/account/" + account.address + "/all") Show All Transactions
+        h3 Recent Activity
         table.table
           thead
             tr

@@ -4,7 +4,7 @@ var router = express.Router();
 var async = require('async');
 var Web3 = require('web3');
 
-function getAccount(req, res, next, all) {
+router.get('/:account', function(req, res, next) {
 
     var config = req.app.get('config');
     var web3 = new Web3();
@@ -23,8 +23,8 @@ function getAccount(req, res, next, all) {
         function(lastBlock, callback) {
             data.lastBlock = lastBlock.number;
             //limits the from block to -1000 blocks ago if block count is greater than 1000
-            if (data.lastBlock > 0x3e8 && !all) {
-                data.fromBlock = data.lastBlock - 0x3e8;
+            if (data.lastBlock > 0x2710) {
+                data.fromBlock = data.lastBlock - 0x2710;
             } else {
                 data.fromBlock = 0x00;
             }
@@ -34,19 +34,6 @@ function getAccount(req, res, next, all) {
         },
         function(balance, callback) {
             data.balance = balance;
-            web3.eth.getTransactionCount(req.params.account, function(err, nonce) {
-                callback(err, nonce);
-            });
-        },
-        function(nonce, callback) {
-            data.nonce = nonce;
-            if (nonce > 100) {
-                if (data.lastBlock > 0x3e8) {
-                    data.fromBlock = data.lastBlock - 0x3e8;
-                } else {
-                    data.fromBlock = 0x00; 
-                }
-            }
             web3.eth.getCode(req.params.account, function(err, code) {
                 callback(err, code);
             });
@@ -56,15 +43,7 @@ function getAccount(req, res, next, all) {
             if (code !== "0x") {
                 data.isContract = true;
             }
-            
-            if (data.isContract) {
-                if (data.lastBlock > 0x3e8) {
-                    data.fromBlock = data.lastBlock - 0x3e8;
-                } else {
-                    data.fromBlock = 0x00; 
-                } 
-            }
-            
+
             db.get(req.params.account.toLowerCase(), function(err, value) {
                 callback(null, value);
             });
@@ -112,7 +91,7 @@ function getAccount(req, res, next, all) {
         function(callback) {
             web3.trace.filter({
                 "fromBlock": "0x" + data.fromBlock.toString(16),
-                "fromAddress": [ req.params.account ]
+                "fromAddress": [req.params.account]
             }, function(err, traces) {
                 callback(err, traces);
             });
@@ -121,7 +100,7 @@ function getAccount(req, res, next, all) {
             data.tracesSent = tracesSent;
             web3.trace.filter({
                 "fromBlock": "0x" + data.fromBlock.toString(16),
-                "toAddress": [ req.params.account ]
+                "toAddress": [req.params.account]
             }, function(err, traces) {
                 callback(err, traces);
             });
@@ -166,24 +145,13 @@ function getAccount(req, res, next, all) {
             data.name = config.names[data.address];
         }
 
-        if (!all) {
-            data.blocks = data.blocks.reverse().splice(0, 100);
-        } else {
-            data.blocks = data.blocks.reverse(); 
-        }
+        data.blocks = data.blocks.reverse().splice(0, 100);
 
         res.render('account', {
-            account: data, isAll: all
+            account: data
         });
     });
-}
 
-router.get('/:account', function(req, res, next) {
-    getAccount(req, res, next, false);
-});
-
-router.get('/:account/all', function(req, res, next) {
-    getAccount(req, res, next, true);
 });
 
 module.exports = router;

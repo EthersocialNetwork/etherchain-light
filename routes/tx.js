@@ -98,10 +98,7 @@ router.get('/:tx', function(req, res, next) {
       try {
         var jsonAbi = JSON.parse(tx.source.abi);
         abiDecoder.addABI(jsonAbi);
-        var decodedLogs = abiDecoder.decodeLogs(receipt.logs);
-        if (decodedLogs.every(function(v) { return v; })) {
-          tx.logs = decodedLogs; 
-        }
+        tx.logs = abiDecoder.decodeLogs(receipt.logs);
         tx.callInfo = abiDecoder.decodeMethod(tx.input);
       } catch (e) {
         console.log("Error parsing ABI:", tx.source.abi, e);
@@ -109,19 +106,15 @@ router.get('/:tx', function(req, res, next) {
     }
     tx.traces = [];
     tx.failed = false;
-    tx.gas = parseInt(tx.gas, 16);
     tx.gasUsed = 0;
-    if (receipt != null) {
-      tx.gasUsed = parseInt(receipt.gasUsed, 16);
-    }
     if (traces != null) {
-      traces.forEach(function(trace) {
+    traces.forEach(function(trace) {
         tx.traces.push(trace);
         if (trace.error) {
           tx.failed = true;
           tx.error = trace.error;
         }
-        if (receipt == null && trace.result && trace.result.gasUsed) {
+        if (trace.result && trace.result.gasUsed) {
           tx.gasUsed += parseInt(trace.result.gasUsed, 16);
         }
       });
