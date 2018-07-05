@@ -111,6 +111,7 @@ router.get('/:account', function(req, res, next) {
         }
 
         data.address = req.params.account;
+        data.officialurl = 'https://ethersocial.net/addr/'+data.address;
         data.tracesReceived = tracesReceived;
 
         var blocks = {};
