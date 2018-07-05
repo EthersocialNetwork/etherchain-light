@@ -25,9 +25,6 @@ router.get('/:offset?', function(req, res, next) {
 		}, 
 		function(accounts, callback) {
 			client.del('esn_top100');
-			client.del('esn_top100_total');
-			client.hset('esn_top100_total', 'totalAccounts', 0);
-			client.hset('esn_top100_total', 'totalSupply', 0);
 
 			if (!accounts) {
 				return callback({name:"FatDBDisabled", message: "Parity FatDB system is not enabled. Please restart Parity with the --fat-db=on parameter."});
@@ -48,8 +45,6 @@ router.get('/:offset?', function(req, res, next) {
 						numBalance = numBalance.dividedBy(Ether);
 						if(code.length < 3 && numBalance > 0) {
 							client.zadd('esn_top100',numBalance.toString(),account);
-							client.hincrby('esn_top100_total', 'totalAccounts', 1);
-							client.hincrby('esn_top100_total', 'totalSupply', numBalance * 10000);
 						}
 						eachCallback();
 					});
@@ -78,19 +73,14 @@ function addZeros(num, digit) {
 			zero += '0';
 		}
 	}
-	return zero + num;
+	return zero + num.toString();
 }
 
 function printDateTime() {
 	var currentDate = new Date(); 
-	var calendar = currentDate.getFullYear() + "-" + (currentDate.getMonth()+1) + "-" + currentDate.getDate();
-	var amPm = 'AM';
+	var calendar = currentDate.getFullYear() + "-" + addZeros((currentDate.getMonth()+1).toString(),2) + "-" + addZeros(currentDate.getDate().toString(),2);
 	var currentHours = addZeros(currentDate.getHours(),2); 
 	var currentMinute = addZeros(currentDate.getMinutes(),2);
 	var currentSeconds =  addZeros(currentDate.getSeconds(),2);
-	if(currentHours >= 12){
-		amPm = 'PM';
-		currentHours = addZeros(currentHours - 12,2);
-	}
-	return calendar +" "+currentHours+":"+currentMinute+":"+currentSeconds+" "+amPm;
+	return calendar +" "+currentHours+":"+currentMinute+":"+currentSeconds;
 }

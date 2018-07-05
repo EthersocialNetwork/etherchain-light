@@ -32,14 +32,12 @@ router.get('/:offset?', function(req, res, next) {
 			var tmp = {};
 
 			async.eachSeries(accounts, function(account, eachCallback) {
-				//console.log("account: " + account, "rank_normal: " + rank_normal);
 				async.setImmediate(function() {
 					if(rank_normal === 0) {
 						create_time = account;
 						rank_normal++;
 					} else if (account == "2100000000"){
 						var tmpVar = account;
-						console.log("tmpVar: " + tmpVar);
 					} else {
 						if(isAccount){
 							data_totalAccounts = data_totalAccounts.plus(1);
@@ -50,7 +48,6 @@ router.get('/:offset?', function(req, res, next) {
 							//}
 							isAccount = false; 
 						} else {
-							console.log("pre_ret: " + account);
 							let ret = new BigNumber(account);
 							data_totalSupply = data_totalSupply.plus(ret);
 							//if(rank_normal < 501) {
