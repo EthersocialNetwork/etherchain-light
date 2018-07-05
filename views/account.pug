@@ -56,7 +56,10 @@ block content
                       a(href="/block/" + trace.blockNumber) #{trace.blockHash.substr(0, 10)}...
                     td
                       a(href="/block/" + trace.blockNumber) #{trace.blockNumber}
-                    td Mining Reward
+                    if trace.action.rewardType === "uncle"
+                      td Mining Reward(Uncle)
+                    else
+                      td Mining Reward
                     td
                     td New Coins
                     td 
