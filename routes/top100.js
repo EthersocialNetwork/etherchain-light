@@ -37,7 +37,7 @@ router.get('/:offset?', function(req, res, next) {
 						create_time = account;
 						rank_normal++;
 					} else if (account == "2100000000"){
-						var tmpVar = account;
+						console.log("run:" + account);
 					} else {
 						if(isAccount){
 							data_totalAccounts = data_totalAccounts.plus(1);
@@ -52,10 +52,14 @@ router.get('/:offset?', function(req, res, next) {
 							data_totalSupply = data_totalSupply.plus(ret);
 							//if(rank_normal < 501) {
 								tmp.balance = ret.toFormat(6) + " ESN";
-								if (config.names[tmp.address]) {
+								const name = config.names[tmp.address];
+								if (name && name != "ESN Alpha or Beta Testers") {
 									tmp.rank = "Rank " + rank_special++;
 									data_special.push(tmp);
 								} else {
+									if (name == "ESN Alpha or Beta Testers") {
+										tmp.address_name = "ESN Alpha or Beta Testers";
+									}
 									tmp.rank = "Rank " + rank_normal++;
 									data_normal.push(tmp);
 								}

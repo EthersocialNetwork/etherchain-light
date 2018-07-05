@@ -23,10 +23,16 @@ var config = new(require('./config.js'))();
 
 var leveldown = require('leveldown');
 var levelup = require('levelup');
-var db = levelup(leveldown('./data'));
+var db = levelup(leveldown('/root/esn_install/parity/chaindata/chains/ethersocial/db/dc73f323b4681272/snapshot/current'));
+// ./data 
+// ~/esn_install/parity/chaindata/chains/ethersocial/db/dc73f323b4681272/archive/db
+// ~/esn_install/parity/chaindata/chains/ethersocial/db/dc73f323b4681272/snapshot/current
+// /root/esn_install/parity/chaindata/chains/ethersocial/db/dc73f323b4681272/snapshot/current
 
 var app = express();
-app.use(compression({filter: shouldCompress}));
+app.use(compression({
+  filter: shouldCompress
+}));
 
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
@@ -65,7 +71,7 @@ app.use('/blocks', blocks);
 app.use('/tx_recent', tx_recent);
 app.use('/top100_settingup', top100_settingup);
 
-function shouldCompress (req, res) {
+function shouldCompress(req, res) {
   if (req.headers['x-no-compression']) {
     // don't compress responses with this request header
     return false;
@@ -76,14 +82,14 @@ function shouldCompress (req, res) {
 }
 
 // catch 404 and forward to error handler
-app.use(function(req, res, next) {
+app.use(function (req, res, next) {
   var err = new Error('Not Found');
   err.status = 404;
   next(err);
 });
 
 // error handler
-app.use(function(err, req, res, next) {
+app.use(function (err, req, res, next) {
   // set locals, only providing error in development
   res.locals.message = err.message;
   res.locals.error = req.app.get('env') === 'development' ? err : {};

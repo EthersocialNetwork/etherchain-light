@@ -10,6 +10,7 @@ var config = function () {
   this.bootstrapUrl = "https://maxcdn.bootstrapcdn.com/bootswatch/3.3.7/yeti/bootstrap.min.css";
   
   this.names = {
+    "0xc02ab66f5648b6d9d511f466b772647c619f2552": "[Pool] esn.koinpool.io",
     "0x02aa3e57361752742cfd683275ade72bc9ebae97": "[Pool] esn.dragonpool.top",
     "0x0b292a321fe5e20cc943648a782184f8ab44d2eb": "[Pool] moricpool.com",
     "0x2eb64b8ab13f0d7823158217d15ba310ed3d0e58": "[Pool] esn.topmining.co.kr",

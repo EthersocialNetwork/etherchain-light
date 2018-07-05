@@ -50,9 +50,8 @@ router.get('/:offset?', function(req, res, next) {
 					});
 				});
 			}, function(err) {
-				callback(err, "Error");
+				callback(err, "완료 시간: " + printDateTime());
 			});
-
 			client.zadd('esn_top100','2100000000', printDateTime());
 		}
 	], function(err, printdatetime) {

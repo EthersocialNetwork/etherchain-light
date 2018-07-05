@@ -47,6 +47,7 @@ html(lang="en")
     div.container
       div.table-responsive
         block content
+    
     script(src='https://cdnjs.cloudflare.com/ajax/libs/jquery/3.1.1/jquery.js')
     script(src='https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js', integrity='sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa', crossorigin='anonymous')
     script.
@@ -60,7 +61,3 @@ html(lang="en")
         p  
           a(href="https://github.com/gobitfly/etherchain-light") Etherchain Light
           |  | #{nodeStatus.version} | #{nodeStatus.nbrPeers} Peers connected
-    //script.
-      $("ul.nav").on("click", function(){
-        $(".navbar-toggle").click(); //bootstrap 3.x by Richard
-      });

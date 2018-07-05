@@ -8,6 +8,6 @@ function nameFormatter(config) {
     } else {
       return address;
     }
-  }
+  };
 }
 module.exports = nameFormatter;

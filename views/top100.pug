@@ -1,39 +1,47 @@
 extends layout
 
 block content
-  h3 Ordinary address
+  h3 Unknown address list 알려지지 않은 주소
   p Generation Time 기준시간 : #{accounts_create_time}
   p Total Create Accounts 전체계정수 : #{totalAccounts} (보유량 0ESN 제외)
   p Total Supply 전체발행량 : #{totalSupply}
-  table.table
-    thead
-      tr
-        th Rank
-        th Address
-        th Type
-        th Balance
-    tbody
+  .divTable.top100
+    .divTableHeading
+      .divTableRow
+        .divTableHead Rank
+        .divTableHead Address
+        .divTableHead Type
+        .divTableHead Balance
+    .divTableBody
       for account in accounts_normal
-        tr
-          td #{account.rank}
-          td
+        .divTableRow
+          .divTableCell #{account.rank}
+          .divTableCell
+            if account.address_name
+              a(href="/account/" + account.address) #{account.address_name}
+              br
             a(href="/account/" + account.address) #{account.address}
-          td #{account.type}
-          td(style="text-align: right;") #{account.balance}
-  h3 Unordinary address list
-  table.table
-    thead
-      tr
-        th Rank
-        th Address
-        th Type
-        th Balance
-    tbody
+            if !account.address_name
+              br
+              | &nbsp;
+          .divTableCell #{account.type}
+          .divTableCell #{account.balance}
+  h3 Known address list 알려진 주소
+  .divTable.top100
+    .divTableHeading
+      .divTableRow
+        .divTableHead Rank
+        .divTableHead Address
+        .divTableHead Type
+        .divTableHead Balance
+    .divTableBody
       for account in accounts_special
-        tr
-          td #{account.rank}
-          td
+        .divTableRow
+          .divTableCell #{account.rank}
+          .divTableCell
             a(href="/account/" + account.address) #{nameformatter.format(account.address)}
-          td #{account.type}
-          td(style="text-align: right;") #{account.balance}
+            br
+            a(href="/account/" + account.address) #{account.address}
+          .divTableCell #{account.type}
+          .divTableCell #{account.balance}
 
