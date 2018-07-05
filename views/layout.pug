@@ -35,25 +35,9 @@ html(lang="en")
             li
               a(href='/tx_recent') Transactions<br/>최근거래내역
             li
-              a(href='/top100') ESN Rank<br/>Top 500
+              a(href='/top100') ESN Rank<br/>전체지갑주소
             li
               a(href='http://pool.sejun.info') ESN Mining<br/>채굴하기
-            li.dropdown
-              a.dropdown-toggle(href='#', data-toggle='dropdown', role='button', aria-haspopup='true', aria-expanded='false')
-                | Tools<br/>기타메뉴
-                span.caret
-              ul.dropdown-menu
-                li
-                  a(href='/accounts') Accounts<br/>지갑주소목록
-                li
-                  a(href='/tx/pending') Pending Tx<br/>대기중인 거래목록
-                li
-                  a(href='/tx/submit') Submit Tx
-                li
-                  a(href='/contract/verify') Verify Contract 
-                li
-                  a(href='/signature/verify') Verify Signature                
-              
           form.navbar-form.navbar-right(action="/search", method="POST")
             .form-group
               .input-group

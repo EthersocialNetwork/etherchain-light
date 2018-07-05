@@ -1,8 +1,10 @@
 extends layout
 
 block content
-  h3 Ordinary address : Top 500!
-  p 기준시간 : #{accounts_create_time}
+  h3 Ordinary address
+  p Generation Time 기준시간 : #{accounts_create_time}
+  p Total Create Accounts 전체계정수 : #{totalAccounts} (보유량 0ESN 제외)
+  p Total Supply 전체발행량 : #{totalSupply}
   table.table
     thead
       tr
