@@ -2,61 +2,122 @@ extends layout
 
 block content
   div
+    h5 This site is optimized for Chrome on your PC. 이 사이트는 PC의 Chrome에 최적화되어 있습니다.
     ul.nav.nav-tabs(role='tablist')
       li.active(role='presentation')
-        a(href='#peerslist', aria-controls='peerslist', role='tab', data-toggle='tab') ESN Peers Data
+        a(href='#peerslist', aria-controls='peerslist', role='tab', data-toggle='tab') ESN Peers List
       li(role='presentation')
-        a(href='#peerschart', aria-controls='peerschart', role='tab', data-toggle='tab') ESN Peers Chart
+        a(href='#locationChart', aria-controls='locationChart', role='tab', data-toggle='tab') Location Chart
+      li(role='presentation')
+        a(href='#exeChart', aria-controls='exeChart', role='tab', data-toggle='tab') Command Chart
+      li(role='presentation')
+        a(href='#versionChart', aria-controls='versionChart', role='tab', data-toggle='tab') Version Chart
+      li(role='presentation')
+        a(href='#osChart', aria-controls='osChart', role='tab', data-toggle='tab') OS Chart
+      li(role='presentation')
+        a(href='#compilerChart', aria-controls='compilerChart', role='tab', data-toggle='tab') Compiler Chart
     .tab-content
       #peerslist.tab-pane.active(role='tabpanel')
         h3 EtherSocialNetwork Peers info 피어 정보 목록
         table.table
           thead
             tr
-              th seq no
-              th id
-              th exe
-              th ver
-              th os
-              th gover
-              th ip
-              th port
-              th scantime
+              th Seq no
+              th ID
+              th Client
+              th Version
+              th OS
+              th Go Ver.
+              th IP
+              th Port
+              th Location
+              th LastConnected
           tbody
             - var n = 1;
             for peer in peers
               tr
                 td= n++
                 td
-                  a(href="#" title=peer.id) #{peer.id.substr(0, 20)}...
+                  a(href="#" title="Click for details" onclick="switchDetails('"+peer.id.substr(0, 20)+"');return false;") #{peer.id.substr(0, 20)}...
+                  div(id=peer.id.substr(0, 20), style="width: 200px; margin: 0 auto; display: none;")
+                    table.table
+                      thead
+                        tr
+                          th key
+                          th value
+                      tbody
+                        tr
+                          td Id
+                          td #{peer.id}
+                        tr
+                          td Host
+                          td #{peer.ip}
+                        tr
+                          td Port
+                          td #{peer.port}
+                        tr
+                          td Enode
+                          td #{peer.enode}
+                        tr
+                          td Client id
+                          td #{peer.name}
+                        tr
+                          td Client
+                          td #{peer.exe}
+                        tr
+                          td Version
+                          td #{peer.ver}
+                        tr
+                          td OS
+                          td #{peer.os}
+                        tr
+                          td Last Connected
+                          td #{peer.scantime}
+                        tr
+                          td Location
+                          td #{peer.geo}
                 td #{peer.exe}
                 td #{peer.ver}
                 td #{peer.os}
                 td #{peer.gover}
                 td #{peer.ip}
                 td #{peer.port}
+                td #{peer.geo}
                 td #{peer.scantime}
-      #peerschart.tab-pane(role='tabpanel')
+      #locationChart.tab-pane(role='tabpanel')
+        h3 EtherSocialNetwork Peers info 피어 정보 차트
+        div#chart_geo(style="min-width: 300px; height: 600px; margin: 0 auto")
+      #exeChart.tab-pane(role='tabpanel')
         h3 EtherSocialNetwork Peers info 피어 정보 차트
         div#chart_exe(style="min-width: 300px; height: 600px; margin: 0 auto")
-        br
-        br
+      #versionChart.tab-pane(role='tabpanel')
+        h3 EtherSocialNetwork Peers info 피어 정보 차트
         div#chart_ver(style="min-width: 300px; height: 600px; margin: 0 auto")
-        br
-        br
+      #osChart.tab-pane(role='tabpanel')
+        h3 EtherSocialNetwork Peers info 피어 정보 차트
         div#chart_os(style="min-width: 300px; height: 600px; margin: 0 auto")
-        br
-        br
+      #compilerChart.tab-pane(role='tabpanel')
+        h3 EtherSocialNetwork Peers info 피어 정보 차트
         div#chart_gover(style="min-width: 300px; height: 600px; margin: 0 auto")
   script(type='text/javascript', src="https://code.highcharts.com/highcharts.js")
   script(type='text/javascript', src="https://code.highcharts.com/modules/exporting.js")
   script(type='text/javascript', src="https://code.highcharts.com/modules/export-data.js")
 
   script.
+    function switchDetails(target){
+      const divById = document.getElementById(target);
+      if(divById.style.display == 'none') {
+        divById.style.display = 'block';
+      } else {
+        divById.style.display = 'none';
+      }
+    }
+
     var commandsSeries = [];
     var versionSeries = [];
     var osSeries = [];
     var goVersionSeries = [];
+    var geoSeries = [];
   for cmd, key in commands
     script.
       commandsSeries.push({
@@ -78,6 +139,12 @@ block content
   for cmd, key in goversions
     script.
       goVersionSeries.push({
+              name: '#{key}',
+              y: #{cmd}
+      });
+  for cmd, key in geo
+    script.
+      geoSeries.push({
               name: '#{key}',
               y: #{cmd}
       });
@@ -165,5 +232,20 @@ block content
           name: 'Compiler',
           colorByPoint: true,
           data: goVersionSeries
+       }]
+    });
+    Highcharts.chart('chart_geo', {
+      chart: opt_chart,
+      title: {
+          text: 'Location Chart'
+      },
+      tooltip: opt_tooltip,
+      plotOptions: opt_plotOptions,
+      exporting: { enabled: false },
+      credits: { enabled: false },
+      series: [{
+          name: 'Location',
+          colorByPoint: true,
+          data: geoSeries
        }]
     });
