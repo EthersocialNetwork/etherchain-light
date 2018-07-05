@@ -37,6 +37,8 @@ html(lang="en")
             li
               a(href='/top100') ESN Rank<br/>전체지갑주소
             li
+              a(href='/peers') Nodes Info<br/>노드 정보
+            li
               a(href='http://pool.sejun.info') ESN Mining<br/>채굴하기
           form.navbar-form.navbar-right(action="/search", method="POST")
             .form-group
@@ -48,8 +50,9 @@ html(lang="en")
       div.table-responsive
         block content
     
-    script(src='https://cdnjs.cloudflare.com/ajax/libs/jquery/3.1.1/jquery.js')
-    script(src='https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js', integrity='sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa', crossorigin='anonymous')
+    script(type='text/javascript', src='https://cdnjs.cloudflare.com/ajax/libs/jquery/3.1.1/jquery.js')
+    script(type='text/javascript', src='https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js', integrity='sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa', crossorigin='anonymous')
+
     script.
       $(function () {
         $('[data-toggle="tooltip"]').tooltip()

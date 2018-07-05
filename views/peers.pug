@@ -1,0 +1,169 @@
+extends layout
+
+block content
+  div
+    ul.nav.nav-tabs(role='tablist')
+      li.active(role='presentation')
+        a(href='#peerslist', aria-controls='peerslist', role='tab', data-toggle='tab') ESN Peers Data
+      li(role='presentation')
+        a(href='#peerschart', aria-controls='peerschart', role='tab', data-toggle='tab') ESN Peers Chart
+    .tab-content
+      #peerslist.tab-pane.active(role='tabpanel')
+        h3 EtherSocialNetwork Peers info 피어 정보 목록
+        table.table
+          thead
+            tr
+              th seq no
+              th id
+              th exe
+              th ver
+              th os
+              th gover
+              th ip
+              th port
+              th scantime
+          tbody
+            - var n = 1;
+            for peer in peers
+              tr
+                td= n++
+                td
+                  a(href="#" title=peer.id) #{peer.id.substr(0, 20)}...
+                td #{peer.exe}
+                td #{peer.ver}
+                td #{peer.os}
+                td #{peer.gover}
+                td #{peer.ip}
+                td #{peer.port}
+                td #{peer.scantime}
+      #peerschart.tab-pane(role='tabpanel')
+        h3 EtherSocialNetwork Peers info 피어 정보 차트
+        div#chart_exe(style="min-width: 300px; height: 600px; margin: 0 auto")
+        br
+        br
+        div#chart_ver(style="min-width: 300px; height: 600px; margin: 0 auto")
+        br
+        br
+        div#chart_os(style="min-width: 300px; height: 600px; margin: 0 auto")
+        br
+        br
+        div#chart_gover(style="min-width: 300px; height: 600px; margin: 0 auto")
+  script(type='text/javascript', src="https://code.highcharts.com/highcharts.js")
+  script(type='text/javascript', src="https://code.highcharts.com/modules/exporting.js")
+  script(type='text/javascript', src="https://code.highcharts.com/modules/export-data.js")
+
+  script.
+    var commandsSeries = [];
+    var versionSeries = [];
+    var osSeries = [];
+    var goVersionSeries = [];
+  for cmd, key in commands
+    script.
+      commandsSeries.push({
+              name: '#{key}',
+              y: #{cmd}
+      });
+  for cmd, key in versions
+    script.
+      versionSeries.push({
+              name: '#{key}',
+              y: #{cmd}
+      });
+  for cmd, key in oss
+    script.
+      osSeries.push({
+              name: '#{key}',
+              y: #{cmd}
+      });
+  for cmd, key in goversions
+    script.
+      goVersionSeries.push({
+              name: '#{key}',
+              y: #{cmd}
+      });
+  script.
+    const opt_chart = {
+          polar: false,
+          plotBackgroundColor: null,
+          plotBorderWidth: null,
+          plotShadow: false,
+          type: 'pie'
+      };
+    const opt_tooltip = {
+          pointFormat: '{series.name}: <b>{point.y} peers, {point.percentage:.1f}%</b>',
+          enabled: true,
+      };
+    const opt_plotOptions = {
+          pie: {
+              allowPointSelect: true,
+              cursor: 'pointer',
+              showInLegend: true,
+              dataLabels: {
+                  enabled: true,
+                  format: '<b>{point.name}</b>: {point.y} peers, {point.percentage:.1f} %',
+                  style: {
+                      color: (Highcharts.theme && Highcharts.theme.contrastTextColor) || 'black'
+                  }
+              }
+          }
+      };
+    //console.dir(commandsSeries);
+    Highcharts.chart('chart_exe', {
+      chart: opt_chart,
+      title: { text: 'EXE Chart' },
+      tooltip: opt_tooltip,
+      plotOptions: opt_plotOptions,
+      exporting: { enabled: false },
+      credits: { enabled: false },
+      series: [{
+          animation: false,
+          name: 'exe',
+          colorByPoint: true,
+          data: commandsSeries
+       }]
+    });
+    Highcharts.chart('chart_ver', {
+      chart: opt_chart,
+      title: {
+          text: 'Version Chart'
+      },
+      tooltip: opt_tooltip,
+      plotOptions: opt_plotOptions,
+      exporting: { enabled: false },
+      credits: { enabled: false },
+      series: [{
+          name: 'Version',
+          colorByPoint: true,
+          data: versionSeries
+       }]
+    });
+    Highcharts.chart('chart_os', {
+      chart: opt_chart,
+      title: {
+          text: 'OS Chart'
+      },
+      tooltip: opt_tooltip,
+      plotOptions: opt_plotOptions,
+      exporting: { enabled: false },
+      credits: { enabled: false },
+      series: [{
+          name: 'OS',
+          colorByPoint: true,
+          data: osSeries
+       }]
+    });
+    Highcharts.chart('chart_gover', {
+      chart: opt_chart,
+      title: {
+          text: 'Compiler Chart'
+      },
+      tooltip: opt_tooltip,
+      plotOptions: opt_plotOptions,
+      exporting: { enabled: false },
+      credits: { enabled: false },
+      series: [{
+          name: 'Compiler',
+          colorByPoint: true,
+          data: goVersionSeries
+       }]
+    });

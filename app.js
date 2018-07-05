@@ -18,6 +18,7 @@ var signature = require('./routes/signature');
 var search = require('./routes/search');
 var top100 = require('./routes/top100');
 var top100_settingup = require('./routes/top100_settingup');
+var peers = require('./routes/peers');
 
 var config = new(require('./config.js'))();
 
@@ -70,6 +71,7 @@ app.use('/top100', top100);
 app.use('/blocks', blocks);
 app.use('/tx_recent', tx_recent);
 app.use('/top100_settingup', top100_settingup);
+app.use('/peers', peers);
 
 function shouldCompress(req, res) {
   if (req.headers['x-no-compression']) {

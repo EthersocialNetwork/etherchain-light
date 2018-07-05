@@ -9,7 +9,6 @@ router.get('/:account', function (req, res, next) {
     var config = req.app.get('config');
     var web3 = new Web3();
     web3.setProvider(config.provider);
-
     var db = req.app.get('db');
 
     var data = {};
@@ -24,8 +23,8 @@ router.get('/:account', function (req, res, next) {
             function (lastBlock, callback) {
                 data.lastBlock = lastBlock.number;
                 //limits the from block to -1000 blocks ago if block count is greater than 1000
-                if (data.lastBlock > 0x2710) {
-                    data.fromBlock = data.lastBlock - 0x2710;
+                if (data.lastBlock > 0x3E8) {
+                    data.fromBlock = data.lastBlock - 0x3E8;
                 } else {
                     data.fromBlock = 0x00;
                 } //범위를 마지막블럭에서 1,000블럭을 뺀 블럭까지 설정

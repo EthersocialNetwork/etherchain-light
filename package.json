@@ -29,7 +29,7 @@
     "solc": "^0.4.23",
     "string-similarity": "^1.2.0",
     "tmp": "0.0.33",
-    "web3": "git+https://github.com/gobitfly/web3.js.git#develop",
+    "web3": "git+https://github.com/ComBba/web3.js.git#develop",
     "yargs": "^11.0.0"
   }
 }
