@@ -48,6 +48,10 @@ router.get('/:end?', function (req, res, next) {
             callback(err, result);
           });
         }
+      } else if (req.params.end && req.params.end < 1000) {
+        web3.eth.getBlock(1000, false, function (err, result) {
+          callback(err, result);
+        });
       } else if (req.params.end && req.params.end < latestBlock.number) {
         web3.eth.getBlock(req.params.end, false, function (err, result) {
           callback(err, result);
@@ -86,50 +90,62 @@ router.get('/:end?', function (req, res, next) {
     data.txnumber = 0;
     data.dbBlock = 0;
     maxBlockNumber = 0;
+    var multi = client.multi();
     blocks.forEach(function (block) {
-      if (lastBlockTimes > 0) {
-        totalBlockTimes += lastBlockTimes - block.timestamp;
-        totaDifficulty += Number(block.difficulty);
-        countBlockTimes++;
-      }
-      lastBlockTimes = block.timestamp;
-
-      if (data.dbLastBlock > block.number) {
-        data.txnumber += Number(block.transactions);
-        data.dbBlock++;
-      } else {
-        data.txnumber += block.transactions ? block.transactions.length : 0;
-        if (data.ip == "115.68.0.74") {
-          var rds_value = {
-            number: block.number.toString(),
-            hash: block.hash,
-            parentHash: block.parentHash,
-            nonce: block.nonce,
-            sha3Uncles: block.sha3Uncles,
-            logsBloom: block.logsBloom,
-            transactionsRoot: block.transactionsRoot,
-            stateRoot: block.stateRoot,
-            miner: block.miner,
-            difficulty: block.difficulty.toString(),
-            totalDifficulty: block.totalDifficulty.toString(),
-            extraData: block.extraData,
-            size: block.size.toString(),
-            gasLimit: block.gasLimit.toString(),
-            gasUsed: block.gasUsed.toString(),
-            timestamp: block.timestamp.toString(),
-            transactions: block.transactions ? block.transactions.length : 0,
-            uncles: block.uncles ? block.uncles.length : 0
-          };
-          var rds_key = pre_fix.concat("list");
-          client.hset(rds_key, block.number, block.miner);
-          var rds_key2 = pre_fix.concat((block.number - (block.number % divide)) + ":").concat(block.number);
-          client.hmset(rds_key2, rds_value);
-          maxBlockNumber = maxBlockNumber < block.number ? block.number : maxBlockNumber;
-          var rds_key3 = pre_fix.concat("lastblock");
-          client.hset(rds_key3, "lastblock", maxBlockNumber);
+      if (block) {
+        if (lastBlockTimes > 0) {
+          totalBlockTimes += lastBlockTimes - Number(block.timestamp);
+          totaDifficulty += Number(block.difficulty);
+          countBlockTimes++;
         }
+        lastBlockTimes = block.timestamp;
+
+        if (data.dbLastBlock > block.number) {
+          data.txnumber += Number(block.transactions);
+          data.dbBlock++;
+        } else {
+          data.txnumber += block.transactions ? block.transactions.length : 0;
+          if (data.ip == "115.68.0.74") {
+            var rds_value = {
+              number: block.number.toString(),
+              hash: block.hash,
+              parentHash: block.parentHash,
+              nonce: block.nonce,
+              sha3Uncles: block.sha3Uncles,
+              //logsBloom: block.logsBloom,
+              transactionsRoot: block.transactionsRoot,
+              stateRoot: block.stateRoot,
+              miner: block.miner,
+              difficulty: block.difficulty.toString(),
+              totalDifficulty: block.totalDifficulty.toString(),
+              extraData: block.extraData,
+              size: block.size.toString(),
+              gasLimit: block.gasLimit.toString(),
+              gasUsed: block.gasUsed.toString(),
+              timestamp: block.timestamp.toString(),
+              transactions: block.transactions ? block.transactions.length : 0,
+              uncles: block.uncles ? block.uncles.length : 0
+            };
+            var rds_key = pre_fix.concat("list");
+            multi.hset(rds_key, block.number, block.miner);
+            var rds_key2 = pre_fix.concat((block.number - (block.number % divide)) + ":").concat(block.number);
+            multi.hmset(rds_key2, rds_value);
+            maxBlockNumber = maxBlockNumber < block.number ? block.number : maxBlockNumber;
+            var rds_key3 = pre_fix.concat("lastblock");
+            multi.hset(rds_key3, "lastblock", maxBlockNumber);
+          }
+        }
+      } else {
+        blocks.splice(blocks.indexOf(block), 1);
       }
     });
+
+    multi.exec(function (errors, results) {
+      if (errors) {
+        console.log(errors);
+      }
+    });
+
     data.blockTime = new Intl.NumberFormat().format((totalBlockTimes / countBlockTimes).toFixed(4)) + "s";
     data.difficulty = hashFormat(totaDifficulty / countBlockTimes) + "H";
     data.hashrate = hashFormat(totaDifficulty / totalBlockTimes) + "H/s";

@@ -1,11 +1,12 @@
-var express = require('express');
-var router = express.Router();
+const express = require('express');
+const router = express.Router();
 
-var async = require('async');
-var Web3 = require('web3');
+const async = require('async');
+const Web3 = require('web3');
 const redis = require("redis");
 const client = redis.createClient();
-var geoip = require('geoip-lite');
+const geoip = require('geoip-lite');
+const iso = require('iso-3166-1');
 
 const pre_fix = 'explorerPeers:';
 
@@ -37,6 +38,7 @@ router.get('/:offset?', function (req, res, next) {
 			if (!peers) {
 				callback(null);
 			} else {
+				var multi = client.multi();
 				async.eachSeries(peers, function (peer, eachCallback) {
 					const time_now = new Date();
 					const scan_time = printDateTime(time_now);
@@ -106,14 +108,20 @@ router.get('/:offset?', function (req, res, next) {
 								scanmstime: scan_msTime,
 								geo: txt_geo
 							};
+
 							var rds_key = pre_fix.concat(h);
-							client.hmset(rds_key, rds_value);
+							multi.hmset(rds_key, rds_value);
 							var rds_key2 = pre_fix.concat("list");
-							client.hset(rds_key2, h, tmp_data.id);
+							multi.hset(rds_key2, h, tmp_data.id);
 						}
 						eachCallback();
 					}
 				}, function (err) {
+					multi.exec(function (errors, results) {
+						if (errors) {
+							console.log(errors);
+						}
+					});
 					callback(err);
 				});
 			}
@@ -136,7 +144,7 @@ router.get('/:offset?', function (req, res, next) {
 					}
 					if (!peer_info) {
 						console.log("no peer_info: " + pre_fix.concat(field));
-					} else if (peer_info.scanmstime > (new Date()).getTime() - 60 * 60 * 24 * 1000) {
+					} else if (peer_info.scanmstime > (new Date()).getTime() - 60 * 60 * 24 * 2 * 1000) {
 						var sIP = peer_info.ip.split(".");
 						sIP[1] = "***";
 						peer_info.ip = sIP.join(".");
@@ -174,6 +182,9 @@ router.get('/:offset?', function (req, res, next) {
 		var arrGover = [];
 		var arrGeo = [];
 		for (var h in data.peers) {
+			if (typeof data.peers[h].exe === 'undefined' || typeof data.peers[h].ver === 'undefined' || typeof data.peers[h].os === 'undefined' || typeof data.peers[h].gover === 'undefined' || typeof data.peers[h].geo === 'undefined') {
+				continue;
+			}
 			arrExe.push(data.peers[h].exe);
 			arrVer.push(data.peers[h].ver);
 			arrOs.push(data.peers[h].os);
@@ -186,14 +197,15 @@ router.get('/:offset?', function (req, res, next) {
 		data.oss = makeReturnSeries(arrOs);
 		data.goversions = makeReturnSeries(arrGover);
 		data.geo = makeReturnSeries(arrGeo);
-
+		data.geoCategories = makeGeoCategories(arrGeo);
 		res.render('peers', {
 			peers: data.peers,
 			commands: data.commands,
 			versions: data.versions,
 			oss: data.oss,
 			goversions: data.goversions,
-			geo: data.geo
+			geo: data.geo,
+			geoCategories: data.geoCategories
 		});
 	});
 });
@@ -237,4 +249,60 @@ function makeReturnSeries(arr) {
 		});
 	}
 	return JSON.stringify(resArray);
+}
+
+function makeGeoCategories(arr) {
+	var prcArray = [];
+	prcArray = arr.reduce(function (acc, curr) {
+		if (acc[curr]) {
+			acc[curr] += 1;
+		} else {
+			acc[curr] = 1;
+		}
+		return acc;
+	}, {});
+
+	var colors = ['#f28f43', '#0d233a', '#8bbc21', '#910000', '#1aadce',
+		'#492970', '#2f7ed8', '#77a1e5', '#c42525', '#a6c96a'
+	];
+	var result = {};
+	result.categories = [];
+	result.data = [];
+
+	var idx = 0;
+	for (var kcmd in prcArray) {
+		if (idx > (colors.length - 1)) {
+			return JSON.stringify(result);
+		}
+
+		var spArray = kcmd.split(", ");
+		var country = iso.whereAlpha2(spArray[1]).country;
+		if (!country) {
+			country = spArray[1];
+		}
+
+		var subCategories = {};
+		if (!(result.categories.includes(country))) {
+			result.categories.push(country);
+			subCategories.y = prcArray[kcmd];
+			subCategories.color = colors[idx];
+			subCategories.drilldown = {};
+			subCategories.drilldown.name = country;
+			subCategories.drilldown.categories = [];
+			subCategories.drilldown.categories.push(spArray[0] + ", " + country);
+			subCategories.drilldown.data = [];
+			subCategories.drilldown.data.push(prcArray[kcmd]);
+			result.data.push(subCategories);
+			idx++;
+		} else {
+			for (var rLeni = 0; rLeni < result.data.length; rLeni++) {
+				if (result.data[rLeni].drilldown.name == country) {
+					result.data[rLeni].y += prcArray[kcmd];
+					result.data[rLeni].drilldown.categories.push(spArray[0] + ", " + country);
+					result.data[rLeni].drilldown.data.push(prcArray[kcmd]);
+				}
+			}
+		}
+	}
+	return JSON.stringify(result);
 }

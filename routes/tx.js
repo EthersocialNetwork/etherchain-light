@@ -96,9 +96,16 @@ router.get('/:tx', function (req, res, next) {
       });
     },
     function (tx, receipt, traces, callback) {
-      db.get(tx.to, function (err, value) {
-        callback(null, tx, receipt, traces, value);
-      });
+      //console.dir(tx);
+      if (tx.to) {
+        db.get(tx.to, function (err, value) {
+          callback(null, tx, receipt, traces, value);
+        });
+      } else {
+        db.get(tx.from, function (err, value) {
+          callback(null, tx, receipt, traces, value);
+        });
+      }
     }
   ], function (err, tx, receipt, traces, source) {
     if (err) {
