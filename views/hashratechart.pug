@@ -1,0 +1,163 @@
+extends layout
+
+block content
+  h3 Block Chain Summary(Calculated in the All blocks)
+  div#chart_BlockTime(style="min-width: 480px; max-width: 1200px; height: 800px; margin: 0 auto")
+  script.
+    /*
+    The purpose of this demo is to demonstrate how multiple charts on the same page
+    can be linked through DOM and Highcharts events and API methods. It takes a
+    standard Highcharts config with a small variation for each data set, and a
+    mouse/touch event handler to bind the charts together.
+    */
+    /**
+    * In order to synchronize tooltips and crosshairs, override the
+    * built-in events with handlers defined on the parent element.
+    */
+    $('#chart_BlockTime').bind('mousemove touchmove touchstart', function (e) {
+      var chart, point, i, event;
+      for (i = 0; i < Highcharts.charts.length; i++) {
+        chart = Highcharts.charts[i];
+        // Find coordinates within the chart
+        event = chart.pointer.normalize(e.originalEvent);
+        // Get the hovered point
+        point = chart.series[0].searchPoint(event, true);
+        if (point) {
+          point.highlight(e);
+        }
+      }
+    });
+    /**
+    * Override the reset function, we don't need to hide the tooltips and
+    * crosshairs.
+    */
+    Highcharts.Pointer.prototype.reset = function () {
+      return undefined;
+    };
+
+    /**
+    * Highlight a point by showing tooltip, setting hover state and draw crosshair
+    */
+    Highcharts.Point.prototype.highlight = function (event) {
+      event = this.series.chart.pointer.normalize(event);
+      this.onMouseOver(); // Show the hover marker
+      this.series.chart.tooltip.refresh(this); // Show the tooltip
+      this.series.chart.xAxis[0].drawCrosshair(event, this); // Show the crosshair
+    };
+
+    /**
+    * Synchronize zooming through the setExtremes event handler.
+    */
+    function syncExtremes(e) {
+      var thisChart = this.chart;
+
+      if (e.trigger !== 'syncExtremes') { // Prevent feedback loop
+        Highcharts.each(Highcharts.charts, function (chart) {
+          if (chart !== thisChart) {
+            if (chart.xAxis[0].setExtremes) { // It is null while updating
+              chart.xAxis[0].setExtremes(
+                e.min,
+                e.max,
+                undefined,
+                false,
+                {
+                  trigger: 'syncExtremes'
+                }
+              );
+            }
+          }
+        });
+      }
+    }
+
+    // Get the data. The contents of the data file can be viewed at
+    $.each(!{activity}.datasets, function (i, dataset) {
+      // Add X values
+      dataset.data = Highcharts.map(dataset.data, function (val, j) {
+        //return [!{activity}.xData[j], val, !{activity}.xBlocknumber[j]];
+        return {x:!{xData}[j], y:val, b:!{xBlocknumber}[j], n:!{xNumberOfBlocks}[j]};
+      });
+
+      $('<div style="min-width: 480px; max-width: 1200px; height: 250px; margin: 0 auto">')
+        .appendTo('#chart_BlockTime')
+        .highcharts({
+          chart: {
+            marginLeft: 40, // Keep all charts left aligned
+            spacingTop: 20,
+            spacingBottom: 20,
+            spacingRight: 30,
+            zoomType: 'x'
+          },
+          title: {
+            text: dataset.name,
+            align: 'right',
+            margin: 0,
+            x: 10
+          },
+          credits: {
+            enabled: false
+          },
+          legend: {
+            enabled: false
+          },
+          xAxis: {
+            type: 'datetime',
+            dateTimeLabelFormats: {
+              millisecond: '%H:%M:%S.%L',
+              second: '%H:%M:%S',
+              minute: '%y/%m/%d %H:%M',
+              hour: '%y/%m/%d %H:%M',
+              day: '%y/%m/%d',
+              week: '%y/%m/%d',
+              month: '%y/%m',
+              year: '%Y'
+            },
+            events: {
+              setExtremes: syncExtremes
+            }
+          },
+          yAxis: {
+            title: {
+              text: null
+            }
+          },
+          exporting: {
+            enabled: false
+          },
+          credits: {
+            enabled: false
+          },
+          tooltip: {
+            positioner: function () {
+              return {
+                // right aligned
+                x: 30,
+                y: 10 // align to title
+              };
+            },
+            borderWidth: 0,
+            backgroundColor: 'none',
+            pointFormat: '{point.y}',
+            formatter: function() {
+              return 'BlockNumber: <b>' + (this.point.b-this.point.n+1).toLocaleString() + ' ~ ' + this.point.b.toLocaleString() + '</b> (' + Highcharts.dateFormat('%y/%m/%d %H:%M', new Date(this.x)) + ' ~ ' + Highcharts.dateFormat('%d %H:%M', new Date(this.x+(60*60*1*1000+60*59*1000+59*1000))) + ')<br/>NumberOfBlocks: <b>' + this.point.n.toLocaleString() + "   |   " + dataset.name + ": <b>" + this.y.toLocaleString(undefined, {maximumFractionDigits: dataset.valueDecimals}) + dataset.unit + '</b>';
+            },
+            headerFormat: '',
+            shadow: false,
+            style: {
+              fontSize: '15px'
+            }
+          },
+          series: [{
+            turboThreshold: !{xDataLength},
+            data: dataset.data,
+            lineWidth: 1,
+            name: dataset.name,
+            type: dataset.type,
+            color: Highcharts.getOptions().colors[i==2?4:i],
+            fillOpacity: 0.5,
+            tooltip: {
+              valueSuffix: ' ' + dataset.unit
+            }
+          }]
+        });
+    });

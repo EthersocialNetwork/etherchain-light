@@ -146,8 +146,126 @@ block content
     Highcharts.chart('chart_ver', makeChartProperty('Version Chart', 'Version', versionSeries));
     Highcharts.chart('chart_os', makeChartProperty('OS Chart', 'OS', osSeries));
     Highcharts.chart('chart_gover', makeChartProperty('Compiler Chart', 'Compiler', goVersionSeries));
-    Highcharts.chart('chart_geo', makeChartProperty('Location Chart', 'Location', geoSeries));
+    //Highcharts.chart('chart_geo', makeChartProperty('Location Chart', 'Location', geoSeries));
     
+    var categories = !{geoCategories}.categories,
+      data = !{geoCategories}.data,
+      countryData = [],
+      cityData = [],
+      i,
+      j,
+      dataLen = data.length,
+      drillDataLen,
+      brightness;
+
+    // Build the data arrays
+    for (i = 0; i < dataLen; i += 1) {
+      // add browser data
+      countryData.push({
+        name: categories[i],
+        y: data[i].y,
+        color: data[i].color
+      });
+    
+      // add version data
+      drillDataLen = data[i].drilldown.data.length;
+      for (j = 0; j < drillDataLen; j += 1) {
+        brightness = 0.25 - (((j + 1) / (drillDataLen + 1)) * 0.25);
+        cityData.push({
+          name: data[i].drilldown.categories[j],
+          y: data[i].drilldown.data[j],
+          color: Highcharts.Color(data[i].color).brighten(brightness).get()
+        });
+      }
+    }
+    
+    // Create the chart
+    Highcharts.chart('chart_geo', {
+      chart: {
+        type: 'pie'
+      },
+      title: {
+        text: 'Location Chart'
+      },
+      yAxis: {
+        title: {
+          text: 'number of Location'
+        }
+      },
+      plotOptions: {
+        pie: {
+          shadow: false,
+          center: ['50%', '50%']
+        }
+      },
+      tooltip: {
+        valueSuffix: 'peers'
+      },
+      series: [{
+        name: 'Country',
+        data: countryData,
+        size: '50%',
+        dataLabels: {
+          formatter: function () {
+            return this.y > 1 ? this.point.name : null;
+          },
+          color: '#ffffff',
+          distance: -30
+        }
+      }, {
+        name: 'City',
+        data: cityData,
+        size: '90%',
+        innerSize: '50%',
+        dataLabels: {
+          formatter: function () {
+            // display only if larger than 1
+            return this.y > 1 ? '<b>' + this.point.name + ':</b> ' + this.y + 'peers' : null;
+          }
+        },
+        id: 'city'
+      }],
+      exporting: {
+        enabled: false
+      },
+      credits: {
+        enabled: false
+      },
+      legend: {
+        align: 'right',
+        verticalAlign: 'top',
+        layout: 'vertical',
+        x: 0,
+        y: 100,
+        useHTML: true,
+        labelFormatter: function() {
+            return '<b>'+this.name+'</b>: '+this.y+' peers';
+        }
+      },
+      plotOptions: {
+        pie: {
+            allowPointSelect: true,
+            cursor: 'pointer',
+            showInLegend: true
+        }
+      },
+      responsive: {
+        rules: [{
+          condition: {
+            maxWidth: 400
+          },
+          chartOptions: {
+            series: [{
+              id: 'city',
+              dataLabels: {
+                enabled: false
+              }
+            }]
+          }
+        }]
+      }
+    });
+
     function switchDetails(target){
       const divById = document.getElementById(target);
       if(divById.style.display == 'none') {

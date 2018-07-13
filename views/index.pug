@@ -38,7 +38,13 @@ block content
             strong DIFFICULTY
   div#chart_BlockTime(style="min-width: 480px; max-width: 1200px; height: 400px; margin: 0 auto")
   div#chart_Miners(style="min-width: 480px; max-width: 1200px; height: 300px; margin: 0 auto")
-  h3 Recent blocks
+  table
+    tr
+      td
+        h3 Recent blocks
+      td &nbsp;&nbsp;&nbsp;
+      td
+        a(href="/blocks") more | 더보기
   table.table
     thead
       tr
@@ -59,7 +65,13 @@ block content
           td #{block.transactionsCount}
           td #{block.unclesCount}
           td #{block.isDB}
-  h3 Recent Transactions
+  table
+    tr
+      td
+        h3 Recent Transactions
+      td &nbsp;&nbsp;&nbsp;
+      td
+        a(href="/tx_recent") more | 더보기
   if txs.length === 0
     p No transactions during the last 10 blocks
   else

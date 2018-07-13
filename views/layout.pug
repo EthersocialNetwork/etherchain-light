@@ -3,7 +3,7 @@ html(lang="en")
   head
     meta(charset='utf-8')
     meta(http-equiv='X-UA-Compatible', content='IE=edge')
-    meta(name='viewport', content='width=device-width, initial-scale=1, user-scalable=no')
+    meta(name='viewport', content='width=device-width, initial-scale=1')
     // The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags
     
     meta(name='description', content='The explorer for the EtherSocialNetwork blockchain')
@@ -44,35 +44,32 @@ html(lang="en")
             span.icon-bar
           |  
           a.navbar-brand(href='/') EtherSocialNetwork<br/><b><font color="black">Block</font></b> Explorer
+          form.navbar-form.navbar-right(action="/search", method="POST")
+              .form-group
+                .input-group
+                  input.form-control.mr-sm-2#search(type='text', placeholder='Block | Tx | Account', name='search')
+                  span.input-group-btn
+                    button.btn.btn-secondary.my-2.my-sm-0(type='submit') Search
         #navbar.collapse.navbar-collapse
-          ul.nav.navbar-nav
+          ul.nav.navbar-nav.hover-effect
             li
-              a(href='/') Home<br/>홈페이지
+              a(href='/') MainPage<br/>메인페이지
+            li
+              a(href='/hashratechart') Total Chart<br/>종합 차트
+            li
+              a(href='/peers') Nodes Info<br/>노드 정보
+            li
+              a(href='http://pool.sejun.info') ESN Mining<br/>채굴하기
             li
               a(href='/top100') ESN Rank<br/>전체지갑주소
             li
-              a(href='/peers') Nodes Info<br/>노드 정보
-            li.dropdown
-              a.dropdown-toggle(href='#', data-toggle='dropdown', role='button', aria-haspopup='true', aria-expanded='false')
-                | Tools<br/>추가 도구들
-                span.caret
-              ul.dropdown-menu
-                li
-                  a(href='http://pool.sejun.info') ESN Mining<br/>채굴하기
-                li
-                  a(href='/redisblock') Blocks Avg. info<br/>블럭평균정보
-                li
-                  a(href='/blocks') Blocks<br/>최근생성블록
-                li
-                  a(href='/tx_recent') Transactions<br/>최근거래내역
-                li
-                  a(href='/tx/pending') Pending Tx<br/>대기거래목록
-            form.navbar-form.navbar-right(action="/search", method="POST")
-              .form-group
-                .input-group
-                  input.form-control.mr-sm-2#search(type='text', placeholder='Block / Tx / Account', name='search')
-                  span.input-group-btn
-                    button.btn.btn-secondary.my-2.my-sm-0(type='submit') Search
+              a(href='/redisblock') Blocks Avg. info<br/>블럭평균정보
+            li
+              a(href='/blocks') Blocks<br/>최근생성블록
+            li
+              a(href='/tx_recent') Transactions<br/>최근거래내역
+            li
+              a(href='/tx/pending') Pending Tx<br/>대기거래목록
     script(type='text/javascript', src='/jquery-3.3.1.min.js')
     script(type='text/javascript', src='/bootstrap-3.3.7-dist/js/bootstrap.min.js', crossorigin='anonymous')
     script(type='text/javascript', src="/highcharts-6.1.0/highcharts.js")
@@ -83,6 +80,12 @@ html(lang="en")
     script(type='text/javascript', src="/highcharts-6.1.0/modules/series-label.js")
 
     script.
+      $('#monitor').html($(window).width());
+      $(window).resize(function() {
+        var viewportWidth = $(window).width();
+        $('#monitor').html(viewportWidth);
+      });
+
       $(function () {
         $('[data-toggle="tooltip"]').tooltip()
       })
