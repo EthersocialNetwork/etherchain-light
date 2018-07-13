@@ -136,7 +136,7 @@ router.get('/:offset?', function (req, res, next) {
 					}
 					if (!peer_info) {
 						console.log("no peer_info: " + pre_fix.concat(field));
-					} else {
+					} else if (peer_info.scanmstime > (new Date()).getTime() - 60 * 60 * 24 * 1000) {
 						var sIP = peer_info.ip.split(".");
 						sIP[1] = "***";
 						peer_info.ip = sIP.join(".");
@@ -222,10 +222,10 @@ function printDateTime(currentDate) {
 function makeReturnSeries(arr) {
 	prcArray = [];
 	prcArray = arr.reduce(function (acc, curr) {
-		if (typeof acc[curr] == 'undefined') {
-			acc[curr] = 1;
-		} else {
+		if (acc[curr]) {
 			acc[curr] += 1;
+		} else {
+			acc[curr] = 1;
 		}
 		return acc;
 	}, {});
