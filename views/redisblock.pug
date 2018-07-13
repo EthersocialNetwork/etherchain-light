@@ -1,15 +1,55 @@
 extends layout
 
 block content
-  h3 blockCount: #{blockCount}
-  h3 lastBlock: #{lastBlock}
-  h3 startBlock: #{startblock}
-  h3 endBlock  : #{endblock}
-  h3 avg. hashrate: #{hashrate}
-  h3 avg. difficulty: #{difficulty}
-  h3 avg. blockTime: #{blockTime}
-  h3 prc. startTime: #{startTime}
-  h3 prc. endTime: #{endTime}
-  h3 consumptionTime: #{consumptionTime}
-  h3 transactionsCount: #{transactionsCount}
-  h3 dbBlock(Cache): #{dbBlock}
+  h3 EtherSocialNetwork Average information for 1,000 blocks 1,000블럭 평균 정보
+    table.table
+      thead
+        tr
+          th key
+          th value
+      tbody
+        tr
+          td PerBlock
+          td #{PerBlock}
+        tr
+          td lastBlock
+          td #{lastBlock}
+        tr
+          td startBlock
+          td
+            - var preBlockNumber = nowBlockNumber-1000;
+            a.btn.btn-primary.btn-sm(href="/redisblock/"+preBlockNumber, style="padding: 4px;") Previous
+            | &nbsp;&nbsp;&nbsp;&nbsp;#{endblock}
+        tr
+          td endBlock
+          td
+            | #{startblock}&nbsp;&nbsp;&nbsp;&nbsp;
+            - var nextBlockNumber = nowBlockNumber-(-1000);
+            a.btn.btn-primary.btn-sm(href="/redisblock/"+nextBlockNumber, style="padding: 4px;") Next
+        tr
+          td avg. hashrate
+          td #{hashrate}
+        tr
+          td avg. difficulty
+          td #{difficulty}
+        tr
+          td avg. blockTime
+          td #{blockTime}
+        tr
+          td transactionsCount
+          td #{transactionsCount}
+        tr
+          td FoundBlockInDB
+          td #{FoundBlockInDB}
+        tr
+          td LastBlockInDB
+          td #{LastBlockInDB}
+        tr
+          td prc. startTime
+          td #{startTime}
+        tr
+          td prc. endTime
+          td #{endTime}
+        tr
+          td consumptionTime
+          td #{consumptionTime}

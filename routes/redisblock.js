@@ -13,11 +13,10 @@ router.get('/:end?', function (req, res, next) {
   var web3 = new Web3();
   web3.setProvider(config.provider);
   var data = {};
-  data.blocks = [];
-  data.blocksContain = [];
-  data.txs = [];
   data.startTime = new Date();
   data.ip = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
+  data.dbLastBlock = 0;
+  data.blockCount = 1000;
 
   client.on("error", function (err) {
     console.log("Error " + err);
@@ -25,30 +24,9 @@ router.get('/:end?', function (req, res, next) {
 
   async.waterfall([
     function (callback) {
-      var rds_key = pre_fix.concat("list");
-      client.hgetall(rds_key, function (err, replies) {
-        var pre_fields = [];
-        for (var blocknumber in replies) {
-          pre_fields.push(blocknumber);
-        }
-        callback(err, pre_fields);
-      });
-    },
-    function (pre_fields, callback) {
-      async.eachSeries(pre_fields, function (field, eachCallback) {
-        client.hgetall(pre_fix.concat((field - (field % divide)) + ":").concat(field), function (err, block_info) {
-          if (err) {
-            return eachCallback(err);
-          }
-          if (!block_info) {
-            console.log("no block_info: " + pre_fix.concat(field));
-          } else {
-            data.blocks.push(block_info);
-            data.blocksContain.push(block_info.number);
-          }
-          eachCallback();
-        });
-      }, function (err) {
+      var rds_key3 = pre_fix.concat("lastblock");
+      client.hget(rds_key3, "lastblock", function (err, result) {
+        data.dbLastBlock = Number(result);
         callback(err);
       });
     },
@@ -59,7 +37,18 @@ router.get('/:end?', function (req, res, next) {
     },
     function (latestBlock, callback) {
       data.lastBlock = new Intl.NumberFormat().format(latestBlock.number);
-      if (req.params.end && req.params.end < latestBlock.number) {
+      if (data.ip == "115.68.0.74") {
+        if (data.dbLastBlock > 0) {
+          var tmpblocknumber = data.dbLastBlock + 1000 > latestBlock.number ? latestBlock.number : data.dbLastBlock + 1000;
+          web3.eth.getBlock(tmpblocknumber, false, function (err, result) {
+            callback(err, result);
+          });
+        } else {
+          web3.eth.getBlock(1000, false, function (err, result) {
+            callback(err, result);
+          });
+        }
+      } else if (req.params.end && req.params.end < latestBlock.number) {
         web3.eth.getBlock(req.params.end, false, function (err, result) {
           callback(err, result);
         });
@@ -68,15 +57,15 @@ router.get('/:end?', function (req, res, next) {
       }
     },
     function (lastBlock, callback) {
-      data.blockCount = 1000;
       if (lastBlock.number - data.blockCount < 0) {
         data.blockCount = lastBlock.number + 1;
       }
       async.times(data.blockCount, function (n, next) {
-        if (data.blocksContain[lastBlock.number - n]) {
-          console.dir(data.blocksContain[lastBlock.number - n]);
-          console.dir(data.blocks[lastBlock.number - n]);
-          next(null, data.blocks[lastBlock.number - n]);
+        if (data.dbLastBlock > 0 && data.dbLastBlock > lastBlock.number - n) {
+          var field = lastBlock.number - n;
+          client.hgetall(pre_fix.concat((field - (field % divide)) + ":").concat(field), function (err, block_info) {
+            next(err, block_info);
+          });
         } else {
           web3.eth.getBlock(lastBlock.number - n, true, function (err, block) {
             next(err, block);
@@ -90,20 +79,13 @@ router.get('/:end?', function (req, res, next) {
     if (err) {
       return next(err);
     }
-    Array.prototype.max = function () {
-      return Math.max.apply(null, this);
-    };
-
-    Array.prototype.min = function () {
-      return Math.min.apply(null, this);
-    };
-
     var totalBlockTimes = 0;
     var lastBlockTimes = -1;
     var countBlockTimes = 0;
     var totaDifficulty = 0;
     data.txnumber = 0;
     data.dbBlock = 0;
+    maxBlockNumber = 0;
     blocks.forEach(function (block) {
       if (lastBlockTimes > 0) {
         totalBlockTimes += lastBlockTimes - block.timestamp;
@@ -112,8 +94,8 @@ router.get('/:end?', function (req, res, next) {
       }
       lastBlockTimes = block.timestamp;
 
-      if (data.blocksContain[block.number]) {
-        data.txnumber += block.transactions;
+      if (data.dbLastBlock > block.number) {
+        data.txnumber += Number(block.transactions);
         data.dbBlock++;
       } else {
         data.txnumber += block.transactions ? block.transactions.length : 0;
@@ -142,6 +124,9 @@ router.get('/:end?', function (req, res, next) {
           client.hset(rds_key, block.number, block.miner);
           var rds_key2 = pre_fix.concat((block.number - (block.number % divide)) + ":").concat(block.number);
           client.hmset(rds_key2, rds_value);
+          maxBlockNumber = maxBlockNumber < block.number ? block.number : maxBlockNumber;
+          var rds_key3 = pre_fix.concat("lastblock");
+          client.hset(rds_key3, "lastblock", maxBlockNumber);
         }
       }
     });
@@ -155,11 +140,10 @@ router.get('/:end?', function (req, res, next) {
     data.consumptionTime = ((data.endTime - data.startTime) / 1000).toLocaleString(undefined, {
       maximumFractionDigits: 4
     }) + " s";
-    data.txnumber = data.txs.length.toLocaleString();
 
     res.render('redisblock', {
       startTime: data.startTime,
-      blockCount: data.blockCount,
+      PerBlock: data.blockCount.toLocaleString(),
       lastBlock: data.lastBlock,
       blockTime: data.blockTime,
       difficulty: data.difficulty,
@@ -168,8 +152,10 @@ router.get('/:end?', function (req, res, next) {
       endblock: data.endblockntime,
       endTime: data.endTime,
       consumptionTime: data.consumptionTime,
-      transactionsCount: data.txnumber,
-      dbBlock: data.dbBlock
+      transactionsCount: data.txnumber.toLocaleString(),
+      FoundBlockInDB: data.dbBlock.toLocaleString(),
+      LastBlockInDB: data.dbLastBlock.toLocaleString(),
+      nowBlockNumber: blocks[0].number
     });
   });
 

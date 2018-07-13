@@ -70,3 +70,12 @@ docker run -p "3000:3000" \
 ```bash
 docker-compose up
 ```
+
+```crontab
+#   no IP Check
+0 */2 * * * curl 'http://explorer.sejun.info/top100_settingup'
+
+#   IP Check
+*/10 * * * * curl 'http://explorer.sejun.info/peers'
+*/1 * * * * curl 'http://explorer.sejun.info/redisblock'
+```
