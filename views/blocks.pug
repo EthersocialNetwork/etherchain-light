@@ -10,6 +10,7 @@ block content
         th Timestamp
         th # Tx
         th # Uncles
+        th is in DB
     tbody
       for block in blocks
         tr
@@ -18,5 +19,6 @@ block content
           td 
             a(href="/account/" + block.author) #{nameformatter.format(block.author)}
           td #{moment.unix(block.timestamp).format()}
-          td #{block.transactions.length}
-          td #{block.uncles.length}
+          td #{block.transactionsCount}
+          td #{block.unclesCount}
+          td #{block.isDB}

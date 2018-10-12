@@ -4,18 +4,18 @@ var router = express.Router();
 var async = require('async');
 var Web3 = require('web3');
 
-router.get('/:offset?', function(req, res, next) {
+router.get('/:offset?', function (req, res, next) {
     var config = req.app.get('config');
     var web3 = new Web3();
     web3.setProvider(config.provider);
 
     async.waterfall([
-        function(callback) {
-            web3.parity.listAccounts(20, req.params.offset, function(err, result) {
+        function (callback) {
+            web3.parity.listAccounts(20, req.params.offset, function (err, result) {
                 callback(err, result);
             });
         },
-        function(accounts, callback) {
+        function (accounts, callback) {
 
             var data = {};
 
@@ -35,8 +35,8 @@ router.get('/:offset?', function(req, res, next) {
 
             var lastAccount = accounts[accounts.length - 1];
 
-            async.eachSeries(accounts, function(account, eachCallback) {
-                web3.eth.getCode(account, function(err, code) {
+            async.eachSeries(accounts, function (account, eachCallback) {
+                web3.eth.getCode(account, function (err, code) {
                     if (err) {
                         return eachCallback(err);
                     }
@@ -44,7 +44,7 @@ router.get('/:offset?', function(req, res, next) {
                     data[account].address = account;
                     data[account].type = code.length > 2 ? "Contract" : "Account";
 
-                    web3.eth.getBalance(account, function(err, balance) {
+                    web3.eth.getBalance(account, function (err, balance) {
                         if (err) {
                             return eachCallback(err);
                         }
@@ -52,19 +52,21 @@ router.get('/:offset?', function(req, res, next) {
                         eachCallback();
                     });
                 });
-            }, function(err) {
+            }, function (err) {
                 callback(err, data, lastAccount);
             });
         }
-    ], function(err, accounts, lastAccount) {
+    ], function (err, accounts, lastAccount) {
         if (err) {
-            return next(err);
+            console.log("Error " + err);
         }
 
         res.render("accounts", {
             accounts: accounts,
             lastAccount: lastAccount
         });
+        accounts = null;
+        lastAccount = null;
     });
 });
 

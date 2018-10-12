@@ -28,15 +28,15 @@ router.get('/:offset?', function (req, res, next) {
 			if (ip == "115.68.0.74") {
 				web3.parity.netPeers(function (err, result) {
 					//console.log("result.connected: " + result.connected);
-					callback(err, result.peers);
+					return callback(err, result.peers);
 				});
 			} else {
-				callback(null, null);
+				return callback(null, null);
 			}
 		},
 		function (peers, callback) {
 			if (!peers) {
-				callback(null);
+				return callback(null);
 			} else {
 				var multi = client.multi();
 				async.eachSeries(peers, function (peer, eachCallback) {
@@ -49,9 +49,9 @@ router.get('/:offset?', function (req, res, next) {
 					tmp_data.id = peer.id;
 					tmp_data.name = peer.name; //Gesn/v0.3.2-unstable-8f84614d/linux-amd64/go1.9.4 //exe, ver, os, gover
 					if (!peer.name || peer.name.length < 1) {
-						eachCallback();
+						return eachCallback();
 					} else if (!peer.protocols.eth || !peer.protocols.eth.head || peer.protocols.eth.head.length < 1) {
-						eachCallback();
+						return eachCallback();
 					} else {
 						if (peer.name.length > 2) {
 							var sres = peer.name.split("/");
@@ -114,7 +114,7 @@ router.get('/:offset?', function (req, res, next) {
 							var rds_key2 = pre_fix.concat("list");
 							multi.hset(rds_key2, h, tmp_data.id);
 						}
-						eachCallback();
+						return eachCallback();
 					}
 				}, function (err) {
 					multi.exec(function (errors, results) {
@@ -122,7 +122,8 @@ router.get('/:offset?', function (req, res, next) {
 							console.log(errors);
 						}
 					});
-					callback(err);
+					multi = null;
+					return callback(err);
 				});
 			}
 		},
@@ -133,7 +134,7 @@ router.get('/:offset?', function (req, res, next) {
 				for (var hkey in replies) {
 					pre_fields.push(hkey);
 				}
-				callback(err, pre_fields);
+				return callback(err, pre_fields);
 			});
 		},
 		function (pre_fields, callback) {
@@ -150,10 +151,10 @@ router.get('/:offset?', function (req, res, next) {
 						peer_info.ip = sIP.join(".");
 						data.peers.push(peer_info);
 					}
-					eachCallback();
+					return eachCallback();
 				});
 			}, function (err) {
-				callback(err);
+				return callback(err);
 			});
 		}
 
@@ -207,6 +208,8 @@ router.get('/:offset?', function (req, res, next) {
 			geo: data.geo,
 			geoCategories: data.geoCategories
 		});
+		data = null;
+		web3 = null;
 	});
 });
 

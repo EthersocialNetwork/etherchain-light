@@ -26,13 +26,13 @@ var nodeStatus = function(config) {
       }
     ], function(err) {
       if (err) {
-        console.log("Error updating node status:", err)
+        console.log("Error updating node status:", err);
       }
       
       setTimeout(self.updateStatus, 1000 * 60 * 60);
-    })
-  }
+    });
+  };
   
   this.updateStatus();
-}
+};
 module.exports = nodeStatus;

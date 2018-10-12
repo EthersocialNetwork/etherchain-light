@@ -23,20 +23,19 @@ router.get('/', function (req, res, next) {
       var rds_key3 = pre_fix.concat("lastblock");
       client.hget(rds_key3, "lastblock", function (err, result) {
         data.dbLastBlock = Number(result);
-        callback(err);
+        return callback(err);
       });
     },
     function (callback) {
       web3.eth.getBlock("latest", false, function (err, result) {
-        callback(err, result);
+        return callback(err, result);
       });
     },
     function (lastBlock, callback) {
       data.blockCount = 200;
       data.lastBlock = new Intl.NumberFormat().format(lastBlock.number);
+      data.lastBlockNumber = lastBlock.number;
       data.difficulty = hashFormat(lastBlock.difficulty) + "H";
-      data.txs = [];
-
       if (lastBlock.number - data.blockCount < 0) {
         data.blockCount = lastBlock.number + 1;
       }
@@ -49,30 +48,34 @@ router.get('/', function (req, res, next) {
             next(err, block_info);
           });
         } else {
-          web3.eth.getBlock(lastBlock.number - n, true, function (err, block) {
+          web3.eth.getBlock(lastBlock.number - n, false, function (err, block) {
             block.isDB = false;
             next(err, block);
           });
         }
       }, function (err, blocks) {
-        callback(err, blocks);
+        return callback(err, blocks);
       });
-      async.times(data.blockCount, function (n, next) {
-        web3.eth.getBlock(lastBlock.number - n, true, function (err, block) {
-          block.transactions.forEach(function (tx) {
-            if (data.txs.length < 6) {
-              data.txs.push(tx);
-            } else {
-              return;
+    },
+    function (blocks, callback) {
+      data.txs = [];
+
+      async.times(10, function (n, next) {
+        web3.eth.getBlock(data.lastBlockNumber - n, true, function (err, txBlock) {
+          for (let i = 0; i < txBlock.transactions.length; i++) {
+            if (data.txs.length < 5) {
+              data.txs.push(txBlock.transactions[i]);
             }
-          });
-          next(err, block);
+          }
+          next(err, txBlock);
         });
+      }, function (err, tmpBlocks) {
+        return callback(err, blocks);
       });
     }
   ], function (err, blocks) {
     if (err) {
-      return next(err);
+      console.log("Error " + err);
     }
 
     var rBlocks = [];
@@ -97,6 +100,8 @@ router.get('/', function (req, res, next) {
     data.minersTime = [];
     data.minersHash = [];
 
+    data.chartDataNumbers = 100;
+    var cntChartData = 0;
     blocks.forEach(function (block) {
       if (lastBlockTimes > 0) {
         totalBlockTimes += lastBlockTimes - block.timestamp;
@@ -104,10 +109,13 @@ router.get('/', function (req, res, next) {
         //console.log(currentBlockTime, lastBlockTimes, block.timestamp);
         var currentDifficulty = Number(block.difficulty);
         var currentNetHashrate = currentDifficulty / currentBlockTime;
-        chartBlockNumber.push(block.number);
-        chartBlockTime.push(currentBlockTime);
-        chartDifficulty.push(currentDifficulty / 1000000000000);
-        chartNetHashrate.push(currentNetHashrate / 1000000000000);
+
+        if (cntChartData++ < data.chartDataNumbers) {
+          chartBlockNumber.push(block.number);
+          chartBlockTime.push(currentBlockTime);
+          chartDifficulty.push(currentDifficulty / 1000000000000);
+          chartNetHashrate.push(currentNetHashrate / 1000000000000);
+        }
         totaDifficulty += Number(block.difficulty);
         miners.push(block.miner);
         if (data.minersTime[block.miner]) {
@@ -125,7 +133,7 @@ router.get('/', function (req, res, next) {
       lastBlockTimes = block.timestamp;
 
       //최근 블럭 5개씩 표시
-      if (rBlocks.length < 6) {
+      if (rBlocks.length < 5) {
         block.author = block.miner;
         block.transactionsCount = block.isDB ? block.transactions : block.transactions.length;
         block.unclesCount = block.isDB ? block.uncles : block.uncles.length;
@@ -157,8 +165,10 @@ router.get('/', function (req, res, next) {
       chartNetHashrateMax: JSON.stringify(chartNetHashrate.max()),
       chartDifficultyMin: JSON.stringify(chartDifficulty.min()),
       chartBlockTimeMin: JSON.stringify(chartBlockTime.min()),
-      blockCount: data.blockCount
+      blockCount: data.blockCount,
+      chartDataNumbers: data.chartDataNumbers
     });
+    data = null;
   });
 
 });

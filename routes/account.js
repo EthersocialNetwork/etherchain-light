@@ -17,7 +17,7 @@ router.get('/:account/:offset?', function (req, res, next) {
     async.waterfall([
             function (callback) {
                 web3.eth.getBlock("latest", false, function (err, result) {
-                    callback(err, result); //마지막 블럭 정보를 받아서 전달
+                    return callback(err, result); //마지막 블럭 정보를 받아서 전달
                 });
             },
             function (lastBlock, callback) {
@@ -32,7 +32,7 @@ router.get('/:account/:offset?', function (req, res, next) {
                     blockNumber = lastBlock.number;
                 }
                 web3.eth.getBlock(blockNumber, false, function (err, result) {
-                    callback(err, result); //마지막 블럭 정보를 받아서 전달
+                    return callback(err, result); //마지막 블럭 정보를 받아서 전달
                 });
             },
             function (targetBlock, callback) {
@@ -46,13 +46,13 @@ router.get('/:account/:offset?', function (req, res, next) {
                     data.fromBlock = 0x00;
                 } //범위를 마지막블럭에서 1,000블럭을 뺀 블럭까지 설정
                 web3.eth.getBalance(req.params.account, function (err, balance) {
-                    callback(err, balance); //해당 계정의 보유량을 받아서 전달
+                    return callback(err, balance); //해당 계정의 보유량을 받아서 전달
                 });
             },
             function (balance, callback) {
                 data.balance = balance;
                 web3.eth.getCode(req.params.account, function (err, code) {
-                    callback(err, code); //해당 계정의 코드를 받아서 전달
+                    return callback(err, code); //해당 계정의 코드를 받아서 전달
                 });
             },
             function (code, callback) {
@@ -60,10 +60,10 @@ router.get('/:account/:offset?', function (req, res, next) {
                 if (code !== "0x") {
                     data.isContract = true;
                     db.get(req.params.account.toLowerCase(), function (err, value) {
-                        callback(null, value); //디비에서 해당 계정의 정보를 가지고 온다.
+                        return callback(null, value); //디비에서 해당 계정의 정보를 가지고 온다.
                     });
                 } else {
-                    callback(null, null);
+                    return callback(null, null);
                 }
             },
             function (source, callback) {
@@ -85,21 +85,20 @@ router.get('/:account/:offset?', function (req, res, next) {
                                         name: item.name,
                                         result: result
                                     });
-                                    eachCallback();
+                                    return eachCallback();
                                 });
                             } catch (e) {
                                 console.log(e);
-                                eachCallback();
+                                return eachCallback();
                             }
                         } else {
-                            eachCallback();
+                            return eachCallback();
                         }
                     }, function (err) {
-                        callback(err, null);
+                        return callback(err, null);
                     });
-
                 } else {
-                    callback(null, null);
+                    return callback(null, null);
                 }
             },
             function (res, callback) {
@@ -107,7 +106,7 @@ router.get('/:account/:offset?', function (req, res, next) {
                     "fromBlock": "0x" + data.fromBlock.toString(16),
                     "toBlock": "0x" + data.lastBlock.toString(16) //[req.params.account]
                 }, function (err, traces) {
-                    callback(err, traces);
+                    return callback(err, traces);
                 });
             },
             function (traces, callback) {
@@ -127,16 +126,16 @@ router.get('/:account/:offset?', function (req, res, next) {
                             }
                             blocks[num].push(trace);
                         }
-                        eachCallback();
+                        return eachCallback();
                     });
                 }, function (err) {
-                    callback(err, null);
+                    return callback(err, null);
                 });
             }
         ],
         function (err) {
             if (err) {
-                return next(err);
+                console.log("Error " + err);
             }
 
             data.address = req.params.account;
@@ -158,6 +157,9 @@ router.get('/:account/:offset?', function (req, res, next) {
             res.render('account', {
                 account: data
             });
+            db = null;
+            data = null;
+            blocks = null;
         });
 });
 

@@ -4,35 +4,39 @@ var router = express.Router();
 var async = require('async');
 var Web3 = require('web3');
 
-router.get('/:block', function(req, res, next) {
-  
-  var config = req.app.get('config');  
+router.get('/:block', function (req, res, next) {
+
+  var config = req.app.get('config');
   var web3 = new Web3();
   web3.setProvider(config.provider);
-  
+
   async.waterfall([
-    function(callback) {
-      web3.eth.getBlock(req.params.block, true, function(err, result) {
+    function (callback) {
+      web3.eth.getBlock(req.params.block, true, function (err, result) {
         callback(err, result);
       });
-    }, function(result, callback) {
+    },
+    function (result, callback) {
       if (!result) {
-        return next({name : "BlockNotFoundError", message : "Block not found!"});
+        return callback({
+          name: "BlockNotFoundError",
+          message: "Block not found!"
+        }, null, null);
       }
-      web3.trace.block(result.number, function(err, traces) {
+      web3.trace.block(result.number, function (err, traces) {
         callback(err, result, traces);
       });
     }
-  ], function(err, block, traces) {
+  ], function (err, block, traces) {
     if (err) {
-      return next(err);
+      console.log("Error " + err);
     }
-    
-    block.transactions.forEach(function(tx) {
+
+    block.transactions.forEach(function (tx) {
       tx.traces = [];
       tx.failed = false;
       if (traces != null) {
-        traces.forEach(function(trace) {
+        traces.forEach(function (trace) {
           if (tx.hash === trace.transactionHash) {
             tx.traces.push(trace);
             if (trace.error) {
@@ -44,39 +48,50 @@ router.get('/:block', function(req, res, next) {
       }
       // console.log(tx);
     });
-    res.render('block', { block: block });
+    res.render('block', {
+      block: block
+    });
+    block = null;
   });
-  
+
 });
 
-router.get('/uncle/:hash/:number', function(req, res, next) {
-  
-  var config = req.app.get('config');  
+router.get('/uncle/:hash/:number', function (req, res, next) {
+
+  var config = req.app.get('config');
   var web3 = new Web3();
   web3.setProvider(config.provider);
-  
+
   async.waterfall([
-    function(callback) {
-      web3.eth.getUncle(req.params.hash, req.params.number, true, function(err, result) {
+    function (callback) {
+      web3.eth.getUncle(req.params.hash, req.params.number, true, function (err, result) {
         callback(err, result);
       });
-    }, function(result, callback) {
+    },
+    function (result, callback) {
       if (!result) {
-        return next({name : "UncleNotFoundError", message : "Uncle not found!"});
+        return next({
+          name: "UncleNotFoundError",
+          message: "Uncle not found!"
+        });
       }
 
       callback(null, result);
     }
-  ], function(err, uncle) {
+  ], function (err, uncle) {
     if (err) {
-      return next(err);
+      console.log("Error " + err);
     }
-     
+
     console.log(uncle);
-    
-    res.render('uncle', { uncle: uncle, blockHash: req.params.hash });
+
+    res.render('uncle', {
+      uncle: uncle,
+      blockHash: req.params.hash
+    });
+    uncle = null;
   });
-  
+
 });
 
 module.exports = router;

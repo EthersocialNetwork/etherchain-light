@@ -1,6 +1,12 @@
 extends layout
 
 block content
+  script(type='text/javascript', src="/highcharts-6.1.0/highcharts.js")
+  script(type='text/javascript', src="/highcharts-6.1.0/modules/exporting.js")
+  script(type='text/javascript', src="/highcharts-6.1.0/modules/export-data.js")
+  script(type='text/javascript', src="/highcharts-6.1.0/modules/heatmap.js")
+  script(type='text/javascript', src="/highcharts-6.1.0/modules/treemap.js")
+  script(type='text/javascript', src="/highcharts-6.1.0/modules/series-label.js")
   h3 Block Chain Summary(Calculated in the last #{blockCount} blocks)
   table.table
     tr
@@ -37,7 +43,7 @@ block content
             br/
             strong DIFFICULTY
   div#chart_BlockTime(style="min-width: 480px; max-width: 1200px; height: 400px; margin: 0 auto")
-  div#chart_Miners(style="min-width: 480px; max-width: 1200px; height: 300px; margin: 0 auto")
+  div#chart_Miners(style="min-width: 480px; max-width: 1200px; height: 400px; margin: 0 auto")
   table
     tr
       td
@@ -107,13 +113,13 @@ block content
         Highcharts.chart('chart_BlockTime', {
           chart: opt_chart,
           title: {
-            text: 'Last '+#{blockCount}+' block chart 최근 '+#{blockCount}+' 블럭 차트'
+            text: 'Last '+#{chartDataNumbers}+' block chart 최근 '+#{chartDataNumbers}+' 블럭 차트'
           },
           exporting: {
-            enabled: false
+            enabled: true
           },
           credits: {
-            enabled: false
+            enabled: true
           },
           xAxis: [{
             categories: !{chartBlockNumber},
@@ -252,10 +258,10 @@ block content
             text: 'Recent '+#{blockCount}+' block mining distribution 최근 '+#{blockCount}+'블록의 채굴자 분포'
           },
           exporting: {
-            enabled: false
+            enabled: true
           },
           credits: {
-            enabled: false
+            enabled: true
           },
           tooltip: {
             formatter: function() {

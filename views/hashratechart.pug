@@ -1,8 +1,14 @@
 extends layout
 
 block content
+  script(type='text/javascript', src="/highcharts-6.1.0/highcharts.js")
+  script(type='text/javascript', src="/highcharts-6.1.0/modules/exporting.js")
+  script(type='text/javascript', src="/highcharts-6.1.0/modules/export-data.js")
+  script(type='text/javascript', src="/highcharts-6.1.0/modules/heatmap.js")
+  script(type='text/javascript', src="/highcharts-6.1.0/modules/treemap.js")
+  script(type='text/javascript', src="/highcharts-6.1.0/modules/series-label.js")
   h3 Block Chain Summary(Calculated in the All blocks)
-  div#chart_BlockTime(style="min-width: 480px; max-width: 1200px; height: 800px; margin: 0 auto")
+  div#chart_BlockTime(style="min-width: 480px; max-width: 1200px; height: 1100px; margin: 0 auto")
   script.
     /*
     The purpose of this demo is to demonstrate how multiple charts on the same page
@@ -95,6 +101,9 @@ block content
             x: 10
           },
           credits: {
+            enabled: true
+          },
+          exporting: {
             enabled: false
           },
           legend: {
@@ -120,12 +129,6 @@ block content
             title: {
               text: null
             }
-          },
-          exporting: {
-            enabled: false
-          },
-          credits: {
-            enabled: false
           },
           tooltip: {
             positioner: function () {

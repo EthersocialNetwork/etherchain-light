@@ -1,6 +1,12 @@
 extends layout
 
 block content
+  script(type='text/javascript', src="/highcharts-6.1.0/highcharts.js")
+  script(type='text/javascript', src="/highcharts-6.1.0/modules/exporting.js")
+  script(type='text/javascript', src="/highcharts-6.1.0/modules/export-data.js")
+  script(type='text/javascript', src="/highcharts-6.1.0/modules/heatmap.js")
+  script(type='text/javascript', src="/highcharts-6.1.0/modules/treemap.js")
+  script(type='text/javascript', src="/highcharts-6.1.0/modules/series-label.js")
   div
     ul.nav.nav-tabs(role='tablist')
       li.active(role='presentation')
@@ -226,10 +232,10 @@ block content
         id: 'city'
       }],
       exporting: {
-        enabled: false
+        enabled: true
       },
       credits: {
-        enabled: false
+        enabled: true
       },
       legend: {
         align: 'right',
@@ -297,10 +303,10 @@ block content
         tooltip: opt_tooltip,
         plotOptions: opt_plotOptions,
         exporting: {
-          enabled: false
+          enabled: true
         },
         credits: {
-          enabled: false
+          enabled: true
         },
         series: [{
           animation: false,
