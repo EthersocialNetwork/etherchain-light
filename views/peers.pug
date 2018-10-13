@@ -1,6 +1,12 @@
 extends layout
 
 block content
+  script(type='text/javascript', src="/highcharts-6.1.0/highcharts.js")
+  script(type='text/javascript', src="/highcharts-6.1.0/modules/exporting.js")
+  script(type='text/javascript', src="/highcharts-6.1.0/modules/export-data.js")
+  script(type='text/javascript', src="/highcharts-6.1.0/modules/heatmap.js")
+  script(type='text/javascript', src="/highcharts-6.1.0/modules/treemap.js")
+  script(type='text/javascript', src="/highcharts-6.1.0/modules/series-label.js")
   div
     ul.nav.nav-tabs(role='tablist')
       li.active(role='presentation')
@@ -112,16 +118,16 @@ block content
     };
     const opt_plotOptions = {
       pie: {
-          allowPointSelect: true,
-          cursor: 'pointer',
-          showInLegend: true,
-          dataLabels: {
-              enabled: true,
-              format: '<b>{point.name}</b>: {point.y} peers, {point.percentage:.1f} %',
-              style: {
-                  color: (Highcharts.theme && Highcharts.theme.contrastTextColor) || 'black'
-              }
+        allowPointSelect: true,
+        cursor: 'pointer',
+        showInLegend: true,
+        dataLabels: {
+          enabled: true,
+          format: '<b>{point.name}</b>: {point.y} peers, {point.percentage:.1f} %',
+          style: {
+            color: (Highcharts.theme && Highcharts.theme.contrastTextColor) || 'black'
           }
+        }
       }
     };
     const opt_legend = {
@@ -132,7 +138,7 @@ block content
       y: 100,
       useHTML: true,
       labelFormatter: function() {
-          return '<b>'+this.name+'</b>: '+this.y+' peers';
+        return '<b>'+this.name+'</b>: '+this.y+' peers';
       }
     };
 
@@ -141,13 +147,13 @@ block content
     var osSeries = resSortedReturn(!{oss});
     var goVersionSeries = resSortedReturn(!{goversions});
     var geoSeries = resSortedReturn(!{geo});
-    
+
     Highcharts.chart('chart_exe', makeChartProperty('EXE Chart', 'exe', commandsSeries));
     Highcharts.chart('chart_ver', makeChartProperty('Version Chart', 'Version', versionSeries));
     Highcharts.chart('chart_os', makeChartProperty('OS Chart', 'OS', osSeries));
     Highcharts.chart('chart_gover', makeChartProperty('Compiler Chart', 'Compiler', goVersionSeries));
     //Highcharts.chart('chart_geo', makeChartProperty('Location Chart', 'Location', geoSeries));
-    
+
     var categories = !{geoCategories}.categories,
       data = !{geoCategories}.data,
       countryData = [],
@@ -166,7 +172,7 @@ block content
         y: data[i].y,
         color: data[i].color
       });
-    
+
       // add version data
       drillDataLen = data[i].drilldown.data.length;
       for (j = 0; j < drillDataLen; j += 1) {
@@ -178,7 +184,7 @@ block content
         });
       }
     }
-    
+
     // Create the chart
     Highcharts.chart('chart_geo', {
       chart: {
@@ -226,10 +232,10 @@ block content
         id: 'city'
       }],
       exporting: {
-        enabled: false
+        enabled: true
       },
       credits: {
-        enabled: false
+        enabled: true
       },
       legend: {
         align: 'right',
@@ -239,14 +245,14 @@ block content
         y: 100,
         useHTML: true,
         labelFormatter: function() {
-            return '<b>'+this.name+'</b>: '+this.y+' peers';
+          return '<b>'+this.name+'</b>: '+this.y+' peers';
         }
       },
       plotOptions: {
         pie: {
-            allowPointSelect: true,
-            cursor: 'pointer',
-            showInLegend: true
+          allowPointSelect: true,
+          cursor: 'pointer',
+          showInLegend: true
         }
       },
       responsive: {
@@ -297,10 +303,10 @@ block content
         tooltip: opt_tooltip,
         plotOptions: opt_plotOptions,
         exporting: {
-          enabled: false
+          enabled: true
         },
         credits: {
-          enabled: false
+          enabled: true
         },
         series: [{
           animation: false,

@@ -21,13 +21,14 @@ var top100_settingup = require('./routes/top100_settingup');
 var peers = require('./routes/peers');
 var redisblock = require('./routes/redisblock');
 var hashratechart = require('./routes/hashratechart');
+var bitzcharts = require('./routes/bitzcharts');
 
 var config = new(require('./config.js'))();
 
 var leveldown = require('leveldown');
 var levelup = require('levelup');
-var db = levelup(leveldown('/root/esn_install/parity/chaindata/chains/ethersocial/db/dc73f323b4681272/snapshot/current'));
-// ./data 
+var db = levelup(leveldown('/home/sejun/.local/share/io.parity.ethereum/chains/ethersocial/db/dc73f323b4681272/snapshot'));
+//var db = levelup(leveldown('./data')); 
 // ~/esn_install/parity/chaindata/chains/ethersocial/db/dc73f323b4681272/archive/db
 // ~/esn_install/parity/chaindata/chains/ethersocial/db/dc73f323b4681272/snapshot/current
 // /root/esn_install/parity/chaindata/chains/ethersocial/db/dc73f323b4681272/snapshot/current
@@ -46,7 +47,11 @@ app.set('trust proxy', true);
 
 // uncomment after placing your favicon in /public
 app.use(favicon(path.join(__dirname, 'public', 'favicon.ico')));
-app.use(logger(config.logFormat));
+app.use(logger(config.logFormat, {
+  skip: function (req, res) {
+    return res.statusCode == 304;
+  }
+}));
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({
   extended: false
@@ -57,6 +62,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.locals.moment = require('moment');
 app.locals.numeral = require('numeral');
 app.locals.ethformatter = require('./utils/ethformatter.js');
+app.locals.numberformatter = require('./utils/numberformatter.js');
 app.locals.nameformatter = new(require('./utils/nameformatter.js'))(config);
 app.locals.nodeStatus = new(require('./utils/nodeStatus.js'))(config);
 app.locals.config = config;
@@ -76,6 +82,7 @@ app.use('/top100_settingup', top100_settingup);
 app.use('/peers', peers);
 app.use('/redisblock', redisblock);
 app.use('/hashratechart', hashratechart);
+app.use('/bitzcharts', bitzcharts);
 
 function shouldCompress(req, res) {
   if (req.headers['x-no-compression']) {

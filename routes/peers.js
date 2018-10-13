@@ -117,9 +117,12 @@ router.get('/:offset?', function (req, res, next) {
 						eachCallback();
 					}
 				}, function (err) {
-					multi.exec(function (errors, results) {
-						if (errors) {
-							console.log(errors);
+					multi.exec(function (err, results) {
+						if (err) {
+							throw err;
+						} else {
+							//console.log(results);
+							//client.quit();
 						}
 					});
 					callback(err);
@@ -140,24 +143,25 @@ router.get('/:offset?', function (req, res, next) {
 			async.eachSeries(pre_fields, function (field, eachCallback) {
 				client.hgetall(pre_fix.concat(field), function (err, peer_info) {
 					if (err) {
-						return eachCallback(err);
+						eachCallback(err);
+					} else {
+						if (!peer_info) {
+							console.log("no peer_info: " + pre_fix.concat(field));
+						} else if (peer_info.scanmstime > (new Date()).getTime() - 60 * 60 * 24 * 2 * 1000) {
+							var sIP = peer_info.ip.split(".");
+							sIP[1] = "***";
+							peer_info.ip = sIP.join(".");
+							data.peers.push(peer_info);
+						}
+						eachCallback();
 					}
-					if (!peer_info) {
-						console.log("no peer_info: " + pre_fix.concat(field));
-					} else if (peer_info.scanmstime > (new Date()).getTime() - 60 * 60 * 24 * 2 * 1000) {
-						var sIP = peer_info.ip.split(".");
-						sIP[1] = "***";
-						peer_info.ip = sIP.join(".");
-						data.peers.push(peer_info);
-					}
-					eachCallback();
 				});
 			}, function (err) {
 				callback(err);
 			});
 		}
-
 	], function (err) {
+		//client.quit();
 		if (err) {
 			console.log("Error " + err);
 		}

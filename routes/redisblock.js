@@ -26,11 +26,11 @@ router.get('/:end?', function (req, res, next) {
     function (callback) {
       var rds_key3 = pre_fix.concat("lastblock");
       client.hget(rds_key3, "lastblock", function (err, result) {
-        data.dbLastBlock = Number(result);
-        callback(err);
+        callback(err, result);
       });
     },
-    function (callback) {
+    function (dbLastBlock, callback) {
+      data.dbLastBlock = Number(dbLastBlock);
       web3.eth.getBlock("latest", false, function (err, result) {
         callback(err, result);
       });
@@ -71,7 +71,7 @@ router.get('/:end?', function (req, res, next) {
             next(err, block_info);
           });
         } else {
-          web3.eth.getBlock(lastBlock.number - n, true, function (err, block) {
+          web3.eth.getBlock(lastBlock.number - n, false, function (err, block) {
             next(err, block);
           });
         }
@@ -81,7 +81,7 @@ router.get('/:end?', function (req, res, next) {
     }
   ], function (err, blocks) {
     if (err) {
-      return next(err);
+      console.log("Error " + err);
     }
     var totalBlockTimes = 0;
     var lastBlockTimes = -1;
@@ -139,10 +139,12 @@ router.get('/:end?', function (req, res, next) {
         blocks.splice(blocks.indexOf(block), 1);
       }
     });
-
-    multi.exec(function (errors, results) {
-      if (errors) {
-        console.log(errors);
+    multi.exec(function (err, results) {
+      if (err) {
+        throw err;
+      } else {
+        //console.log(results);
+        //client.quit();
       }
     });
 
@@ -174,7 +176,6 @@ router.get('/:end?', function (req, res, next) {
       nowBlockNumber: blocks[0].number
     });
   });
-
 });
 
 function hashFormat(number) {

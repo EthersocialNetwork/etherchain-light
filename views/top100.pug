@@ -1,10 +1,14 @@
 extends layout
 
 block content
-  h3 Unknown address list 알려지지 않은 주소
-  p Generation Time 기준시간 : #{accounts_create_time}
-  p Total Create Accounts 전체계정수 : #{totalAccounts} (보유량 0ESN 제외)
+  h3 Supply summary 공급 요약
+  p Total Create Accounts 전체계정수 : #{totalAccounts} (전체 생성)
+  p Total Active Accounts 유효계정수 : #{activeAccounts} (보유량 0.00000001ESN 미만 제외)
   p Total Supply 전체발행량 : #{totalSupply}
+  p Data update progress status 데이터 업데이트 진행 상태 : #{nowAccounts} / #{totalAccounts} ( #{perProgress}% )
+  p Last Update Account 마지막 업데이트 계정 : #{lastAccount}
+  p Data Generation Time 데이터 갱신시간 : #{accounts_create_time}
+  h3 Unknown address list 알려지지 않은 주소
   .divTable.top100
     .divTableHeading
       .divTableRow

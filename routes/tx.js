@@ -20,12 +20,17 @@ router.get('/pending', function (req, res, next) {
     }
   ], function (err, txs) {
     if (err) {
-      return next(err);
+      console.log("Error " + err);
     }
+
+    txs.forEach(function (tx) {
+      tx.gasPrice = parseInt(tx.gasPrice, 16);
+    });
 
     res.render('tx_pending', {
       txs: txs
     });
+    web3 = null;
   });
 });
 
@@ -75,41 +80,39 @@ router.get('/:tx', function (req, res, next) {
   async.waterfall([
     function (callback) {
       web3.eth.getTransaction(req.params.tx, function (err, result) {
-        callback(err, result);
+        return callback(err, result);
       });
     },
     function (result, callback) {
-
       if (!result || !result.hash) {
         return callback({
           message: "Transaction hash not found"
-        }, null);
+        }, null, null);
       }
-
       web3.eth.getTransactionReceipt(result.hash, function (err, receipt) {
-        callback(err, result, receipt);
+        return callback(err, result, receipt);
       });
     },
     function (tx, receipt, callback) {
       web3.trace.transaction(tx.hash, function (err, traces) {
-        callback(err, tx, receipt, traces);
+        return callback(err, tx, receipt, traces);
       });
     },
     function (tx, receipt, traces, callback) {
       //console.dir(tx);
       if (tx.to) {
         db.get(tx.to, function (err, value) {
-          callback(null, tx, receipt, traces, value);
+          return callback(null, tx, receipt, traces, value);
         });
       } else {
         db.get(tx.from, function (err, value) {
-          callback(null, tx, receipt, traces, value);
+          return callback(null, tx, receipt, traces, value);
         });
       }
     }
   ], function (err, tx, receipt, traces, source) {
     if (err) {
-      return next(err);
+      console.log("Error " + err);
     }
 
     // Try to match the tx to a solidity function call if the contract source is available
@@ -156,21 +159,20 @@ router.get('/raw/:tx', function (req, res, next) {
   async.waterfall([
     function (callback) {
       web3.eth.getTransaction(req.params.tx, function (err, result) {
-        callback(err, result);
+        return callback(err, result);
       });
     },
-    function (result, callback) {
-      web3.trace.replayTransaction(result.hash, ["trace", "stateDiff", "vmTrace"], function (err, traces) {
-        callback(err, result, traces);
+    function (tx, callback) {
+      web3.trace.replayTransaction(tx.hash, ["vmTrace", "trace", "stateDiff"], function (err, traces) {
+        tx.traces = traces;
+        return callback(err, tx);
       });
     }
-  ], function (err, tx, traces) {
+  ], function (err, tx) {
     if (err) {
-      return next(err);
+      console.log("Error " + err);
     }
-
-    tx.traces = traces;
-
+    //console.dir(tx);
     res.render('tx_raw', {
       tx: tx
     });

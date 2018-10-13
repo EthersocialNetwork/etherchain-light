@@ -1,7 +1,7 @@
 extends layout
 
 block content
-  h3 Pending Transactions
+  h3 Pending Transactions (total: #{numberformatter(txs.length)})
   
   if txs.length === 0
     p Currently there are no pending transactions
@@ -27,4 +27,4 @@ block content
               else
                 | New Contract
             td(style="text-align: right;") #{ethformatter(tx.value)}
-            td(style="text-align: right;") #{ethformatter(tx.gasPrice)}
+            td(style="text-align: right;") #{numberformatter(tx.gasPrice)} Gas
