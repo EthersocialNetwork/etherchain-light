@@ -12,6 +12,7 @@ var redis_args = ['esn_top100', max, min, 'WITHSCORES'];
 router.get('/:offset?', function (req, res, next) {
 	var config = req.app.get('config');
 	var allcnt = 0;
+	var nowcnt = 0;
 	var lastaccount = "";
 	client.on("error", function (err) {
 		console.log("Error " + err);
@@ -19,26 +20,34 @@ router.get('/:offset?', function (req, res, next) {
 	async.waterfall([
 			function (callback) {
 				client.hget('esn_top100:lastaccount', 'count', function (err, result) {
-					if (result != null && result != "Nan") {
-						allcnt = parseInt(result);
-					}
-					callback(err);
+					return callback(err, result);
 				});
 			},
-			function (callback) {
+			function (pallcnt, callback) {
+				if (pallcnt != null && pallcnt != "Nan") {
+					allcnt = parseInt(pallcnt);
+				}
+				client.hget('esn_top100:lastaccount', 'nowcount', function (err, result) {
+					return callback(err, result);
+				});
+			},
+			function (pnowcount, callback) {
+				if (pnowcount != null && pnowcount != "Nan") {
+					nowcnt = parseInt(pnowcount);
+				}
 				client.hget('esn_top100:lastaccount', 'address', function (err, result) {
-					lastaccount = result;
-					callback(err);
+					return callback(err, result);
 				});
 			},
-			function (callback) {
+			function (plastaccount, callback) {
+				lastaccount = plastaccount;
 				client.hget('esn_top100:createtime', 'datetime', function (err, result) {
-					callback(err, result);
+					return callback(err, result);
 				});
 			},
 			function (createtime, callback) {
 				client.zrevrange(redis_args, function (err, result) {
-					callback(err, result, createtime);
+					return callback(err, result, createtime);
 				});
 			},
 			function (accounts, create_time, callback) {
@@ -55,44 +64,47 @@ router.get('/:offset?', function (req, res, next) {
 					async.setImmediate(function () {
 						if (isAccount) {
 							data_totalAccounts = data_totalAccounts.plus(1);
-							if (rank_normal < 5001) {
-								tmp = {};
-								tmp.address = account;
-								tmp.type = "Account";
-							}
+							//if (rank_normal < 5001) {
+							tmp = {};
+							tmp.address = account;
+							tmp.type = "Account";
+							//}
 							isAccount = false;
 						} else {
 							let ret = new BigNumber(account);
 							data_totalSupply = data_totalSupply.plus(ret);
-							if (rank_normal < 5001) {
-								tmp.balance = ret.toFormat(8) + " ESN";
-								const name = config.names[tmp.address];
-								if (name && name != "ESN Alpha or Beta Testers") {
-									tmp.rank = "Rank " + rank_special++;
-									data_special.push(tmp);
-								} else {
-									if (name == "ESN Alpha or Beta Testers") {
-										tmp.address_name = "ESN Alpha or Beta Testers";
-									}
-									tmp.rank = "Rank " + rank_normal++;
-									data_normal.push(tmp);
-									tmp = null;
+							//if (rank_normal < 5001) {
+							tmp.balance = ret.toFormat(8) + " ESN";
+							const name = config.names[tmp.address];
+							if (name && name != "ESN Alpha or Beta Testers") {
+								tmp.rank = "Rank " + rank_special++;
+								data_special.push(tmp);
+							} else {
+								if (name == "ESN Alpha or Beta Testers") {
+									tmp.address_name = "ESN Alpha or Beta Testers";
 								}
+								tmp.rank = "Rank " + rank_normal++;
+								data_normal.push(tmp);
+								tmp = null;
 							}
+							//}
 							isAccount = true;
 						}
 						eachCallback();
 					});
 				}, function (err) {
-					callback(err, lastaccount, (allcnt.toLocaleString()), create_time, data_special, data_normal, (data_totalAccounts.toFormat(0)), (data_totalSupply.toFormat(6) + " ESN"));
+					callback(err, lastaccount, allcnt, nowcnt, create_time, data_special, data_normal, (data_totalAccounts.toFormat(0)), (data_totalSupply.toFormat(6) + " ESN"));
 				});
 			}
 		],
-		function (err, lastaccount, totalAccounts, accounts_create_time, accounts_special, accounts_normal, activeAccounts, totalSupply) {
+		function (err, lastaccount, totalAccounts, nowAccounts, accounts_create_time, accounts_special, accounts_normal, activeAccounts, totalSupply) {
+			var perProgress = ((nowAccounts / totalAccounts) * 100).toLocaleString();
 			res.render("top100", {
 				"lastAccount": lastaccount,
-				"totalAccounts": totalAccounts,
+				"totalAccounts": totalAccounts.toLocaleString(),
+				"nowAccounts": nowAccounts.toLocaleString(),
 				"activeAccounts": activeAccounts,
+				"perProgress": perProgress,
 				"totalSupply": totalSupply,
 				"accounts_create_time": accounts_create_time,
 				"accounts_special": accounts_special,

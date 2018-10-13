@@ -28,15 +28,15 @@ router.get('/:offset?', function (req, res, next) {
 			if (ip == "115.68.0.74") {
 				web3.parity.netPeers(function (err, result) {
 					//console.log("result.connected: " + result.connected);
-					return callback(err, result.peers);
+					callback(err, result.peers);
 				});
 			} else {
-				return callback(null, null);
+				callback(null, null);
 			}
 		},
 		function (peers, callback) {
 			if (!peers) {
-				return callback(null);
+				callback(null);
 			} else {
 				var multi = client.multi();
 				async.eachSeries(peers, function (peer, eachCallback) {
@@ -49,9 +49,9 @@ router.get('/:offset?', function (req, res, next) {
 					tmp_data.id = peer.id;
 					tmp_data.name = peer.name; //Gesn/v0.3.2-unstable-8f84614d/linux-amd64/go1.9.4 //exe, ver, os, gover
 					if (!peer.name || peer.name.length < 1) {
-						return eachCallback();
+						eachCallback();
 					} else if (!peer.protocols.eth || !peer.protocols.eth.head || peer.protocols.eth.head.length < 1) {
-						return eachCallback();
+						eachCallback();
 					} else {
 						if (peer.name.length > 2) {
 							var sres = peer.name.split("/");
@@ -114,16 +114,18 @@ router.get('/:offset?', function (req, res, next) {
 							var rds_key2 = pre_fix.concat("list");
 							multi.hset(rds_key2, h, tmp_data.id);
 						}
-						return eachCallback();
+						eachCallback();
 					}
 				}, function (err) {
-					multi.exec(function (errors, results) {
-						if (errors) {
-							console.log(errors);
+					multi.exec(function (err, results) {
+						if (err) {
+							throw err;
+						} else {
+							//console.log(results);
+							//client.quit();
 						}
 					});
-					multi = null;
-					return callback(err);
+					callback(err);
 				});
 			}
 		},
@@ -134,31 +136,32 @@ router.get('/:offset?', function (req, res, next) {
 				for (var hkey in replies) {
 					pre_fields.push(hkey);
 				}
-				return callback(err, pre_fields);
+				callback(err, pre_fields);
 			});
 		},
 		function (pre_fields, callback) {
 			async.eachSeries(pre_fields, function (field, eachCallback) {
 				client.hgetall(pre_fix.concat(field), function (err, peer_info) {
 					if (err) {
-						return eachCallback(err);
+						eachCallback(err);
+					} else {
+						if (!peer_info) {
+							console.log("no peer_info: " + pre_fix.concat(field));
+						} else if (peer_info.scanmstime > (new Date()).getTime() - 60 * 60 * 24 * 2 * 1000) {
+							var sIP = peer_info.ip.split(".");
+							sIP[1] = "***";
+							peer_info.ip = sIP.join(".");
+							data.peers.push(peer_info);
+						}
+						eachCallback();
 					}
-					if (!peer_info) {
-						console.log("no peer_info: " + pre_fix.concat(field));
-					} else if (peer_info.scanmstime > (new Date()).getTime() - 60 * 60 * 24 * 2 * 1000) {
-						var sIP = peer_info.ip.split(".");
-						sIP[1] = "***";
-						peer_info.ip = sIP.join(".");
-						data.peers.push(peer_info);
-					}
-					return eachCallback();
 				});
 			}, function (err) {
-				return callback(err);
+				callback(err);
 			});
 		}
-
 	], function (err) {
+		//client.quit();
 		if (err) {
 			console.log("Error " + err);
 		}
@@ -208,8 +211,6 @@ router.get('/:offset?', function (req, res, next) {
 			geo: data.geo,
 			geoCategories: data.geoCategories
 		});
-		data = null;
-		web3 = null;
 	});
 });
 

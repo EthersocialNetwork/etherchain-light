@@ -19,11 +19,11 @@ router.get('/:offset?', function (req, res, next) {
 					res.on('end', function () {
 						var fbResponse = JSON.parse(body);
 						console.dir(fbResponse.data.datas.data);
-						callback(null, fbResponse.data.datas.data);
+						return callback(null, fbResponse.data.datas.data);
 					});
 				}).on('error', function (e) {
 					console.log("Got an error: ", e);
-					callback(e, null);
+					return callback(e, null);
 				});
 			}
 		],

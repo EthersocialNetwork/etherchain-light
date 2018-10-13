@@ -13,7 +13,6 @@ router.get('/:offset?', function (req, res, next) {
 	var Ether = new BigNumber(10e+17);
 	web3.setProvider(config.provider);
 	var ip = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
-	var multi = client.multi();
 	var data = "";
 	var cnt = 0;
 	var allcnt = 0;
@@ -33,42 +32,46 @@ router.get('/:offset?', function (req, res, next) {
 		async.waterfall([
 			function (callback) {
 				client.hget('esn_top100:lastaccount', 'nowcount', function (err, result) {
-					if (result != null && result != "Nan") {
-						nowcnt = parseInt(result);
-					}
-				});
-				client.hget('esn_top100:lastaccount', 'count', function (err, result) {
-					if (result != null && result != "Nan") {
-						allcnt = parseInt(result);
-					}
-					return callback(err);
+					return callback(err, result);
 				});
 			},
-			function (callback) {
+			function (pnowcnt, callback) {
+				if (pnowcnt != null && pnowcnt != "Nan") {
+					nowcnt = parseInt(pnowcnt);
+				}
+				client.hget('esn_top100:lastaccount', 'count', function (err, result) {
+					return callback(err, result);
+				});
+			},
+			function (pallcnt, callback) {
+				if (pallcnt != null && pallcnt != "Nan") {
+					allcnt = parseInt(pallcnt);
+				}
 				client.hget('esn_top100:lastaccount', 'address', function (err, result) {
 					return callback(err, result);
 				});
 			},
 			function (lastaccount, callback) {
 				console.log("esn_top100:lastaccount:", lastaccount);
-				web3.parity.listAccounts(50000, lastaccount, function (err, result) {
-					return callback(err, result);
+				web3.parity.listAccounts(3000, lastaccount, function (err, result) {
+					callback(err, result);
 				});
 			},
 			function (accounts, callback) {
 				if (!accounts) {
-					return callback({
+					callback({
 						name: "FatDBDisabled",
 						message: "Parity FatDB system is not enabled. Please restart Parity with the --fat-db=on parameter."
 					});
-				}
-				if (accounts.length < 1) {
-					nowcnt = 0;
-					web3.parity.listAccounts(200000, null, function (err, result) {
-						return callback(err, result);
-					});
 				} else {
-					return callback(null, accounts);
+					if (accounts.length < 1) {
+						nowcnt = 0;
+						web3.parity.listAccounts(3000, null, function (err, result) {
+							callback(err, result);
+						});
+					} else {
+						callback(null, accounts);
+					}
 				}
 			},
 			function (accounts, callback) {
@@ -76,49 +79,46 @@ router.get('/:offset?', function (req, res, next) {
 					data = account;
 					web3.eth.getBalance(account, function (err, balance) {
 						if (err) {
-							return eachCallback(err);
+							eachCallback(err);
+						} else {
+							var numBalance = new BigNumber(balance);
+							numBalance = numBalance.dividedBy(Ether);
+							nowcnt++;
+							if (numBalance >= 0.00000001) {
+								cnt++;
+								client.zadd('esn_top100', numBalance.toString(), account);
+							} else {
+								client.zrem('esn_top100', account);
+							}
+							eachCallback();
 						}
-						var numBalance = new BigNumber(balance);
-						numBalance = numBalance.dividedBy(Ether);
-						nowcnt++;
-						if (numBalance >= 0.00000001) {
-							cnt++;
-							multi.zadd('esn_top100', numBalance.toString(), account);
-						}
-						return eachCallback();
 					});
 				}, function (err) {
-					return callback(err, "완료 시간: " + printDateTime(), data, cnt, allcnt, nowcnt);
+					callback(err, "완료 시간: " + printDateTime(), data, cnt, allcnt, nowcnt);
 				});
 			}
 		], function (err, printdatetime, resaccount, rescount, resallcount, nowcount) {
 			if (err) {
 				console.log("Error " + err);
+				return next(err);
 			}
 
-			multi.hset('esn_top100:createtime', 'datetime', printDateTime());
+			client.hset('esn_top100:createtime', 'datetime', printDateTime());
 			if (resallcount < nowcount) {
-				multi.hset('esn_top100:lastaccount', 'count', nowcount);
+				client.hset('esn_top100:lastaccount', 'count', nowcount);
 			}
-			multi.hset('esn_top100:lastaccount', 'nowcount', nowcount);
+			client.hset('esn_top100:lastaccount', 'nowcount', nowcount);
 			if (resaccount != "") {
-				multi.hset('esn_top100:lastaccount', 'address', resaccount);
+				client.hset('esn_top100:lastaccount', 'address', resaccount);
 			}
 
-			multi.exec(function (errors, results) {
-				if (errors) {
-					console.log(errors);
-				}
-			});
-			multi = null;
-
+			//client.quit();
 			res.render("top100_settingup", {
 				"printdatetime": printdatetime,
 				"lastaccount": resaccount,
 				"addcount": rescount,
 				"allcount": resallcount
 			});
-			web3 = null;
 		});
 	}
 });

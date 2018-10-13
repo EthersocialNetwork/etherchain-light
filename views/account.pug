@@ -1,6 +1,10 @@
 extends layout
 
 block content
+  script(type='text/javascript', src='/GoJS-1.8.26/release/go.js')
+  script(type='text/javascript', src='/GoJS-1.8.26/extensions/HyperlinkText.js')
+  //script(type='text/javascript', src='/GoJS-1.8.26/assets/js/goSamples.js')
+  // this is only for the GoJS Samples framework 
   if account.isContract
     h3 Contract #{account.address}
   else
@@ -18,9 +22,14 @@ block content
     tr
       td Block Range:
       td 
-        a.btn.btn-primary.btn-sm(href="/account/" + account.address + "/" + account.previousBlockNumber, style="padding: 4px;") Previous
-        | &nbsp;&nbsp;&nbsp;&nbsp;from:#{account.fromBlock} ~ to:#{account.lastBlock} 정보 추출 범위 &nbsp;&nbsp;&nbsp;&nbsp;
-        a.btn.btn-primary.btn-sm(href="/account/" + account.address + "/" + account.nextBlockNumber, style="padding: 4px;") Next
+        if account.previousBlockNumber > 999
+          a.btn.btn-primary.btn-sm(href="/account/" + account.address + "/" + account.previousBlockNumber, style="padding: 4px;") Previous
+          | &nbsp;&nbsp;&nbsp;&nbsp;from:#{account.fromBlock} ~ to:#{account.lastBlock} 정보 추출 범위 &nbsp;&nbsp;&nbsp;&nbsp;
+          //a.btn.btn-primary.btn-sm(href="/account/" + account.address + "/" + account.nextBlockNumber, style="padding: 4px;") Lastest
+          a.btn.btn-primary.btn-sm(href="/account/" + account.address, style="padding: 4px;") Lastest
+        else
+          |from:#{account.fromBlock} ~ to:#{account.lastBlock} 정보 추출 범위 &nbsp;&nbsp;&nbsp;&nbsp;
+          a.btn.btn-primary.btn-sm(href="/account/" + account.address, style="padding: 4px;") Lastest
     tr
       td More Infomation:
       td
@@ -28,6 +37,8 @@ block content
   div
     ul.nav.nav-tabs(role='tablist')
       li.active(role='presentation')
+        a(href='#tracemap', aria-controls='tracemap', role='tab', data-toggle='tab') Transactions Tracing
+      li(role='presentation')
         a(href='#transactions', aria-controls='transactions', role='tab', data-toggle='tab') Transactions
       if account.isContract
         li(role='presentation')
@@ -38,7 +49,10 @@ block content
         li(role='presentation')
           a(href='#contractState', aria-controls='source', role='tab', data-toggle='tab') Contract State
     .tab-content
-      #transactions.tab-pane.active(role='tabpanel')
+      #tracemap.tab-pane.active(role='tabpanel')
+        #sample
+          #myDiagramDiv(style='border: solid 1px black; width: 100%; height: 1000px')
+      #transactions.tab-pane(role='tabpanel')
         h3 Recent Activity 최근 활동 내역
         table.table
           thead
@@ -64,6 +78,7 @@ block content
                     else
                       td Mining Reward
                     td
+                      span.glyphicon.glyphicon-gift(style="color: blue;")
                     td New Coins
                     td 
                       a(href="/account/" + trace.action.author) #{nameformatter.format(trace.action.author)}
@@ -111,13 +126,17 @@ block content
                       td
                         a(href="/account/" + trace.action.refundAddress) #{nameformatter.format(trace.action.refundAddress)}
                       td #{ethformatter(trace.action.balance)}
-      
       if account.isContract
         #code.tab-pane(role='tabpanel')
           h3 Code
           if !account.source
             a(href="/contract/verify") Upload source
           pre #{account.code}
+          if account.wast
+            h3 Wast code
+            pre #{account.wast}
+          h3 Storage
+          pre #{JSON.stringify(account.storage)}
       if account.source
         #source.tab-pane(role='tabpanel')
           h4 Source
@@ -138,3 +157,53 @@ block content
                 tr
                   td #{item.name}
                   td #{item.result}
+  //script#code
+  if account.isContract
+    h3 Contract's flow map is not support
+  else
+    script.
+      (function() {
+        function async_load() {
+          //if (window.goSamples) goSamples();  // init for these samples -- you don't need to call this
+          var $ = go.GraphObject.make;  // for conciseness in defining templates
+          myDiagram = $(go.Diagram, "myDiagramDiv",  // must name or refer to the DIV HTML element
+            {
+              initialAutoScale: go.Diagram.Uniform,  // an initial automatic zoom-to-fit
+              contentAlignment: go.Spot.Center,  // align document to the center of the viewport
+              layout:
+                $(go.ForceDirectedLayout,  // automatically spread nodes apart
+                  { maxIterations: 200, defaultSpringLength: 100, defaultElectricalCharge: 200 })
+            });
+          // define each Node's appearance
+          myDiagram.nodeTemplate = 
+            $(go.Node, "Auto",  // the whole node panel
+              { locationSpot: go.Spot.Center },
+              // define the node's outer shape, which will surround the TextBlock
+              $(go.Shape, "RoundedRectangle", { fill: $(go.Brush, "Linear", { 0: "#008cba", 1: "#99d2e5" }), stroke: "#008cba" }),
+              $("HyperlinkText",
+                function(node) { return node.data.text=="Mining"?"http://pool.sejun.info/":"http://explorer.sejun.info/account/" + node.data.text; },
+                function(node) { return node.data.text.substr(0, 10).concat("..."); },
+                { font: "bold 10pt helvetica, bold arial, sans-serif", stroke: "white", margin: 4 }
+              )
+            );
+          // replace the default Link template in the linkTemplateMap
+          myDiagram.linkTemplate =
+            $(go.Link,  // the whole link panel
+              { curve: go.Link.Bezier, adjusting: go.Link.Stretch, reshapable: true },
+              $(go.Shape,  // the link shape
+                { stroke: "gray" }),
+              $(go.Shape,  // the arrowhead
+                { toArrow: "standard", stroke: null }),
+              $(go.TextBlock,  // the label text
+                { textAlign: "center", font: "bold 9pt helvetica, arial, sans-serif", stroke: "black", margin: 4, segmentIndex: 2, segmentFraction: 0.2, segmentOffset: new go.Point(0, 10)},
+                new go.Binding("text", "text"))
+            );
+          // create the model for the concept map
+          //console.log(!{nodedata});
+          //console.log(!{linkdata});
+          var nodeDataArray = !{nodedata};
+          var linkDataArray = !{linkdata};
+          myDiagram.model = new go.GraphLinksModel(nodeDataArray, linkDataArray);
+        }
+        window.attachEvent ? window.attachEvent('onload', async_load) : window.addEventListener('load', async_load, false);
+      })();

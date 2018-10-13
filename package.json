@@ -18,6 +18,7 @@
     "express": "~4.16.3",
     "fg-loadcss": "^2.0.1",
     "geoip-lite": "^1.2.1",
+    "gojs": "^1.8.26",
     "iso-3166-1": "^1.1.0",
     "level": "^3.0.1",
     "leveldown": "^3.0.1",
@@ -31,6 +32,7 @@
     "solc": "^0.4.23",
     "string-similarity": "^1.2.0",
     "tmp": "0.0.33",
+    "wabt": "^1.0.0",
     "web3": "git+https://github.com/ComBba/web3.js.git#develop",
     "yargs": "^11.0.0"
   }

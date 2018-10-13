@@ -75,7 +75,6 @@ router.get('/uncle/:hash/:number', function (req, res, next) {
           message: "Uncle not found!"
         });
       }
-
       callback(null, result);
     }
   ], function (err, uncle) {

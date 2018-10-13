@@ -15,9 +15,6 @@ router.get('/pending', function (req, res, next) {
   async.waterfall([
     function (callback) {
       web3.parity.pendingTransactions(function (err, result) {
-        result.forEach(function (tx) {
-          tx.gasPrice = parseInt(tx.gasPrice, 16);
-        });
         callback(err, result);
       });
     }
@@ -25,6 +22,10 @@ router.get('/pending', function (req, res, next) {
     if (err) {
       console.log("Error " + err);
     }
+
+    txs.forEach(function (tx) {
+      tx.gasPrice = parseInt(tx.gasPrice, 16);
+    });
 
     res.render('tx_pending', {
       txs: txs
@@ -83,13 +84,11 @@ router.get('/:tx', function (req, res, next) {
       });
     },
     function (result, callback) {
-
       if (!result || !result.hash) {
         return callback({
           message: "Transaction hash not found"
-        }, null);
+        }, null, null);
       }
-
       web3.eth.getTransactionReceipt(result.hash, function (err, receipt) {
         return callback(err, result, receipt);
       });
@@ -163,17 +162,17 @@ router.get('/raw/:tx', function (req, res, next) {
         return callback(err, result);
       });
     },
-    function (result, callback) {
-      web3.trace.replayTransaction(result.hash, ["vmTrace", "trace", "stateDiff"], function (err, traces) {
-        result.traces = traces;
-        return callback(err, result);
+    function (tx, callback) {
+      web3.trace.replayTransaction(tx.hash, ["vmTrace", "trace", "stateDiff"], function (err, traces) {
+        tx.traces = traces;
+        return callback(err, tx);
       });
     }
   ], function (err, tx) {
     if (err) {
       console.log("Error " + err);
     }
-    console.dir(tx);
+    //console.dir(tx);
     res.render('tx_raw', {
       tx: tx
     });

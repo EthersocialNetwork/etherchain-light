@@ -70,73 +70,74 @@ router.get('/', function (req, res, next) {
   async.waterfall([
     function (callback) {
       client.hget(pre_fix.concat("lastblock"), "lastblock", function (err, result) {
-        data.dbLastBlock = Number(result);
-        callback(err);
+        return callback(err, result);
       });
     },
-    function (callback) {
+    function (dbLastBlock, callback) {
+      data.dbLastBlock = Number(dbLastBlock);
       client.hget(pre_fix_chart.concat("lastblock"), "lastblock", function (err, result) {
-        data.dbChartLastBlock = Number(result);
-        callback(err);
+        return callback(err, result);
       });
     },
-    function (callback) {
+    function (dbChartLastBlock, callback) {
+      data.dbChartLastBlock = Number(dbChartLastBlock);
       client.lrange(pre_fix_chart.concat("xData"), 0, -1, function (err, result) {
-        for (let i = 0; i < result.length; i++) {
-          data.xData.push(Number(result[i]));
-        }
-        callback(err);
+        return callback(err, result);
       });
     },
-    function (callback) {
+    function (xData, callback) {
+      for (let i = 0; i < xData.length; i++) {
+        data.xData.push(Number(xData[i]));
+      }
       client.lrange(pre_fix_chart.concat("xBlocknumber"), 0, -1, function (err, result) {
-        for (let i = 0; i < result.length; i++) {
-          data.xBlocknumber.push(Number(result[i]));
-        }
-        callback(err);
+        return callback(err, result);
       });
     },
-    function (callback) {
+    function (xBlocknumber, callback) {
+      for (let i = 0; i < xBlocknumber.length; i++) {
+        data.xBlocknumber.push(Number(xBlocknumber[i]));
+      }
       client.lrange(pre_fix_chart.concat("xNumberOfBlocks"), 0, -1, function (err, result) {
-        for (let i = 0; i < result.length; i++) {
-          data.xNumberOfBlocks.push(Number(result[i]));
-        }
-        callback(err);
+        return callback(err, result);
       });
     },
-    function (callback) {
+    function (xNumberOfBlocks, callback) {
+      for (let i = 0; i < xNumberOfBlocks.length; i++) {
+        data.xNumberOfBlocks.push(Number(xNumberOfBlocks[i]));
+      }
       client.lrange(pre_fix_chart.concat("BlockTime"), 0, -1, function (err, result) {
-        for (let i = 0; i < result.length; i++) {
-          data.datasets[0].data.push(Number(result[i]));
-        }
-        callback(err);
+        return callback(err, result);
       });
     },
-    function (callback) {
+    function (datasets, callback) {
+      for (let i = 0; i < datasets.length; i++) {
+        data.datasets[0].data.push(Number(datasets[i]));
+      }
       client.lrange(pre_fix_chart.concat("Difficulty"), 0, -1, function (err, result) {
-        for (let i = 0; i < result.length; i++) {
-          data.datasets[1].data.push(Number(result[i]));
-        }
-        callback(err);
+        return callback(err, result);
       });
     },
-    function (callback) {
+    function (datasets, callback) {
+      for (let i = 0; i < datasets.length; i++) {
+        data.datasets[1].data.push(Number(datasets[i]));
+      }
       client.lrange(pre_fix_chart.concat("NetHashrate"), 0, -1, function (err, result) {
-        for (let i = 0; i < result.length; i++) {
-          data.datasets[2].data.push(Number(result[i]));
-        }
-        callback(err);
+        return callback(err, result);
       });
     },
-    function (callback) {
+    function (datasets, callback) {
+      for (let i = 0; i < datasets.length; i++) {
+        data.datasets[2].data.push(Number(datasets[i]));
+      }
       client.lrange(pre_fix_chart.concat("Transactions"), 0, -1, function (err, result) {
-        for (let i = 0; i < result.length; i++) {
-          data.datasets[3].data.push(Number(result[i]));
-        }
-        callback(err);
+        return callback(err, result);
       });
     },
-    function (callback) {
+    function (datasets, callback) {
+      for (let i = 0; i < datasets.length; i++) {
+        data.datasets[3].data.push(Number(datasets[i]));
+      }
+
       data.blockCount = data.dbLastBlock - data.dbChartLastBlock;
       data.lastBlockTimes = 0;
       dbSaveDatas.xData = [];
@@ -157,7 +158,7 @@ router.get('/', function (req, res, next) {
             client.hmget(fieldkey, 'timestamp', 'difficulty', 'number', 'transactions', function (err, block_info) {
               if (err || !block_info) {
                 console.log(fieldkey + ": no block infomation");
-                next(err, null);
+                return next(err, null);
               } else {
                 var baseOneTime = (60 * 60 * 1 * 1000);
                 var baseTime = (60 * 60 * 2 * 1000);
@@ -258,10 +259,10 @@ router.get('/', function (req, res, next) {
       console.log("Error " + err);
     }
 
-    var multi = client.multi();
     if (data.lastnumber > 0) {
-      multi.hset(pre_fix_chart.concat("lastblock"), "lastblock", data.lastnumber);
+      client.hset(pre_fix_chart.concat("lastblock"), "lastblock", data.lastnumber);
     }
+    var multi = client.multi();
     for (let i = 0; i < dbSaveDatas.xData.length; i++) {
       multi.rpush(pre_fix_chart.concat('xData'), dbSaveDatas.xData[i]);
       multi.rpush(pre_fix_chart.concat('xBlocknumber'), dbSaveDatas.xBlocknumber[i]);
@@ -271,11 +272,15 @@ router.get('/', function (req, res, next) {
       multi.rpush(pre_fix_chart.concat('NetHashrate'), dbSaveDatas.NetHashrate[i]);
       multi.rpush(pre_fix_chart.concat('Transactions'), dbSaveDatas.Transactions[i]);
     }
-    multi.exec(function (errors, results) {
-      if (errors) {
-        console.log(errors);
+    multi.exec(function (err, results) {
+      if (err) {
+        throw err;
+      } else {
+        //console.log(results);
+        //client.quit();
       }
     });
+
     dbSaveDatas = null;
 
     //1) combine the arrays:
@@ -331,7 +336,6 @@ router.get('/', function (req, res, next) {
     data = null;
     tmpData = null;
     dbSaveDatas = null;
-    multi = null;
     list = null;
     web3 = null;
   });

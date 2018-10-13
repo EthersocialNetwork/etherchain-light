@@ -22,11 +22,11 @@ router.get('/', function (req, res, next) {
     function (callback) {
       var rds_key3 = pre_fix.concat("lastblock");
       client.hget(rds_key3, "lastblock", function (err, result) {
-        data.dbLastBlock = Number(result);
-        return callback(err);
+        return callback(err, result);
       });
     },
-    function (callback) {
+    function (dbLastBlock, callback) {
+      data.dbLastBlock = Number(dbLastBlock);
       web3.eth.getBlock("latest", false, function (err, result) {
         return callback(err, result);
       });
@@ -58,7 +58,7 @@ router.get('/', function (req, res, next) {
           });
         }
       }, function (err, blocks) {
-        return callback(err, blocks);
+        callback(err, blocks);
       });
     }
   ], function (err, blocks) {

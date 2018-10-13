@@ -27,8 +27,8 @@ var config = new(require('./config.js'))();
 
 var leveldown = require('leveldown');
 var levelup = require('levelup');
-var db = levelup(leveldown('/root/esn_install/parity/chaindata/chains/ethersocial/db/dc73f323b4681272/snapshot/current'));
-// ./data 
+var db = levelup(leveldown('/home/sejun/.local/share/io.parity.ethereum/chains/ethersocial/db/dc73f323b4681272/snapshot'));
+//var db = levelup(leveldown('./data')); 
 // ~/esn_install/parity/chaindata/chains/ethersocial/db/dc73f323b4681272/archive/db
 // ~/esn_install/parity/chaindata/chains/ethersocial/db/dc73f323b4681272/snapshot/current
 // /root/esn_install/parity/chaindata/chains/ethersocial/db/dc73f323b4681272/snapshot/current

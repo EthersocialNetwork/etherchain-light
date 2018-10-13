@@ -22,11 +22,11 @@ router.get('/', function (req, res, next) {
     function (callback) {
       var rds_key3 = pre_fix.concat("lastblock");
       client.hget(rds_key3, "lastblock", function (err, result) {
-        data.dbLastBlock = Number(result);
-        return callback(err);
+        return callback(err, result);
       });
     },
-    function (callback) {
+    function (dbLastBlock, callback) {
+      data.dbLastBlock = Number(dbLastBlock);
       web3.eth.getBlock("latest", false, function (err, result) {
         return callback(err, result);
       });
@@ -70,10 +70,10 @@ router.get('/', function (req, res, next) {
           next(err, txBlock);
         });
       }, function (err, tmpBlocks) {
-        return callback(err, blocks);
+        return callback(err, tmpBlocks, blocks);
       });
     }
-  ], function (err, blocks) {
+  ], function (err, tmpBlocks, blocks) {
     if (err) {
       console.log("Error " + err);
     }
@@ -131,7 +131,8 @@ router.get('/', function (req, res, next) {
         countBlockTimes++;
       }
       lastBlockTimes = block.timestamp;
-
+      //});
+      //tmpBlocks.forEach(function (block) {
       //최근 블럭 5개씩 표시
       if (rBlocks.length < 5) {
         block.author = block.miner;
@@ -140,7 +141,6 @@ router.get('/', function (req, res, next) {
         rBlocks.push(block);
       }
     });
-
     for (var keyminer in data.minersTime) {
       data.minersHash[keyminer] = hashFormat((data.minersDiff[keyminer] / totaDifficulty) * data.minersDiff[keyminer] / data.minersTime[keyminer]) + "H/s";
     }

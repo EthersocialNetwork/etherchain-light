@@ -4,9 +4,9 @@ var net = require('net');
 var config = function () {
   
   this.logFormat = ":remote-addr [:date[clf]] :status :url :referrer :user-agent";
-  this.ipcPath = process.env.HOME + "/.Ethersocial/gesc.ipc";
+  //this.ipcPath = process.env.HOME + "/.Ethersocial/gesc.ipc";
   //this.provider = new web3.providers.IpcProvider(this.ipcPath, net);
-  this.provider = new web3.providers.HttpProvider("http://localhost:8545");
+  this.provider = new web3.providers.HttpProvider("http://115.68.99.203:8545");
   
   this.bootstrapUrl = "https://maxcdn.bootstrapcdn.com/bootswatch/3.3.7/yeti/bootstrap.min.css";
   

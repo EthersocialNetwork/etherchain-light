@@ -26,13 +26,13 @@ router.get('/:end?', function (req, res, next) {
     function (callback) {
       var rds_key3 = pre_fix.concat("lastblock");
       client.hget(rds_key3, "lastblock", function (err, result) {
-        data.dbLastBlock = Number(result);
-        return callback(err);
+        callback(err, result);
       });
     },
-    function (callback) {
+    function (dbLastBlock, callback) {
+      data.dbLastBlock = Number(dbLastBlock);
       web3.eth.getBlock("latest", false, function (err, result) {
-        return callback(err, result);
+        callback(err, result);
       });
     },
     function (latestBlock, callback) {
@@ -41,23 +41,23 @@ router.get('/:end?', function (req, res, next) {
         if (data.dbLastBlock > 0) {
           var tmpblocknumber = data.dbLastBlock + 1000 > latestBlock.number ? latestBlock.number : data.dbLastBlock + 1000;
           web3.eth.getBlock(tmpblocknumber, false, function (err, result) {
-            return callback(err, result);
+            callback(err, result);
           });
         } else {
           web3.eth.getBlock(1000, false, function (err, result) {
-            return callback(err, result);
+            callback(err, result);
           });
         }
       } else if (req.params.end && req.params.end < 1000) {
         web3.eth.getBlock(1000, false, function (err, result) {
-          return callback(err, result);
+          callback(err, result);
         });
       } else if (req.params.end && req.params.end < latestBlock.number) {
         web3.eth.getBlock(req.params.end, false, function (err, result) {
-          return callback(err, result);
+          callback(err, result);
         });
       } else {
-        return callback(null, latestBlock);
+        callback(null, latestBlock);
       }
     },
     function (lastBlock, callback) {
@@ -76,7 +76,7 @@ router.get('/:end?', function (req, res, next) {
           });
         }
       }, function (err, blocks) {
-        return callback(err, blocks);
+        callback(err, blocks);
       });
     }
   ], function (err, blocks) {
@@ -139,13 +139,14 @@ router.get('/:end?', function (req, res, next) {
         blocks.splice(blocks.indexOf(block), 1);
       }
     });
-
-    multi.exec(function (errors, results) {
-      if (errors) {
-        console.log(errors);
+    multi.exec(function (err, results) {
+      if (err) {
+        throw err;
+      } else {
+        //console.log(results);
+        //client.quit();
       }
     });
-    multi = null;
 
     data.blockTime = new Intl.NumberFormat().format((totalBlockTimes / countBlockTimes).toFixed(4)) + "s";
     data.difficulty = hashFormat(totaDifficulty / countBlockTimes) + "H";
@@ -174,8 +175,6 @@ router.get('/:end?', function (req, res, next) {
       LastBlockInDB: data.dbLastBlock.toLocaleString(),
       nowBlockNumber: blocks[0].number
     });
-    data = null;
-    web3 = null;
   });
 });
 
