@@ -50,7 +50,7 @@ Supported Ethereum backend nodes: Parity (Geth is currently not supported as it 
 6. Rename `config.js.example` into `config.js` and adjust the file to your local environment
 7. Start the explorer: `npm start`
 8. Browse to `http://localhost:3000`
-
+9. How to use "Forever": `forever start ./bin/www`
 
 ```crontab
 7 */2 * * *             curl 'http://explorer.sejun.info/hashratechart'

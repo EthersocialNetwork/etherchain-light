@@ -9,17 +9,16 @@ web3.setProvider(provider);
 
 function resultToJson(err, param) {
   var result = {};
-  result.jsonrpc = '2.0';
-
+  result.jsonrpc = 'esn';
+  result.success = false;
+  
   if (err) {
     result.result = err;
-    result.success = false;
   } else if (param) {
     result.result = param;
     result.success = true;
   } else {
     result.result = NaN;
-    result.success = false;
   }
   return result;
 }

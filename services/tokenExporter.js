@@ -86,7 +86,8 @@ var exporter = function (provider, erc20ABI, tokenAddress, createBlock, timeout)
     }
   }, function (err) {
     if (!err) {
-      console.log("[TokenInput]", tokenAddress, "\t[symbol]", self.token_symbol, "\t[Name]", self.token_name, "\t[wait]", timeout + "ms");
+      console.log("[Token]", tokenAddress, "\t[wait]", timeout + "ms", "\t[symbol]", self.token_symbol, "\t[Name]", self.token_name);
+      //console.log(tokenAddress, "_end_", Date.now());
     }
   });
   self.newEvents = self.contract.allEvents();

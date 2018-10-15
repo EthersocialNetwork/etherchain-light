@@ -5,9 +5,15 @@ var config = function () {
 
   this.logFormat = ":remote-addr [:date[clf]] :status :url :referrer :user-agent";
   this.ipcPath = "/home/sejun/.local/share/io.parity.ethereum/gesn.ipc";
+  
+  //this.provideripc = new web3.providers.HttpProvider("http://115.68.99.203:8545");
   this.provideripc = new web3.providers.IpcProvider(this.ipcPath, net);
+  
   this.provider = new web3.providers.HttpProvider("http://115.68.99.203:8545");
+  
+  //this.localprovider = new web3.providers.HttpProvider("http://115.68.99.203:8545");
   this.localprovider = new web3.providers.HttpProvider("http://127.0.0.1:8545");
+  
   this.cronIP = "115.68.0.74";
   this.bootstrapUrl = "https://maxcdn.bootstrapcdn.com/bootswatch/3.3.7/yeti/bootstrap.min.css";
 
@@ -183,6 +189,7 @@ var config = function () {
   this.tokenShortName = "UnnamedToken";
 
   this.names = {
+    "0x12d1784e324156b707e3d02d07b86f587c3f7e78": "[Pool] miningpoolhub.com",
     "0xfb630243f8c9a141fd96b8ad9250bf999be76d4e": "[Mining] 8bit_mine",
     "0xd144e30a0571aaf0d0c050070ac435deba461fab": "[Pool] esn.clona.ru",
     "0x9bcf3e61f09fd2c9e9d60b5a590ed3ca726f6e7d": "[Pool] pool.baikalmine.com",

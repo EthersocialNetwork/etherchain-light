@@ -45,14 +45,6 @@ router.get('/:account/:offset?', function (req, res, next) {
 
     async.waterfall([
             function (callback) {
-                web3.eth.getTransactionCount(data.address, function (err, result) {
-                    callback(err, result); //TX 갯수
-                });
-            },
-            function (txCount, callback) {
-                if (txCount && txCount < 50) {
-                    max_blocks = txCount;
-                }
                 web3.eth.getBlock("latest", false, function (err, result) {
                     callback(err, result); //마지막 블럭 정보를 받아서 전달
                 });
@@ -62,10 +54,10 @@ router.get('/:account/:offset?', function (req, res, next) {
                 var blockNumber = lastBlock.number;
                 if (!req.params.offset) {
                     blockNumber = lastBlock.number;
-                } else if (req.params.offset > 100 && req.params.offset < lastBlock.number) {
+                } else if (req.params.offset > max_blocks && req.params.offset < lastBlock.number) {
                     blockNumber = req.params.offset;
-                } else if (req.params.offset < 101) {
-                    blockNumber = 101;
+                } else if (req.params.offset < max_blocks + 1) {
+                    blockNumber = max_blocks + 1;
                 } else {
                     blockNumber = lastBlock.number;
                 }
@@ -541,117 +533,124 @@ router.get('/:account/:offset?', function (req, res, next) {
         function (err, tokenEvents) {
             if (err) {
                 console.log("Final Error " + err);
-            }
+                res.locals.message = err.message;
+                res.locals.error = {};
+                res.locals.error = req.app.get('env') === 'development' ? err : {};
+                // render the error page
+                res.status(err.status || 500);
+                res.render('error');
+            } else {
 
-            data.officialurl = 'https://ethersocial.net/addr/' + data.address;
+                data.officialurl = 'https://ethersocial.net/addr/' + data.address;
 
-            data.blocks = [];
-            for (var block in blocks) {
-                data.blocks.push(blocks[block]);
-            }
-            data.blocks = data.blocks.reverse();
-
-            if (tokenEvents) {
-                data.tokenBlocks = [];
-                for (var tokenBlock in tokenEvents) {
-                    if (tokenEvents[tokenBlock]) {
-                        data.tokenBlocks.push(tokenEvents[tokenBlock]);
-                    }
+                data.blocks = [];
+                for (var block in blocks) {
+                    data.blocks.push(blocks[block]);
                 }
-                data.tokenBlocks = data.tokenBlocks.reverse();
-            }
+                data.blocks = data.blocks.reverse();
 
-            //console.dir(data.tokenBlocks);
-            //console.log(" ============= console.dir(data.tokenBlocks) ============= ");
-
-            if (data.source) {
-                data.name = data.source.name;
-            } else if (config.names[data.address]) {
-                data.name = config.names[data.address];
-            }
-
-            if (!data.isContract) {
-                data.tokens = [];
-                for (var tokenaddress in allContractObject.tokenlist) {
-                    data.tokens.push(allContractObject.tokenlist[tokenaddress]);
-                }
-            }
-
-            //console.dir(data.tokens);
-            //console.log("================= data.tokens =================");
-            let setNodeText = new Set();
-            let mapNodeText = new Map();
-
-            for (var nodekey = 0; nodekey < data.blocks.length; nodekey++) {
-                for (var idxtrace = 0; idxtrace < data.blocks[nodekey].length; idxtrace++) {
-                    var tmpBlock = data.blocks[nodekey][idxtrace];
-                    if (tmpBlock.type == "call") {
-                        setNodeText.add(tmpBlock.action.from).add(tmpBlock.action.to);
-
-                        let mapKey = tmpBlock.action.from.concat(",").concat(tmpBlock.action.to);
-                        let mapValue = mapNodeText.get(mapKey);
-                        if (mapValue != undefined) {
-                            mapNodeText.set(mapKey, mapValue + parseInt(tmpBlock.action.value, 16) / 10e+17);
-                        } else {
-                            mapNodeText.set(mapKey, parseInt(tmpBlock.action.value, 16) / 10e+17);
-                        }
-                    } else if (tmpBlock.type == "reward") {
-                        setNodeText.add("Mining").add(tmpBlock.action.author);
-                        let mapKey = "Mining,".concat(tmpBlock.action.author);
-                        let mapValue = mapNodeText.get(mapKey);
-                        if (mapValue != undefined) {
-                            mapNodeText.set(mapKey, mapValue + parseInt(tmpBlock.action.value, 16) / 10e+17);
-                        } else {
-                            mapNodeText.set(mapKey, parseInt(tmpBlock.action.value, 16) / 10e+17);
+                if (tokenEvents) {
+                    data.tokenBlocks = [];
+                    for (var tokenBlock in tokenEvents) {
+                        if (tokenEvents[tokenBlock]) {
+                            data.tokenBlocks.push(tokenEvents[tokenBlock]);
                         }
                     }
+                    data.tokenBlocks = data.tokenBlocks.reverse();
                 }
-            }
 
-            data.nodeDataArray = [];
-            data.linkDataArray = [];
-            var nodeindex = 1;
-            for (let nodetext of setNodeText) {
-                data.nodeDataArray.push({
-                    key: nodeindex,
-                    text: nodetext
-                });
-                nodeindex++;
-            }
-            mapNodeText.forEach(function (value, key) {
-                var nodelink1 = 0;
-                var nodelink2 = 0;
-                var arrkey = key.split(",");
-                data.nodeDataArray.forEach(function (item, index, array) {
-                    if (item.text == arrkey[0]) {
-                        nodelink1 = item.key;
-                    } else if (item.text == arrkey[1]) {
-                        nodelink2 = item.key;
+                //console.dir(data.tokenBlocks);
+                //console.log(" ============= console.dir(data.tokenBlocks) ============= ");
+
+                if (data.source) {
+                    data.name = data.source.name;
+                } else if (config.names[data.address]) {
+                    data.name = config.names[data.address];
+                }
+
+                if (!data.isContract) {
+                    data.tokens = [];
+                    for (var tokenaddress in allContractObject.tokenlist) {
+                        data.tokens.push(allContractObject.tokenlist[tokenaddress]);
                     }
-                });
-                data.linkDataArray.push({
-                    from: nodelink1,
-                    to: nodelink2,
-                    text: value.toFixed(3)
-                });
-            });
-
-            if (contractEvents) {
-                data.contractEvents = [];
-
-                for (var contractnum in contractEvents) {
-                    //console.dir(contractEvents[contractnum]);
-                    data.contractEvents.push(contractEvents[contractnum][0]);
                 }
 
-                data.contractEvents = data.contractEvents.reverse(); //.splice(0, 100);
-                //console.dir(data.contractEvents);
+                //console.dir(data.tokens);
+                //console.log("================= data.tokens =================");
+                let setNodeText = new Set();
+                let mapNodeText = new Map();
+
+                for (var nodekey = 0; nodekey < data.blocks.length; nodekey++) {
+                    for (var idxtrace = 0; idxtrace < data.blocks[nodekey].length; idxtrace++) {
+                        var tmpBlock = data.blocks[nodekey][idxtrace];
+                        if (tmpBlock.type == "call") {
+                            setNodeText.add(tmpBlock.action.from).add(tmpBlock.action.to);
+
+                            let mapKey = tmpBlock.action.from.concat(",").concat(tmpBlock.action.to);
+                            let mapValue = mapNodeText.get(mapKey);
+                            if (mapValue != undefined) {
+                                mapNodeText.set(mapKey, mapValue + parseInt(tmpBlock.action.value, 16) / 10e+17);
+                            } else {
+                                mapNodeText.set(mapKey, parseInt(tmpBlock.action.value, 16) / 10e+17);
+                            }
+                        } else if (tmpBlock.type == "reward") {
+                            setNodeText.add("Mining").add(tmpBlock.action.author);
+                            let mapKey = "Mining,".concat(tmpBlock.action.author);
+                            let mapValue = mapNodeText.get(mapKey);
+                            if (mapValue != undefined) {
+                                mapNodeText.set(mapKey, mapValue + parseInt(tmpBlock.action.value, 16) / 10e+17);
+                            } else {
+                                mapNodeText.set(mapKey, parseInt(tmpBlock.action.value, 16) / 10e+17);
+                            }
+                        }
+                    }
+                }
+
+                data.nodeDataArray = [];
+                data.linkDataArray = [];
+                var nodeindex = 1;
+                for (let nodetext of setNodeText) {
+                    data.nodeDataArray.push({
+                        key: nodeindex,
+                        text: nodetext
+                    });
+                    nodeindex++;
+                }
+                mapNodeText.forEach(function (value, key) {
+                    var nodelink1 = 0;
+                    var nodelink2 = 0;
+                    var arrkey = key.split(",");
+                    data.nodeDataArray.forEach(function (item, index, array) {
+                        if (item.text == arrkey[0]) {
+                            nodelink1 = item.key;
+                        } else if (item.text == arrkey[1]) {
+                            nodelink2 = item.key;
+                        }
+                    });
+                    data.linkDataArray.push({
+                        from: nodelink1,
+                        to: nodelink2,
+                        text: value.toFixed(3)
+                    });
+                });
+
+                if (contractEvents) {
+                    data.contractEvents = [];
+
+                    for (var contractnum in contractEvents) {
+                        //console.dir(contractEvents[contractnum]);
+                        data.contractEvents.push(contractEvents[contractnum][0]);
+                    }
+
+                    data.contractEvents = data.contractEvents.reverse(); //.splice(0, 100);
+                    //console.dir(data.contractEvents);
+                }
+                res.render('account', {
+                    account: data,
+                    nodedata: JSON.stringify(data.nodeDataArray),
+                    linkdata: JSON.stringify(data.linkDataArray)
+                });
             }
-            res.render('account', {
-                account: data,
-                nodedata: JSON.stringify(data.nodeDataArray),
-                linkdata: JSON.stringify(data.linkDataArray)
-            });
         });
 });
 

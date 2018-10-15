@@ -8,6 +8,9 @@ var app = require('../app');
 var debug = require('debug')('etherchain-light:server');
 var http = require('http');
 
+var events = require('events');
+events.EventEmitter.defaultMaxListeners = 100;
+
 /**
  * Get port from environment and store in Express.
  */

@@ -60,9 +60,21 @@ async.waterfall([
     });
   },
   function (result, callback) {
-    async.eachOfSeries(result, function (eventslength, account, forEachOfCallback) {
+    //console.dir(result);
+    var sortable = [];
+    for (var adr in result) {
+      sortable.push([adr, result[adr]]);
+    }
+    sortable.sort(function (a, b) {
+      return Number(a[1]) - Number(b[1]);
+    });
+
+    async.eachSeries(sortable, function (iter, forEachOfCallback) {
+      var eventslength = iter[1],
+        account = iter[0];
       contractAccountList.push(account);
-      var timeout = eventslength < 50 ? 50 : 50 + (eventslength * 2);
+      var timeout = eventslength < 1 ? 50 : 50 + (eventslength * 3);
+      //console.log(account,"start", Date.now());
       tokenExporter[account] = new tokenExporterService(config.provideripc, config.erc20ABI, account, 1, timeout);
       //console.log("[timeout]", account, " : ", timeout);
       sleep(timeout).then(() => {
@@ -152,10 +164,26 @@ async.waterfall([
     res.locals.message = err.message;
     res.locals.error = {};
     res.locals.error = req.app.get('env') === 'development' ? err : {};
-  
+
     // render the error page
     res.status(err.status || 500);
-    res.render('error');
+
+    //console.dir(req.url);
+    var isJson = false;
+    var surl = req.url.split("/");
+    //console.dir(surl);
+    if (surl && surl.length > 1 && surl[1]) {
+      var sparam = surl[1].split("_");
+      //console.dir(sparam);
+      if (sparam && sparam.length > 1 && sparam[0] === 'api') {
+        isJson = true;
+      }
+    }
+    if (isJson) {
+      res.json(resultToJson(err, null));
+    } else {
+      res.render('error');
+    }
   });
 
   console.log("┌───────────────────────────────────────┐");
@@ -177,6 +205,23 @@ function shouldCompress(req, res) {
 
 function sleep(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+function resultToJson(err, param) {
+  var result = {};
+  result.jsonrpc = '2.0';
+
+  if (err) {
+    result.result = err;
+    result.success = false;
+  } else if (param) {
+    result.result = param;
+    result.success = true;
+  } else {
+    result.result = NaN;
+    result.success = false;
+  }
+  return result;
 }
 
 module.exports = app;

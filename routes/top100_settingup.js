@@ -167,7 +167,7 @@ router.get('/:offset?', function (req, res, next) {
 					data = accountCode.account;
 					if (accountCode.code !== "0x" && !tokenExporter[accountCode.account]) {
 						var tokenExporterService = require('../services/tokenExporter.js');
-						tokenExporter[accountCode.account] = new tokenExporterService(config, accountCode.account, 1);
+						tokenExporter[accountCode.account] = new tokenExporterService(config.provideripc, config.erc20ABI, accountCode.account, 1, 10);
 						req.app.set('tokenExporter', tokenExporter);
 					}
 
@@ -229,7 +229,55 @@ router.get('/:offset?', function (req, res, next) {
 				client.hset('esn_top100:lastaccount', 'address', resaccount);
 			}
 
-			//client.quit();
+
+			var max = 0,
+				min = -1;
+			var redis_args = ['esn_top100', max, min, 'WITHSCORES'];
+
+			async.waterfall([
+					function (apicallback) {
+						client.hget('esn_top100:lastaccount', 'count', function (err, result) {
+							return apicallback(err, result);
+						});
+					},
+					function (allcnt, apicallback) {
+						client.zrevrange(redis_args, function (err, result) {
+							return apicallback(err, allcnt, result);
+						});
+					},
+					function (allcnt, accounts, apicallback) {
+						let totalAccounts = new BigNumber(0);
+						let totalSupply = new BigNumber(0);
+						var isAccount = true;
+
+						async.eachSeries(accounts, function (account, apieachCallback) {
+							async.setImmediate(function () {
+								if (isAccount) {
+									totalAccounts = totalAccounts.plus(1);
+									isAccount = false;
+								} else {
+									let ret = new BigNumber(account);
+									totalSupply = totalSupply.plus(ret);
+									isAccount = true;
+								}
+								apieachCallback();
+							});
+						}, function (err) {
+							apicallback(err, allcnt, totalAccounts.toNumber(), totalSupply.toNumber());
+						});
+					}
+				],
+				function (err, totalAccounts, activeAccounts, totalSupply) {
+					if (err) {
+						res.json(resultToJson(err, null));
+					} else {
+						var supplyinfo = {};
+						client.hset('esn_top100:apisupport', 'totalAccounts', totalAccounts);
+						client.hset('esn_top100:apisupport', 'activeAccounts', activeAccounts);
+						client.hset('esn_top100:apisupport', 'totalSupply', totalSupply);
+					}
+				});
+
 			res.render("top100_settingup", {
 				"printdatetime": printdatetime,
 				"lastaccount": resaccount,

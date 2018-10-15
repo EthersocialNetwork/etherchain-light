@@ -168,7 +168,15 @@ block content
               th Example
           tbody
             tr
-              td Get Ether Balance 
+              td Get ESN Supply
+                br
+                | Active, Total Accounts
+                br
+                | Total Supply
+              td none
+              td /esnsupply
+            tr
+              td Get ESN Balance 
                 br
                 | for multiple Addresses 
                 br
@@ -177,5 +185,33 @@ block content
                 br
                 | #[strong defaultBlock](Optional): Number
               td /eth_balancemulti/0x5811590907050746b897efe65fea7b65710e1a2c,0xe3ec5ebd3e822c972d802a0ee4e0ec080b8237ba/1522934
+            tr
+              td Get Token Balance 
+                br
+                | all or specified token
+                br
+                | in a single call
+              td #[strong address]: Hex
+                br
+                | #[strong contract addess](Optional): Hex
+              td /tokenbalance/0x3e2c6a622c29cf30c04c9ed8ed1e985da8c95662/0x0146b9dcd9fb2abc1b5b136c28d20d0037526961
+            tr
+              td Get Token information
+              td #[strong contract address]: Hex
+              td /tokeninfo/0x0146b9dcd9fb2abc1b5b136c28d20d0037526961
+            tr
+              td Get Token Events 
+                br
+                | from Contract Address
+                br
+                | by Address
+              td #[strong address]: Hex
+                br
+                | #[strong contract addess]: Hex
+                br
+                | #[strong count]: Number(default:10)
+                br
+                | #[strong page]: Number(default:1)
+              td /tokenevents/0x3e2c6a622c29cf30c04c9ed8ed1e985da8c95662/0x0146b9dcd9fb2abc1b5b136c28d20d0037526961/10/1
       #cached.tab-pane(role='tabpanel')
         h3 Cached response APIs 캐시된 응답 API 목록
