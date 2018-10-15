@@ -25,7 +25,7 @@ router.get('/:offset?', function (req, res, next) {
 		function (callback) {
 			var ip = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
 			//console.log("\nclient ip: "+ip+"\n");
-			if (ip == "115.68.0.74") {
+			if (ip == config.cronIP) {
 				web3.parity.netPeers(function (err, result) {
 					//console.log("result.connected: " + result.connected);
 					callback(err, result.peers);

@@ -72,35 +72,37 @@ router.get('/:offset?', function (req, res, next) {
 				});
 				var contractno = 1;
 				sortable.forEach(function (tokeninfo) {
-					var tmpTokeninfo = {};
-					tmpTokeninfo.no = contractno++;
-					tmpTokeninfo.address = tokeninfo[0];
-					tmpTokeninfo.eventcount = tokeninfo[1];
-					tmpTokeninfo.transfercount = 0;
-					if (contractstransfercount[tokeninfo[0]]) {
-						tmpTokeninfo.transfercount = contractstransfercount[tokeninfo[0]];
-					}
+					if (tokeninfo[0] && tokenExporter[tokeninfo[0]]) {
+						var tmpTokeninfo = {};
+						tmpTokeninfo.no = contractno++;
+						tmpTokeninfo.address = tokeninfo[0];
+						tmpTokeninfo.eventcount = tokeninfo[1];
+						tmpTokeninfo.transfercount = 0;
+						if (contractstransfercount[tokeninfo[0]]) {
+							tmpTokeninfo.transfercount = contractstransfercount[tokeninfo[0]];
+						}
 
-					tmpTokeninfo.name = "";
-					if (tokenExporter[tokeninfo[0]] && tokenExporter[tokeninfo[0]].token_name) {
-						tmpTokeninfo.name = tokenExporter[tokeninfo[0]].token_name;
-					}
+						tmpTokeninfo.name = "";
+						if (tokenExporter[tokeninfo[0]] && tokenExporter[tokeninfo[0]].token_name) {
+							tmpTokeninfo.name = tokenExporter[tokeninfo[0]].token_name;
+						}
 
-					tmpTokeninfo.decimals = "";
-					if (tokenExporter[tokeninfo[0]] && tokenExporter[tokeninfo[0]].token_decimals) {
-						tmpTokeninfo.decimals = tokenExporter[tokeninfo[0]].token_decimals;
-					}
+						tmpTokeninfo.decimals = "";
+						if (tokenExporter[tokeninfo[0]] && tokenExporter[tokeninfo[0]].token_decimals) {
+							tmpTokeninfo.decimals = tokenExporter[tokeninfo[0]].token_decimals;
+						}
 
-					tmpTokeninfo.symbol = "";
-					if (tokenExporter[tokeninfo[0]] && tokenExporter[tokeninfo[0]].token_symbol) {
-						tmpTokeninfo.symbol = tokenExporter[tokeninfo[0]].token_symbol;
-					}
+						tmpTokeninfo.symbol = "";
+						if (tokenExporter[tokeninfo[0]] && tokenExporter[tokeninfo[0]].token_symbol) {
+							tmpTokeninfo.symbol = tokenExporter[tokeninfo[0]].token_symbol;
+						}
 
-					tmpTokeninfo.totalSupply = "";
-					if (tokenExporter[tokeninfo[0]] && tokenExporter[tokeninfo[0]].token_totalSupply) {
-						tmpTokeninfo.totalSupply = tokenExporter[tokeninfo[0]].token_totalSupply;
+						tmpTokeninfo.totalSupply = "";
+						if (tokenExporter[tokeninfo[0]] && tokenExporter[tokeninfo[0]].token_totalSupply) {
+							tmpTokeninfo.totalSupply = tokenExporter[tokeninfo[0]].token_totalSupply;
+						}
+						contracts.push(tmpTokeninfo);
 					}
-					contracts.push(tmpTokeninfo);
 				});
 
 

@@ -16,7 +16,7 @@ Object.size = function (obj) {
 };
 
 router.get('/:account/:offset?', function (req, res, next) {
-    const max_blocks = 50;
+    var max_blocks = 50;
 
     var config = req.app.get('config');
     var web3 = new Web3();
@@ -45,6 +45,14 @@ router.get('/:account/:offset?', function (req, res, next) {
 
     async.waterfall([
             function (callback) {
+                web3.eth.getTransactionCount(data.address, function (err, result) {
+                    callback(err, result); //TX 갯수
+                });
+            },
+            function (txCount, callback) {
+                if (txCount && txCount < 50) {
+                    max_blocks = txCount;
+                }
                 web3.eth.getBlock("latest", false, function (err, result) {
                     callback(err, result); //마지막 블럭 정보를 받아서 전달
                 });
@@ -449,30 +457,20 @@ router.get('/:account/:offset?', function (req, res, next) {
                                                     trace.isContract = true;
                                                     //console.dir(trace);
                                                     //console.log("-----------------------trace.type === 'create'-----------------------");
-                                                    var erc20Contract = web3.eth.contract(config.erc20ABI).at(trace.result.address);
-                                                    async.eachSeries(config.erc20ABI, function (item, abieachCallback) {
-                                                        if (item.type === "function" && item.inputs.length === 0 && item.constant) {
-                                                            try {
-                                                                erc20Contract[item.name](function (err, result) {
-                                                                    if (item.name === "decimals") {
-                                                                        if (result && result.toString().length >= 1) {
-                                                                            trace.token_decimals = result;
-                                                                        }
-                                                                    } else if (item.name === "symbol") {
-                                                                        if (result && result.length >= 1) {
-                                                                            trace.token_symbol = result;
-                                                                        }
-                                                                    }
-                                                                    return abieachCallback();
-                                                                });
-                                                            } catch (e) {
-                                                                console.log(e);
-                                                                return abieachCallback();
-                                                            }
+                                                    if (tokenExporter[trace.result.address]) {
+                                                        if (tokenExporter[trace.result.address].token_decimals) {
+                                                            trace.token_decimals = tokenExporter[trace.result.address].token_decimals;
                                                         } else {
-                                                            return abieachCallback();
+                                                            trace.token_decimals = 0;
                                                         }
-                                                    });
+
+                                                        if (tokenExporter[trace.result.address].token_symbol) {
+                                                            trace.token_symbol = tokenExporter[trace.result.address].token_symbol;
+                                                        } else {
+                                                            trace.token_symbol = 'n/a';
+                                                        }
+                                                    }
+
                                                     if (Object.size(blocks) < max_blocks) {
                                                         if (!blocks[num]) {
                                                             blocks[num] = [];

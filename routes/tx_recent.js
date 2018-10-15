@@ -45,14 +45,13 @@ router.get('/', function (req, res, next) {
           return;
         }
         txs.push(tx);
+        //console.dir(tx);
       });
     });
     res.render('tx_recent', {
       blocks: blocks,
       txs: txs
     });
-    blocks = null;
-    txs = null;
   });
 });
 

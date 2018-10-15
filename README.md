@@ -24,9 +24,10 @@ A demo instance connected to the EtherSocialNetwork is available at [http://expl
 * Signature verification
 * Supports IPC and HTTP backend connections
 * Responsive layout
+* ERC20 Token support
 
 ## Planned features
-* ERC20 Token support
+* API service
 
 Missing a feature? Please request it by creating a new [Issue](https://github.com/gobitfly/etherchain-light/issues).
 
@@ -52,8 +53,8 @@ Supported Ethereum backend nodes: Parity (Geth is currently not supported as it 
 
 
 ```crontab
-0 */2 * * * curl 'http://explorer.sejun.info/top100_settingup'
-*/10 * * * * curl 'http://explorer.sejun.info/peers'
-*/1 * * * * curl 'http://explorer.sejun.info/redisblock'
-7 */2 * * * curl 'http://explorer.sejun.info/hashratechart'
+7 */2 * * *             curl 'http://explorer.sejun.info/hashratechart'
+3,15,27,39,51 * * * *   curl 'http://explorer.sejun.info/redisblock'
+*/2 * * * *             curl 'http://explorer.sejun.info/top100_settingup'
+5,25,45 * * * *         curl 'http://explorer.sejun.info/peers'
 ```

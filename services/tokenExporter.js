@@ -2,11 +2,10 @@ var async = require('async');
 var Web3 = require('web3');
 var tokenDatastore = require('nedb-core');
 
-var exporter = function (config, tokenAddress, createBlock) {
+var exporter = function (provider, erc20ABI, tokenAddress, createBlock, timeout) {
   var self = this;
-  console.log("[ExportToken]", tokenAddress);
+  //console.log("[ExportToken]", tokenAddress);
   self.tokenAddress = tokenAddress;
-  self.config = config;
   self.db = new tokenDatastore();
   /*
   self.db = new tokenDatastore({
@@ -44,17 +43,22 @@ var exporter = function (config, tokenAddress, createBlock) {
   });
 
   self.web3 = new Web3();
-  self.web3.setProvider(config.provideripc);
+  self.web3.setProvider(provider);
 
-  self.contract = self.web3.eth.contract(config.erc20ABI).at(tokenAddress);
+  self.contract = self.web3.eth.contract(erc20ABI).at(tokenAddress);
   //console.log("[Token Init]", tokenAddress);
   self.allEvents = self.contract.allEvents({
     fromBlock: createBlock,
     toBlock: "latest"
   });
 
+  self.token_name = '';
+  self.token_totalSupply = 0;
+  self.token_decimals = 0;
+  self.token_symbol = 'n/a';
+
   self.contractState = [];
-  async.eachSeries(config.erc20ABI, function (item, eachCallback) {
+  async.eachSeries(erc20ABI, function (item, eachCallback) {
     if (item.type === "function" && item.inputs.length === 0 && item.constant) {
       try {
         self.contract[item.name](function (err, result) {
@@ -82,7 +86,7 @@ var exporter = function (config, tokenAddress, createBlock) {
     }
   }, function (err) {
     if (!err) {
-      console.log("[TokenInput] [Name]", self.token_name, "\t\t[symbol]", self.token_symbol);
+      console.log("[TokenInput]", tokenAddress, "\t[symbol]", self.token_symbol, "\t[Name]", self.token_name, "\t[wait]", timeout + "ms");
     }
   });
   self.newEvents = self.contract.allEvents();

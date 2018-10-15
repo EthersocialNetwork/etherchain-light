@@ -41,6 +41,9 @@ block content
       td Size:
       td #{numeral(block.size).format()}
     tr
+      td Nonce:
+      td #{numeral(block.nonce).format()}
+    tr
       td Transactions:
       td #{block.transactions.length}
     tr
@@ -52,6 +55,14 @@ block content
               a(href="uncle/" + block.hash + "/" + index) #{index + " - " + uncle}
         else
           | 0
+    tr
+      td ExtraData(ASCII):
+      td
+        pre #{block.extraDataToAscii}
+    tr
+      td ExtraData(raw):
+      td
+        pre #{block.extraData}
   h4 Transactions
   if block.transactions.length === 0
     p Block does not contain any transactions.
@@ -86,13 +97,29 @@ block content
                 if trace.error
                   span(style="color: red", data-toggle="tooltip", data-placement="left", title=trace.error).glyphicon.glyphicon-warning-sign
                 span.glyphicon.glyphicon-arrow-right
-              td.capitalize #{trace.type}
+              if trace._event
+                td.capitalize #{trace._event}
+              else
+                td.capitalize #{trace.type}
               if trace.type === "call"
-                td
-                  a(href="/account/" + trace.action.from) #{nameformatter.format(trace.action.from)}
-                td 
-                  a(href="/account/" + trace.action.to) #{nameformatter.format(trace.action.to)}
-                td(align="right") #{ethformatter(trace.action.value)}
+                if trace._value
+                  td
+                    if trace._from
+                      a(href="/account/" + trace._from) #{nameformatter.format(trace._from)}
+                    else
+                      a(href="/account/" + trace.action.from) #{nameformatter.format(trace.action.from)}
+                  td 
+                    if trace._to
+                      a(href="/account/" + trace._to) #{nameformatter.format(trace._to)}
+                    else
+                      a(href="/account/" + trace.action.to) #{nameformatter.format(trace.action.to)}
+                  td(align="right") #{tokenformatter.format(trace._value, trace._decimals, trace._symbol)}
+                else
+                  td
+                    a(href="/account/" + trace.action.from) #{nameformatter.format(trace.action.from)}
+                  td 
+                    a(href="/account/" + trace.action.to) #{nameformatter.format(trace.action.to)}
+                  td(align="right") #{ethformatter(trace.action.value)}
               else if trace.type === "create"
                 td
                   a(href="/account/" + trace.action.from) #{nameformatter.format(trace.action.from)}

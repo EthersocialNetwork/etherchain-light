@@ -16,6 +16,12 @@ block content
       td
         a(href="/block/" + tx.blockNumber) #{tx.blockNumber}
     tr
+      td TimeStamp: 
+      if tx.timestamp
+        td #{moment.unix(tx.timestamp).format()} (#{moment.unix(tx.timestamp).fromNow()})
+      else
+        td not yet
+    tr
       td From:
       td
         a(href="/account/" + tx.from) #{nameformatter.format(tx.from)}
@@ -141,3 +147,23 @@ block content
             td
               a(href="/account/" + trace.action.refundAddress) #{nameformatter.format(trace.action.refundAddress)}
             td(align="right") #{ethformatter(trace.action.balance)}
+  if tx._value
+    h4 Token Transfer
+    table.table
+      thead
+        tr
+          th
+          th Event
+          th From
+          th To
+          th Amount
+      tbody
+        tr
+          td.text-right
+            |  
+          td.capitalize #{tx._event}
+          td
+            a(href="/account/" + tx._from) #{nameformatter.format(tx._from)}
+          td 
+            a(href="/account/" + tx._to) #{nameformatter.format(tx._to)}
+          td(align="right") #{tokenformatter.format(tx._value, tx.token_decimals, tx.token_symbol)}

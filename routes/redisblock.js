@@ -37,7 +37,7 @@ router.get('/:end?', function (req, res, next) {
     },
     function (latestBlock, callback) {
       data.lastBlock = new Intl.NumberFormat().format(latestBlock.number);
-      if (data.ip == "115.68.0.74") {
+      if (data.ip == config.cronIP) {
         if (data.dbLastBlock > 0) {
           var tmpblocknumber = data.dbLastBlock + 1000 > latestBlock.number ? latestBlock.number : data.dbLastBlock + 1000;
           web3.eth.getBlock(tmpblocknumber, false, function (err, result) {
@@ -105,7 +105,7 @@ router.get('/:end?', function (req, res, next) {
           data.dbBlock++;
         } else {
           data.txnumber += block.transactions ? block.transactions.length : 0;
-          if (data.ip == "115.68.0.74") {
+          if (data.ip == config.cronIP) {
             var rds_value = {
               number: block.number.toString(),
               hash: block.hash,
