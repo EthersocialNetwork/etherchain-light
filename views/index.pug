@@ -1,12 +1,80 @@
 extends layout
 
 block content
-  script(type='text/javascript', src="/highcharts-6.1.0/highcharts.js")
-  script(type='text/javascript', src="/highcharts-6.1.0/modules/exporting.js")
-  script(type='text/javascript', src="/highcharts-6.1.0/modules/export-data.js")
-  script(type='text/javascript', src="/highcharts-6.1.0/modules/heatmap.js")
-  script(type='text/javascript', src="/highcharts-6.1.0/modules/treemap.js")
-  script(type='text/javascript', src="/highcharts-6.1.0/modules/series-label.js")
+  script(defer type='text/javascript', src="/highcharts-6.1.0/highcharts.js")
+  script(defer type='text/javascript', src="/highcharts-6.1.0/modules/exporting.js")
+  script(defer type='text/javascript', src="/highcharts-6.1.0/modules/export-data.js")
+  script(defer type='text/javascript', src="/highcharts-6.1.0/modules/heatmap.js")
+  script(defer type='text/javascript', src="/highcharts-6.1.0/modules/treemap.js")
+  script(defer type='text/javascript', src="/highcharts-6.1.0/modules/series-label.js")
+  h3 Exchange Summary (Bit-z / CacheTime: 1 min.)
+  table.table
+    tr
+      td(style="padding-right:20px") 
+        center
+          span(style="font-size:2em; color:#008cba")
+            i.fa.fa-btc
+          span(style="font-size:2em; color:#000000") &nbsp;&nbsp;#{coinrate.btc}
+          span(style="font-size:1.5em; color:#008cba")
+            br/
+            strong ESN to BTC
+      td(style="padding-right:20px") 
+        center
+          span(style="font-size:2em; color:#008cba")
+            i.fa.fa-usd
+          span(style="font-size:2em; color:#000000") &nbsp;&nbsp;#{coinrate.usd}
+          span(style="font-size:1.5em; color:#008cba")
+            br/
+            strong ESN to USD
+      td(style="padding-right:20px") 
+        center
+          span(style="font-size:2em; color:#008cba")
+            i.fa.fa-krw
+          span(style="font-size:2em; color:#000000") &nbsp;&nbsp;#{coinrate.krw}
+          span(style="font-size:1.5em; color:#008cba")
+            br/
+            strong ESN to KRW
+      td(style="padding-right:20px") 
+        center
+          span(style="font-size:2em; color:#008cba")
+            i.fa.fa-globe
+          span(style="font-size:2em; color:#000000") &nbsp;&nbsp;#{ticker.quoteVolume} BTC
+          span(style="font-size:1.5em; color:#008cba")
+            br/
+            strong Volume(24h)
+    tr
+      td(style="padding-right:20px") 
+        center
+          span(style="font-size:2em; color:#008cba")
+            i.fa.fa-arrow-down
+          span(style="font-size:2em; color:#000000") &nbsp;&nbsp;#{ticker.low} BTC
+          span(style="font-size:1.5em; color:#008cba")
+            br/
+            strong Lowest Price
+      td(style="padding-right:20px") 
+        center
+          span(style="font-size:2em; color:#008cba")
+            i.fa.fa-arrow-up
+          span(style="font-size:2em; color:#000000") &nbsp;&nbsp;#{ticker.high} BTC
+          span(style="font-size:1.5em; color:#008cba")
+            br/
+            strong Highest Price
+      td(style="padding-right:20px") 
+        center
+          span(style="font-size:2em; color:#008cba")
+            i.fa.fa-th
+          span(style="font-size:2em; color:#000000") &nbsp;&nbsp;#{ticker.priceChange}%
+          span(style="font-size:1.5em; color:#008cba")
+            br/
+            strong PriceChange(Recently)
+      td(style="padding-right:20px") 
+        center
+          span(style="font-size:2em; color:#008cba")
+            i.fa.fa-th-large
+          span(style="font-size:2em; color:#000000") &nbsp;&nbsp;#{ticker.priceChange24h}%
+          span(style="font-size:1.5em; color:#008cba")
+            br/
+            strong PriceChange(24h)
   h3 Block Chain Summary(Calculated in the last #{blockCount} blocks)
   table.table
     tr

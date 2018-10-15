@@ -1,12 +1,12 @@
 extends layout
 
 block content
-  script(type='text/javascript', src="/highcharts-6.1.0/highcharts.js")
-  script(type='text/javascript', src="/highcharts-6.1.0/modules/exporting.js")
-  script(type='text/javascript', src="/highcharts-6.1.0/modules/export-data.js")
-  script(type='text/javascript', src="/highcharts-6.1.0/modules/heatmap.js")
-  script(type='text/javascript', src="/highcharts-6.1.0/modules/treemap.js")
-  script(type='text/javascript', src="/highcharts-6.1.0/modules/series-label.js")
+  script(defer type='text/javascript', src="/highcharts-6.1.0/highcharts.js")
+  script(defer type='text/javascript', src="/highcharts-6.1.0/modules/exporting.js")
+  script(defer type='text/javascript', src="/highcharts-6.1.0/modules/export-data.js")
+  script(defer type='text/javascript', src="/highcharts-6.1.0/modules/heatmap.js")
+  script(defer type='text/javascript', src="/highcharts-6.1.0/modules/treemap.js")
+  script(defer type='text/javascript', src="/highcharts-6.1.0/modules/series-label.js")
   h3 Block Chain Summary(Calculated in the All blocks)
   div#chart_BlockTime(style="min-width: 480px; max-width: 1200px; height: 1100px; margin: 0 auto")
   script.

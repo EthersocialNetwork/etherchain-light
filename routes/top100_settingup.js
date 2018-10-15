@@ -10,9 +10,10 @@ var redis = require("redis"),
 router.get('/:offset?', function (req, res, next) {
 	console.log("--------- Top100 Settingup Start: ", printDateTime(), "--------- ");
 	var config = req.app.get('config');
+	var configERC20 = req.app.get('configERC20');
 	var web3 = new Web3();
 	var Ether = new BigNumber(10e+17);
-	web3.setProvider(config.provider);
+	web3.setProvider(config.providerSub);
 	var ip = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
 	var data = "";
 	var cnt = 0;
@@ -24,6 +25,7 @@ router.get('/:offset?', function (req, res, next) {
 		console.log("Error " + err);
 	});
 	if (ip != config.cronIP) {
+		console.log(ip, config.cronIP);
 		res.render("top100_settingup", {
 			"printdatetime": ("현재 시간: " + printDateTime()),
 			"lastaccount": "0x0000000000000000000000000000000000000000",
@@ -167,7 +169,7 @@ router.get('/:offset?', function (req, res, next) {
 					data = accountCode.account;
 					if (accountCode.code !== "0x" && !tokenExporter[accountCode.account]) {
 						var tokenExporterService = require('../services/tokenExporter.js');
-						tokenExporter[accountCode.account] = new tokenExporterService(config.provideripc, config.erc20ABI, accountCode.account, 1, 10);
+						tokenExporter[accountCode.account] = new tokenExporterService(config.providerIpc, configERC20.erc20ABI, accountCode.account, 1, 10);
 						req.app.set('tokenExporter', tokenExporter);
 					}
 
@@ -278,18 +280,41 @@ router.get('/:offset?', function (req, res, next) {
 					}
 				});
 
-			res.render("top100_settingup", {
+			var jsonResult = {};
+			jsonResult.printdatetime = printdatetime;
+			jsonResult.resaccount = resaccount;
+			jsonResult.rescount = rescount;
+			jsonResult.resallcount = resallcount;
+
+			res.json(resultToJson(null, printdatetime));
+			/*res.render("top100_settingup", {
 				"printdatetime": printdatetime,
 				"lastaccount": resaccount,
 				"addcount": rescount,
 				"allcount": resallcount
-			});
+			});*/
 			console.log("--------- Top100 Settingup End: ", printDateTime(), "--------- ");
 		});
 	}
 });
 
 module.exports = router;
+
+function resultToJson(err, param) {
+	var result = {};
+	result.jsonrpc = 'esn';
+	result.success = false;
+
+	if (err) {
+		result.result = err;
+	} else if (param) {
+		result.result = param;
+		result.success = true;
+	} else {
+		result.result = NaN;
+	}
+	return result;
+}
 
 function addZeros(num, digit) {
 	var zero = '';

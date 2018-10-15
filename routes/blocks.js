@@ -11,7 +11,7 @@ const divide = 10000;
 router.get('/', function (req, res, next) {
   var config = req.app.get('config');
   var web3 = new Web3();
-  web3.setProvider(config.provider);
+  web3.setProvider(config.providerSubGESN);
   var data = {};
 
   client.on("error", function (err) {

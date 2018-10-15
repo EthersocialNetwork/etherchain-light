@@ -17,7 +17,12 @@ block content
     tr
       td Miner: 
       td  
-        a(href="/account/" + uncle.author) #{nameformatter.format(uncle.author)}
+        if uncle.author
+          a(href="/account/" + uncle.author) #{nameformatter.format(uncle.author)}
+        else if uncle.miner
+          a(href="/account/" + uncle.miner) #{nameformatter.format(uncle.miner)}
+        else
+          | undefined (정의되지 않음)
     tr
       td Gas Limit:
       td #{numeral(uncle.gasLimit).format()}

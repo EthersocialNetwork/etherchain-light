@@ -6,9 +6,9 @@ var web3 = new Web3();
 var BigNumber = require('bignumber.js');
 var redis = require("redis"),
   client = redis.createClient();
-//var provider = new web3.providers.HttpProvider("http://115.68.99.203:8545");
 var provider = new web3.providers.HttpProvider("http://127.0.0.1:8545");
 web3.setProvider(provider);
+//console.dir(app.locals.config);
 
 function resultToJson(err, param) {
   var result = {};

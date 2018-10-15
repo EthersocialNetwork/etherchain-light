@@ -1,9 +1,6 @@
 var express = require('express');
 var router = express.Router();
-var events = require("events");
-events.EventEmitter.prototype._maxListeners = 100;
 var async = require('async');
-var Web3 = require('web3');
 const redis = require("redis");
 const client = redis.createClient();
 const pre_fix = 'explorerBlocks:';
@@ -12,8 +9,6 @@ const divide = 10000;
 
 router.get('/', function (req, res, next) {
   var config = req.app.get('config');
-  var web3 = new Web3();
-  web3.setProvider(config.provider);
   var data = {};
   var tmpData = {};
   tmpData.BlockTime = [];
@@ -151,7 +146,6 @@ router.get('/', function (req, res, next) {
       var cntDatasets = 0;
       if (data.blockCount > 0) {
         async.times(data.blockCount, function (n, next) {
-          //async.times(10000, function (n, next) {
           var field = data.dbChartLastBlock + n;
           if (field > 0) {
             var fieldkey = pre_fix.concat((field - (field % divide)) + ":").concat(field);
@@ -259,29 +253,21 @@ router.get('/', function (req, res, next) {
       console.log("Error " + err);
     }
 
-    if (data.lastnumber > 0) {
-      client.hset(pre_fix_chart.concat("lastblock"), "lastblock", data.lastnumber);
-    }
-    var multi = client.multi();
-    for (let i = 0; i < dbSaveDatas.xData.length; i++) {
-      multi.rpush(pre_fix_chart.concat('xData'), dbSaveDatas.xData[i]);
-      multi.rpush(pre_fix_chart.concat('xBlocknumber'), dbSaveDatas.xBlocknumber[i]);
-      multi.rpush(pre_fix_chart.concat('xNumberOfBlocks'), dbSaveDatas.xNumberOfBlocks[i]);
-      multi.rpush(pre_fix_chart.concat('BlockTime'), dbSaveDatas.BlockTime[i]);
-      multi.rpush(pre_fix_chart.concat('Difficulty'), dbSaveDatas.Difficulty[i]);
-      multi.rpush(pre_fix_chart.concat('NetHashrate'), dbSaveDatas.NetHashrate[i]);
-      multi.rpush(pre_fix_chart.concat('Transactions'), dbSaveDatas.Transactions[i]);
-    }
-    multi.exec(function (err, results) {
-      if (err) {
-        throw err;
-      } else {
-        //console.log(results);
-        //client.quit();
+    if (data.ip == config.cronIP) {
+      if (data.lastnumber > 0) {
+        client.hset(pre_fix_chart.concat("lastblock"), "lastblock", data.lastnumber);
       }
-    });
-
-    dbSaveDatas = null;
+      for (let i = 0; i < dbSaveDatas.xData.length; i++) {
+        client.rpush(pre_fix_chart.concat('xData'), dbSaveDatas.xData[i]);
+        client.rpush(pre_fix_chart.concat('xBlocknumber'), dbSaveDatas.xBlocknumber[i]);
+        client.rpush(pre_fix_chart.concat('xNumberOfBlocks'), dbSaveDatas.xNumberOfBlocks[i]);
+        client.rpush(pre_fix_chart.concat('BlockTime'), dbSaveDatas.BlockTime[i]);
+        client.rpush(pre_fix_chart.concat('Difficulty'), dbSaveDatas.Difficulty[i]);
+        client.rpush(pre_fix_chart.concat('NetHashrate'), dbSaveDatas.NetHashrate[i]);
+        client.rpush(pre_fix_chart.concat('Transactions'), dbSaveDatas.Transactions[i]);
+      }
+      //dbSaveDatas = null;
+    }
 
     //1) combine the arrays:
     var list = [];
@@ -322,18 +308,38 @@ router.get('/', function (req, res, next) {
     console.log("final data.datasets[1].data: " + data.datasets[1].data.length);
     console.log("final data.datasets[2].data: " + data.datasets[2].data.length);
     */
-    res.render('hashratechart', {
-      xDataLength: JSON.stringify(data.xData.length + 1),
-      xData: JSON.stringify(data.xData),
-      xBlocknumber: JSON.stringify(data.xBlocknumber),
-      xNumberOfBlocks: JSON.stringify(data.xNumberOfBlocks),
-      BlockTime: JSON.stringify(data.datasets[0].data[k]),
-      Difficulty: JSON.stringify(data.datasets[1].data[k]),
-      NetHashrate: JSON.stringify(data.datasets[2].data[k]),
-      Transactions: JSON.stringify(data.datasets[3].data[k]),
-      activity: JSON.stringify(data)
-    });
+    if (data.ip == config.cronIP) {
+      res.json(resultToJson(null, data));
+    } else {
+      res.render('hashratechart', {
+        xDataLength: JSON.stringify(data.xData.length + 1),
+        xData: JSON.stringify(data.xData),
+        xBlocknumber: JSON.stringify(data.xBlocknumber),
+        xNumberOfBlocks: JSON.stringify(data.xNumberOfBlocks),
+        BlockTime: JSON.stringify(data.datasets[0].data[k]),
+        Difficulty: JSON.stringify(data.datasets[1].data[k]),
+        NetHashrate: JSON.stringify(data.datasets[2].data[k]),
+        Transactions: JSON.stringify(data.datasets[3].data[k]),
+        activity: JSON.stringify(data)
+      });
+    }
   });
 });
 
 module.exports = router;
+
+function resultToJson(err, param) {
+  var result = {};
+  result.jsonrpc = 'esn';
+  result.success = false;
+
+  if (err) {
+    result.result = err;
+  } else if (param) {
+    result.result = param;
+    result.success = true;
+  } else {
+    result.result = NaN;
+  }
+  return result;
+}

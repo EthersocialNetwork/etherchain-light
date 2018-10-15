@@ -5,6 +5,10 @@ var async = require('async');
 var Web3 = require('web3');
 var redis = require("redis"),
     client = redis.createClient();
+var BigNumber = require('bignumber.js');
+BigNumber.config({
+    DECIMAL_PLACES: 8
+});
 
 Object.size = function (obj) {
     var size = 0,
@@ -15,17 +19,18 @@ Object.size = function (obj) {
     return size;
 };
 
-router.get('/:account/:offset?', function (req, res, next) {
-    var max_blocks = 50;
-
+router.get('/:account/:offset?/:count?/:json?', function (req, res, next) {
     var config = req.app.get('config');
+    var configNames = req.app.get('configNames');
     var web3 = new Web3();
-    //web3.setProvider(config.provider);
-    web3.setProvider(config.provideripc);
+    web3.setProvider(config.provider);
+    var web3GESN = new Web3();
+    web3GESN.setProvider(config.providerSubGESN);
     var db = req.app.get('db');
     var tokenExporter = req.app.get('tokenExporter');
 
     var data = {};
+    data.max_blocks = req.params.count ? parseInt(req.params.count, 10) : 50;
     var allContractObject = {};
     allContractObject.tokenlist = [];
     allContractObject.accountList = [];
@@ -41,11 +46,11 @@ router.get('/:account/:offset?', function (req, res, next) {
 
 
     var totalblocks = [];
-    const devide = 2000;
+    const devide = 1000;
 
     async.waterfall([
             function (callback) {
-                web3.eth.getBlock("latest", false, function (err, result) {
+                web3GESN.eth.getBlock("latest", false, function (err, result) {
                     callback(err, result); //마지막 블럭 정보를 받아서 전달
                 });
             },
@@ -54,15 +59,15 @@ router.get('/:account/:offset?', function (req, res, next) {
                 var blockNumber = lastBlock.number;
                 if (!req.params.offset) {
                     blockNumber = lastBlock.number;
-                } else if (req.params.offset > max_blocks && req.params.offset < lastBlock.number) {
+                } else if (req.params.offset > data.max_blocks && req.params.offset < lastBlock.number) {
                     blockNumber = req.params.offset;
-                } else if (req.params.offset < max_blocks + 1) {
-                    blockNumber = max_blocks + 1;
+                } else if (req.params.offset < data.max_blocks + 1) {
+                    blockNumber = data.max_blocks + 1;
                 } else {
                     blockNumber = lastBlock.number;
                 }
 
-                web3.eth.getBlock(blockNumber, false, function (err, result) {
+                web3GESN.eth.getBlock(blockNumber, false, function (err, result) {
                     callback(err, result); //마지막 블럭 정보를 받아서 전달
                 });
             },
@@ -75,13 +80,13 @@ router.get('/:account/:offset?', function (req, res, next) {
                 if (idxblock > devide) {
                     totalblocks.push(idxblock);
                 }
-                web3.eth.getBalance(data.address, function (err, balance) {
+                web3GESN.eth.getBalance(data.address, function (err, balance) {
                     callback(err, balance); //해당 계정의 보유량을 받아서 전달
                 });
             },
             function (balance, callback) {
                 data.balance = balance;
-                web3.eth.getCode(data.address, function (err, code) {
+                web3GESN.eth.getCode(data.address, function (err, code) {
                     callback(err, code); //해당 계정의 코드를 받아서 전달
                 });
             },
@@ -114,7 +119,7 @@ router.get('/:account/:offset?', function (req, res, next) {
             },
             function (accountList, callback) {
                 //console.log("accountList.length: ", accountList.length);
-                if (accountList.length > 0 && data.code === "0x") {
+                if (accountList && accountList.length > 0 && data.code === "0x") {
                     async.eachSeries(accountList, function (account, accountListeachCallback) {
                         //TokenDB Start
                         //console.log("[OUT] [tokenAddress]", tokenExporter[account].tokenAddress, "\n[token_name]", tokenExporter[account].token_name, "\n[token_decimals]", tokenExporter[account].token_decimals);
@@ -176,7 +181,6 @@ router.get('/:account/:offset?', function (req, res, next) {
                 }
             },
             function (tokenlist, callback) {
-
                 // fetch verified contract source from db
                 db.get(data.address.toLowerCase(), function (err, value) {
                     callback(null, value); //디비에서 해당 계정의 정보를 가지고 온다.
@@ -295,7 +299,7 @@ router.get('/:account/:offset?', function (req, res, next) {
                                     //console.log("_value: ", amount, "blockNumber: ", blockNumber);
                                     if (amount) {
                                         event.args._value = amount;
-                                        web3.eth.getBlock(blockNumber, false, function (err, block) {
+                                        web3GESN.eth.getBlock(blockNumber, false, function (err, block) {
                                             contractcallback(block.timestamp, null);
                                         });
                                     } else {
@@ -322,8 +326,8 @@ router.get('/:account/:offset?', function (req, res, next) {
                     });
                 } else {
                     async.eachSeries(totalblocks, function (subblocks, outeachCallback) {
-                            //console.log("[TAG Test] subblocks: ", subblocks, " Object.size(blocks): ", Object.size(blocks), " max_blocks: ", max_blocks);
-                            if (Object.size(blocks) >= max_blocks) {
+                            //console.log("[TAG Test] subblocks: ", subblocks, " Object.size(blocks): ", Object.size(blocks), " data.max_blocks: ", data.max_blocks);
+                            if (Object.size(blocks) >= data.max_blocks) {
                                 return callback(null, null);
                             } else {
                                 const startblocknumber = (subblocks - devide - 1).toString(16);
@@ -367,115 +371,122 @@ router.get('/:account/:offset?', function (req, res, next) {
                                         },
                                         function (totraces, fromtraces, incallback) {
                                             var traces = totraces.concat(fromtraces);
-                                            traces.sort(function (a, b) {
+                                            var sortedTraces = traces.sort(function (a, b) {
                                                 return (a.blockNumber < b.blockNumber) ? 1 : ((b.blockNumber < a.blockNumber) ? -1 : 0);
                                             });
 
-                                            async.eachSeries(traces, function (trace, ineachCallback) {
-                                                const num = trace.blockNumber;
-                                                trace.isContract = false;
-                                                trace.action._value = '';
-                                                trace.action._to = '';
-                                                if (trace.type === 'reward') {
-                                                    web3.eth.getBlock(num, true, function (err, result) {
-                                                        if (result.transactions && result.transactions.length > 0) {
-                                                            var totalGasUsed = 0;
-                                                            async.eachOfSeries(result.transactions, function (value, key, eachOfSeriesCallback) {
-                                                                totalGasUsed += result.gasUsed * result.transactions[key].gasPrice;
-                                                                eachOfSeriesCallback();
-                                                            }, function (err) {
-                                                                trace.action.value = "0x".concat((parseInt(trace.action.value, 16) + totalGasUsed).toString(16));
-                                                            });
-                                                        }
-                                                    });
-                                                    if (Object.size(blocks) < max_blocks) {
-                                                        if (!blocks[num]) {
-                                                            blocks[num] = [];
-                                                        }
-                                                        blocks[num].push(trace);
+                                            async.eachSeries(sortedTraces, function (trace, ineachCallback) {
+                                                if (Object.size(blocks) >= data.max_blocks) {
+                                                    return incallback(null);
+                                                } else {
+                                                    const num = trace.blockNumber;
+                                                    trace.isContract = false;
+                                                    trace.action._value = '';
+                                                    trace.action._to = '';
+                                                    if (trace.type === 'reward') {
+                                                        web3GESN.eth.getBlock(num, true, function (err, result) {
+                                                            if (!err && result.transactions && result.transactions.length > 0 && trace.action.value == '0x4563918244f40000') {
+                                                                //console.log("result.transactions: ", result.transactions);
+                                                                var gasUsed = new BigNumber(result.gasUsed);
+                                                                //console.log("gasUsed:", gasUsed);
+                                                                var totalGasUsed = new BigNumber(gasUsed.times(result.transactions[result.transactions.length - 1].gasPrice));
+                                                                //console.log("totalGasUsed:", totalGasUsed);
+                                                                var actionValue = new BigNumber(trace.action.value);
+                                                                //console.log("actionValue:", actionValue);
+                                                                trace.action.value = web3GESN.toHex(actionValue.plus(totalGasUsed).toNumber());
+                                                            }
 
-                                                        data.previousBlockNumber = num - 1;
-                                                        data.fromBlock = num;
-                                                    }
-                                                    ineachCallback();
-                                                } else if (trace.type === 'call') {
-                                                    if (tokenExporter[trace.action.to]) {
-                                                        trace.isContract = true;
-                                                        if (tokenExporter[trace.action.to].token_decimals) {
-                                                            trace.token_decimals = tokenExporter[trace.action.to].token_decimals;
-                                                        } else {
-                                                            trace.token_decimals = 0;
-                                                        }
-
-                                                        if (tokenExporter[trace.action.to].token_symbol) {
-                                                            trace.token_symbol = tokenExporter[trace.action.to].token_symbol;
-                                                        } else {
-                                                            trace.token_symbol = 'n/a';
-                                                        }
-
-                                                        if (allContractObject.tokenlist[trace.action.to] && allContractObject.tokenlist[trace.action.to].events) {
-                                                            async.eachSeries(allContractObject.tokenlist[trace.action.to].events, function (event, eventeachCallback) {
-                                                                if (trace.transactionHash === event.transactionHash) {
-                                                                    if (event.event === "Transfer" || event.event === "Approval") {
-                                                                        if (event.args && event.args._value && trace.transactionPosition == event.transactionIndex) {
-                                                                            //console.dir(event.args);
-                                                                            /*
-                                                                            data:    :10442 - { _from: '0x3e2c6a622c29cf30c04c9ed8ed1e985da8c95662',
-                                                                            data:    :10442 -   _to: '0xf94fda503c3f792491fa77b3702fd465f028810d',
-                                                                            data:    :10442 -   _value: 1e+23 }
-                                                                            */
-                                                                            trace.action._value = "0x".concat(event.args._value.toString(16));
-                                                                            trace.action._to = event.args._to;
-                                                                        }
-                                                                    } else {
-                                                                        console.dir(event.args);
-                                                                    }
+                                                            if (Object.size(blocks) < data.max_blocks) {
+                                                                if (!blocks[num]) {
+                                                                    blocks[num] = [];
                                                                 }
-                                                                eventeachCallback();
-                                                            });
-                                                        }
-                                                    }
-                                                    if (Object.size(blocks) < max_blocks) {
-                                                        if (!blocks[num]) {
-                                                            blocks[num] = [];
-                                                        }
-                                                        blocks[num].push(trace);
+                                                                blocks[num].push(trace);
 
-                                                        data.previousBlockNumber = num - 1;
-                                                        data.fromBlock = num;
-                                                    }
-                                                    ineachCallback();
-                                                } else if (trace.type === 'create') {
-                                                    trace.isContract = true;
-                                                    //console.dir(trace);
-                                                    //console.log("-----------------------trace.type === 'create'-----------------------");
-                                                    if (tokenExporter[trace.result.address]) {
-                                                        if (tokenExporter[trace.result.address].token_decimals) {
-                                                            trace.token_decimals = tokenExporter[trace.result.address].token_decimals;
-                                                        } else {
-                                                            trace.token_decimals = 0;
+                                                                data.previousBlockNumber = num - 1;
+                                                                data.fromBlock = num;
+                                                                return ineachCallback();
+                                                            }
+                                                        });
+                                                    } else if (trace.type === 'call') {
+                                                        if (tokenExporter[trace.action.to]) {
+                                                            trace.isContract = true;
+                                                            if (tokenExporter[trace.action.to].token_decimals) {
+                                                                trace.token_decimals = tokenExporter[trace.action.to].token_decimals;
+                                                            } else {
+                                                                trace.token_decimals = 0;
+                                                            }
+
+                                                            if (tokenExporter[trace.action.to].token_symbol) {
+                                                                trace.token_symbol = tokenExporter[trace.action.to].token_symbol;
+                                                            } else {
+                                                                trace.token_symbol = 'n/a';
+                                                            }
+
+                                                            if (allContractObject.tokenlist[trace.action.to] && allContractObject.tokenlist[trace.action.to].events) {
+                                                                async.eachSeries(allContractObject.tokenlist[trace.action.to].events, function (event, eventeachCallback) {
+                                                                    if (trace.transactionHash === event.transactionHash) {
+                                                                        if (event.event === "Transfer" || event.event === "Approval") {
+                                                                            if (event.args && event.args._value && trace.transactionPosition == event.transactionIndex) {
+                                                                                //console.dir(event.args);
+                                                                                /*
+                                                                                data:    :10442 - { _from: '0x3e2c6a622c29cf30c04c9ed8ed1e985da8c95662',
+                                                                                data:    :10442 -   _to: '0xf94fda503c3f792491fa77b3702fd465f028810d',
+                                                                                data:    :10442 -   _value: 1e+23 }
+                                                                                */
+                                                                                trace.action._value = "0x".concat(event.args._value.toString(16));
+                                                                                trace.action._to = event.args._to;
+                                                                            }
+                                                                        } else {
+                                                                            console.dir(event.args);
+                                                                        }
+                                                                    }
+                                                                    eventeachCallback();
+                                                                });
+                                                            }
+                                                        }
+                                                        if (Object.size(blocks) < data.max_blocks) {
+                                                            if (!blocks[num]) {
+                                                                blocks[num] = [];
+                                                            }
+                                                            blocks[num].push(trace);
+
+                                                            data.previousBlockNumber = num - 1;
+                                                            data.fromBlock = num;
+                                                        }
+                                                        ineachCallback();
+                                                    } else if (trace.type === 'create') {
+                                                        trace.isContract = true;
+                                                        //console.dir(trace);
+                                                        //console.log("-----------------------trace.type === 'create'-----------------------");
+                                                        if (tokenExporter[trace.result.address]) {
+                                                            if (tokenExporter[trace.result.address].token_decimals) {
+                                                                trace.token_decimals = tokenExporter[trace.result.address].token_decimals;
+                                                            } else {
+                                                                trace.token_decimals = 0;
+                                                            }
+
+                                                            if (tokenExporter[trace.result.address].token_symbol) {
+                                                                trace.token_symbol = tokenExporter[trace.result.address].token_symbol;
+                                                            } else {
+                                                                trace.token_symbol = 'n/a';
+                                                            }
                                                         }
 
-                                                        if (tokenExporter[trace.result.address].token_symbol) {
-                                                            trace.token_symbol = tokenExporter[trace.result.address].token_symbol;
-                                                        } else {
-                                                            trace.token_symbol = 'n/a';
-                                                        }
-                                                    }
+                                                        if (Object.size(blocks) < data.max_blocks) {
+                                                            if (!blocks[num]) {
+                                                                blocks[num] = [];
+                                                            }
+                                                            blocks[num].push(trace);
 
-                                                    if (Object.size(blocks) < max_blocks) {
-                                                        if (!blocks[num]) {
-                                                            blocks[num] = [];
+                                                            data.previousBlockNumber = num - 1;
+                                                            data.fromBlock = num;
                                                         }
-                                                        blocks[num].push(trace);
-
-                                                        data.previousBlockNumber = num - 1;
-                                                        data.fromBlock = num;
+                                                        ineachCallback();
                                                     }
-                                                    ineachCallback();
                                                 }
+                                            }, function (err) {
+                                                incallback(err);
                                             });
-                                            incallback(null);
                                         }
                                     ],
                                     function (err) {
@@ -540,118 +551,172 @@ router.get('/:account/:offset?', function (req, res, next) {
                 res.status(err.status || 500);
                 res.render('error');
             } else {
+                if (req.params.json && (req.params.json == 'jsontxs')) {
+                    var jsonData = {};
+                    jsonData.transactions = blocks;
+                    res.json(resultToJson(err, jsonData));
+                } else {
+                    data.officialurl = 'https://ethersocial.net/addr/' + data.address;
 
-                data.officialurl = 'https://ethersocial.net/addr/' + data.address;
-
-                data.blocks = [];
-                for (var block in blocks) {
-                    data.blocks.push(blocks[block]);
-                }
-                data.blocks = data.blocks.reverse();
-
-                if (tokenEvents) {
-                    data.tokenBlocks = [];
-                    for (var tokenBlock in tokenEvents) {
-                        if (tokenEvents[tokenBlock]) {
-                            data.tokenBlocks.push(tokenEvents[tokenBlock]);
-                        }
+                    data.blocks = [];
+                    for (var block in blocks) {
+                        data.blocks.push(blocks[block]);
                     }
-                    data.tokenBlocks = data.tokenBlocks.reverse();
-                }
+                    data.blocks = data.blocks.reverse();
 
-                //console.dir(data.tokenBlocks);
-                //console.log(" ============= console.dir(data.tokenBlocks) ============= ");
-
-                if (data.source) {
-                    data.name = data.source.name;
-                } else if (config.names[data.address]) {
-                    data.name = config.names[data.address];
-                }
-
-                if (!data.isContract) {
-                    data.tokens = [];
-                    for (var tokenaddress in allContractObject.tokenlist) {
-                        data.tokens.push(allContractObject.tokenlist[tokenaddress]);
-                    }
-                }
-
-                //console.dir(data.tokens);
-                //console.log("================= data.tokens =================");
-                let setNodeText = new Set();
-                let mapNodeText = new Map();
-
-                for (var nodekey = 0; nodekey < data.blocks.length; nodekey++) {
-                    for (var idxtrace = 0; idxtrace < data.blocks[nodekey].length; idxtrace++) {
-                        var tmpBlock = data.blocks[nodekey][idxtrace];
-                        if (tmpBlock.type == "call") {
-                            setNodeText.add(tmpBlock.action.from).add(tmpBlock.action.to);
-
-                            let mapKey = tmpBlock.action.from.concat(",").concat(tmpBlock.action.to);
-                            let mapValue = mapNodeText.get(mapKey);
-                            if (mapValue != undefined) {
-                                mapNodeText.set(mapKey, mapValue + parseInt(tmpBlock.action.value, 16) / 10e+17);
-                            } else {
-                                mapNodeText.set(mapKey, parseInt(tmpBlock.action.value, 16) / 10e+17);
-                            }
-                        } else if (tmpBlock.type == "reward") {
-                            setNodeText.add("Mining").add(tmpBlock.action.author);
-                            let mapKey = "Mining,".concat(tmpBlock.action.author);
-                            let mapValue = mapNodeText.get(mapKey);
-                            if (mapValue != undefined) {
-                                mapNodeText.set(mapKey, mapValue + parseInt(tmpBlock.action.value, 16) / 10e+17);
-                            } else {
-                                mapNodeText.set(mapKey, parseInt(tmpBlock.action.value, 16) / 10e+17);
+                    if (tokenEvents) {
+                        data.tokenBlocks = [];
+                        for (var tokenBlock in tokenEvents) {
+                            if (tokenEvents[tokenBlock]) {
+                                data.tokenBlocks.push(tokenEvents[tokenBlock]);
                             }
                         }
+                        data.tokenBlocks = data.tokenBlocks.reverse();
                     }
-                }
 
-                data.nodeDataArray = [];
-                data.linkDataArray = [];
-                var nodeindex = 1;
-                for (let nodetext of setNodeText) {
-                    data.nodeDataArray.push({
-                        key: nodeindex,
-                        text: nodetext
-                    });
-                    nodeindex++;
-                }
-                mapNodeText.forEach(function (value, key) {
-                    var nodelink1 = 0;
-                    var nodelink2 = 0;
-                    var arrkey = key.split(",");
-                    data.nodeDataArray.forEach(function (item, index, array) {
-                        if (item.text == arrkey[0]) {
-                            nodelink1 = item.key;
-                        } else if (item.text == arrkey[1]) {
-                            nodelink2 = item.key;
+                    //console.dir(data.tokenBlocks);
+                    //console.log(" ============= console.dir(data.tokenBlocks) ============= ");
+
+                    if (data.source) {
+                        data.name = data.source.name;
+                    } else if (configNames.names[data.address]) {
+                        data.name = configNames.names[data.address];
+                    } else if (configNames.holdnames[data.address]) {
+                        data.name = 'Long-term holding: '.concat(configNames.holdnames[data.address]);
+                    }
+
+                    if (!data.isContract) {
+                        data.tokens = [];
+                        for (var tokenaddress in allContractObject.tokenlist) {
+                            data.tokens.push(allContractObject.tokenlist[tokenaddress]);
                         }
-                    });
-                    data.linkDataArray.push({
-                        from: nodelink1,
-                        to: nodelink2,
-                        text: value.toFixed(3)
-                    });
-                });
-
-                if (contractEvents) {
-                    data.contractEvents = [];
-
-                    for (var contractnum in contractEvents) {
-                        //console.dir(contractEvents[contractnum]);
-                        data.contractEvents.push(contractEvents[contractnum][0]);
                     }
 
-                    data.contractEvents = data.contractEvents.reverse(); //.splice(0, 100);
-                    //console.dir(data.contractEvents);
+                    //console.dir(data.tokens);
+                    //console.log("================= data.tokens =================");
+                    let setNodeText = new Set();
+                    let mapNodeText = new Map();
+
+                    for (var nodekey = 0; nodekey < data.blocks.length; nodekey++) {
+                        for (var idxtrace = 0; idxtrace < data.blocks[nodekey].length; idxtrace++) {
+                            var tmpBlock = data.blocks[nodekey][idxtrace];
+                            if (tmpBlock.type == "call") {
+                                setNodeText.add(tmpBlock.action.from).add(tmpBlock.action.to);
+                                let mapKey = tmpBlock.action.from.concat(",").concat(tmpBlock.action.to);
+                                let mapValue = mapNodeText.get(mapKey);
+                                if (!mapValue || mapValue == undefined) {
+                                    mapNodeText.set(mapKey, (Number(tmpBlock.action.value) / 10e+17).toString() + "ESN");
+                                } else {
+                                    //console.log(mapKey, mapValue);
+                                    let arrMapValue = mapValue.split("ESN");
+                                    //console.dir(arrMapValue);
+                                    var prevret = new BigNumber(arrMapValue[0]);
+                                    mapNodeText.set(mapKey, (prevret.plus((parseInt(tmpBlock.action.value, 16) / 10e+17))).toString() + "ESN");
+                                }
+
+                                if (tmpBlock.action._to) {
+                                    let decimals = 18;
+                                    let symbol = 'NaN';
+                                    var Ether = new BigNumber(Math.pow(10, decimals));
+                                    if (tokenExporter[tmpBlock.action.to]) {
+                                        decimals = tokenExporter[tmpBlock.action.to].token_decimals;
+                                        symbol = tokenExporter[tmpBlock.action.to].token_symbol;
+                                    }
+                                    var ret = new BigNumber(tmpBlock.action._value);
+                                    let _value = ret.dividedBy(Ether);
+
+                                    setNodeText.add(tmpBlock.action.to).add(tmpBlock.action._to);
+                                    let mapKeyToken = tmpBlock.action.to.concat(",").concat(tmpBlock.action._to);
+                                    let mapValueToken = mapNodeText.get(mapKeyToken);
+                                    if (!mapValueToken || mapValueToken == undefined) {
+                                        mapNodeText.set(mapKeyToken, _value + symbol);
+                                    } else {
+                                        let arrMapValueToken = mapValueToken.split(symbol);
+                                        var prevretToken = new BigNumber(arrMapValueToken[0]);
+                                        mapNodeText.set(mapKeyToken, prevretToken.plus(_value) + symbol);
+                                    }
+                                }
+                            } else if (tmpBlock.type == "reward") {
+                                setNodeText.add("Mining").add(tmpBlock.action.author);
+                                let mapKey = "Mining,".concat(tmpBlock.action.author);
+                                let mapValue = mapNodeText.get(mapKey);
+                                if (mapValue != undefined) {
+                                    mapNodeText.set(mapKey, mapValue + parseInt(tmpBlock.action.value, 16) / 10e+17);
+                                } else {
+                                    mapNodeText.set(mapKey, parseInt(tmpBlock.action.value, 16) / 10e+17);
+                                }
+                            }
+                        }
+                    }
+
+                    data.nodeDataArray = [];
+                    data.linkDataArray = [];
+                    var nodeindex = 1;
+                    for (let nodetext of setNodeText) {
+                        data.nodeDataArray.push({
+                            key: nodeindex,
+                            text: nodetext
+                        });
+                        nodeindex++;
+                    }
+                    mapNodeText.forEach(function (value, key) {
+                        var nodelink1 = 0;
+                        var nodelink2 = 0;
+                        var arrkey = key.split(",");
+                        data.nodeDataArray.forEach(function (item, index, array) {
+                            if (item.text == arrkey[0]) {
+                                nodelink1 = item.key;
+                            } else if (item.text == arrkey[1]) {
+                                nodelink2 = item.key;
+                            }
+                        });
+                        data.linkDataArray.push({
+                            from: nodelink1,
+                            to: nodelink2,
+                            text: value
+                        });
+                    });
+
+                    if (contractEvents) {
+                        data.contractEvents = [];
+
+                        for (var contractnum in contractEvents) {
+                            //console.dir(contractEvents[contractnum]);
+                            data.contractEvents.push(contractEvents[contractnum][0]);
+                        }
+
+                        data.contractEvents = data.contractEvents.reverse(); //.splice(0, 100);
+                        //console.dir(data.contractEvents);
+                    }
+
+                    if (req.params.json && (req.params.json == 'true' || req.params.json == 'json')) {
+                        res.json(resultToJson(err, data));
+                    } else {
+                        res.render('account', {
+                            account: data,
+                            nodedata: JSON.stringify(data.nodeDataArray),
+                            linkdata: JSON.stringify(data.linkDataArray)
+                        });
+                    }
                 }
-                res.render('account', {
-                    account: data,
-                    nodedata: JSON.stringify(data.nodeDataArray),
-                    linkdata: JSON.stringify(data.linkDataArray)
-                });
             }
         });
 });
+
+function resultToJson(err, param) {
+    var result = {};
+    result.jsonrpc = 'esn';
+    result.success = false;
+
+    if (err) {
+        result.result = err;
+    } else if (param) {
+        result.result = param;
+        result.success = true;
+    } else {
+        result.result = NaN;
+    }
+    return result;
+}
 
 module.exports = router;

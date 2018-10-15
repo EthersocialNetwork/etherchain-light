@@ -6,13 +6,11 @@ var exporter = function (provider, erc20ABI, tokenAddress, createBlock, timeout)
   var self = this;
   //console.log("[ExportToken]", tokenAddress);
   self.tokenAddress = tokenAddress;
-  self.db = new tokenDatastore();
-  /*
+  //self.db = new tokenDatastore();
   self.db = new tokenDatastore({
-    filename: './token_data_' + tokenAddress + '.db',
+    filename: './tokenDatastore/' + tokenAddress + '.nedb',
     autoload: true
   });
-  */
   self.db.ensureIndex({
     fieldName: 'balance'
   }, function (err) {

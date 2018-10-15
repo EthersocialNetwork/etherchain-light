@@ -38,9 +38,8 @@ block content
       td Block Range:
       td 
         if account.previousBlockNumber > 999
-          a.btn.btn-primary.btn-sm(href="/account/" + account.address + "/" + account.previousBlockNumber, style="padding: 4px;") Previous
+          a.btn.btn-primary.btn-sm(href="/account/" + account.address + "/" + account.previousBlockNumber + "/" + account.max_blocks, style="padding: 4px;") Previous
           | &nbsp;&nbsp;&nbsp;&nbsp;from:#{numberformatter(account.fromBlock)} ~ to:#{numberformatter(account.lastBlock)} 정보 추출 범위 &nbsp;&nbsp;&nbsp;&nbsp;
-          //a.btn.btn-primary.btn-sm(href="/account/" + account.address + "/" + account.nextBlockNumber, style="padding: 4px;") Lastest
           a.btn.btn-primary.btn-sm(href="/account/" + account.address, style="padding: 4px;") Lastest
         else
           |from:#{numberformatter(account.fromBlock)} ~ to:#{numberformatter(account.lastBlock)} 정보 추출 범위 &nbsp;&nbsp;&nbsp;&nbsp;

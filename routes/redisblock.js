@@ -8,10 +8,20 @@ const client = redis.createClient();
 const pre_fix = 'explorerBlocks:';
 const divide = 10000;
 
+Array.prototype.clean = function (deleteValue) {
+  for (var i = 0; i < this.length; i++) {
+    if (this[i] == deleteValue) {
+      this.splice(i, 1);
+      i--;
+    }
+  }
+  return this;
+};
+
 router.get('/:end?', function (req, res, next) {
   var config = req.app.get('config');
   var web3 = new Web3();
-  web3.setProvider(config.provider);
+  web3.setProvider(config.providerSubGESN);
   var data = {};
   data.startTime = new Date();
   data.ip = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
@@ -39,17 +49,17 @@ router.get('/:end?', function (req, res, next) {
       data.lastBlock = new Intl.NumberFormat().format(latestBlock.number);
       if (data.ip == config.cronIP) {
         if (data.dbLastBlock > 0) {
-          var tmpblocknumber = data.dbLastBlock + 1000 > latestBlock.number ? latestBlock.number : data.dbLastBlock + 1000;
+          var tmpblocknumber = data.dbLastBlock + data.blockCount > latestBlock.number ? latestBlock.number : data.dbLastBlock + data.blockCount;
           web3.eth.getBlock(tmpblocknumber, false, function (err, result) {
             callback(err, result);
           });
         } else {
-          web3.eth.getBlock(1000, false, function (err, result) {
+          web3.eth.getBlock(data.blockCount, false, function (err, result) {
             callback(err, result);
           });
         }
-      } else if (req.params.end && req.params.end < 1000) {
-        web3.eth.getBlock(1000, false, function (err, result) {
+      } else if (req.params.end && req.params.end < data.blockCount) {
+        web3.eth.getBlock(data.blockCount, false, function (err, result) {
           callback(err, result);
         });
       } else if (req.params.end && req.params.end < latestBlock.number) {
@@ -61,27 +71,49 @@ router.get('/:end?', function (req, res, next) {
       }
     },
     function (lastBlock, callback) {
-      if (lastBlock.number - data.blockCount < 0) {
-        data.blockCount = lastBlock.number + 1;
-      }
+      var batch = web3.createBatch();
       async.times(data.blockCount, function (n, next) {
+        var field = lastBlock.number - n;
+        if (field === 0) {
+          next();
+        }
         if (data.dbLastBlock > 0 && data.dbLastBlock > lastBlock.number - n) {
-          var field = lastBlock.number - n;
           client.hgetall(pre_fix.concat((field - (field % divide)) + ":").concat(field), function (err, block_info) {
             next(err, block_info);
           });
         } else {
-          web3.eth.getBlock(lastBlock.number - n, false, function (err, block) {
-            next(err, block);
-          });
+          batch.add(web3.eth.getBlock.request(lastBlock.number - n, false));
+          next();
         }
       }, function (err, blocks) {
-        callback(err, blocks);
+        if (batch.requests.length > 0) {
+          batch.requestManager.sendBatch(batch.requests, function (err, results) {
+            async.eachOfSeries(batch.requests, function (value, key, requestsEachCallback) {
+              if (results[key].result.number) {
+                results[key].result.number = parseInt(results[key].result.number, 16);
+              }
+              //console.dir(results[key].result);
+              blocks.push(results[key].result);
+              requestsEachCallback();
+            }, function (err) {
+              blocks.sort(function (a, b) {
+                if (a.number == undefined || b.number == undefined) {
+                  return 0;
+                }
+                return ((a.number > b.number) ? -1 : ((a.number == b.number) ? 0 : 1));
+              });
+              callback(err, blocks);
+            });
+          });
+        } else {
+          callback(err, blocks);
+        }
       });
     }
   ], function (err, blocks) {
-    if (err) {
+    if (err || !blocks) {
       console.log("Error " + err);
+      next();
     }
     var totalBlockTimes = 0;
     var lastBlockTimes = -1;
@@ -90,9 +122,10 @@ router.get('/:end?', function (req, res, next) {
     data.txnumber = 0;
     data.dbBlock = 0;
     maxBlockNumber = 0;
-    var multi = client.multi();
+
+    blocks.clean(undefined);
     blocks.forEach(function (block) {
-      if (block) {
+      if (block && block != undefined) {
         if (lastBlockTimes > 0) {
           totalBlockTimes += lastBlockTimes - Number(block.timestamp);
           totaDifficulty += Number(block.difficulty);
@@ -127,24 +160,14 @@ router.get('/:end?', function (req, res, next) {
               uncles: block.uncles ? block.uncles.length : 0
             };
             var rds_key = pre_fix.concat("list");
-            multi.hset(rds_key, block.number, block.miner);
+            client.hset(rds_key, block.number, block.miner);
             var rds_key2 = pre_fix.concat((block.number - (block.number % divide)) + ":").concat(block.number);
-            multi.hmset(rds_key2, rds_value);
+            client.hmset(rds_key2, rds_value);
             maxBlockNumber = maxBlockNumber < block.number ? block.number : maxBlockNumber;
             var rds_key3 = pre_fix.concat("lastblock");
-            multi.hset(rds_key3, "lastblock", maxBlockNumber);
+            client.hset(rds_key3, "lastblock", maxBlockNumber);
           }
         }
-      } else {
-        blocks.splice(blocks.indexOf(block), 1);
-      }
-    });
-    multi.exec(function (err, results) {
-      if (err) {
-        throw err;
-      } else {
-        //console.log(results);
-        //client.quit();
       }
     });
 
@@ -152,31 +175,57 @@ router.get('/:end?', function (req, res, next) {
     data.difficulty = hashFormat(totaDifficulty / countBlockTimes) + "H";
     data.hashrate = hashFormat(totaDifficulty / totalBlockTimes) + "H/s";
 
-    data.startblockntime = Number(blocks[0].number).toLocaleString() + " block (" + new Date(blocks[0].timestamp * 1000) + ")";
+    //console.dir(blocks[0]);
+    //console.dir(blocks[blocks.length - 1]);
+    //console.log("blocks.length: ", blocks.length);
+    if (blocks[0] === undefined || blocks[0] === null) {
+      data.startblockntime = "Genesis block";
+    } else {
+      data.startblockntime = Number(blocks[0].number).toLocaleString() + " block (" + new Date(blocks[0].timestamp * 1000) + ")";
+    }
     data.endblockntime = Number(blocks[blocks.length - 1].number).toLocaleString() + " block (" + new Date(blocks[blocks.length - 1].timestamp * 1000) + ")";
     data.endTime = new Date();
     data.consumptionTime = ((data.endTime - data.startTime) / 1000).toLocaleString(undefined, {
       maximumFractionDigits: 4
     }) + " s";
-
-    res.render('redisblock', {
-      startTime: data.startTime,
-      PerBlock: data.blockCount.toLocaleString(),
-      lastBlock: data.lastBlock,
-      blockTime: data.blockTime,
-      difficulty: data.difficulty,
-      hashrate: data.hashrate,
-      startblock: data.startblockntime,
-      endblock: data.endblockntime,
-      endTime: data.endTime,
-      consumptionTime: data.consumptionTime,
-      transactionsCount: data.txnumber.toLocaleString(),
-      FoundBlockInDB: data.dbBlock.toLocaleString(),
-      LastBlockInDB: data.dbLastBlock.toLocaleString(),
-      nowBlockNumber: blocks[0].number
-    });
+    if (data.ip == config.cronIP) {
+      res.json(resultToJson(null, data));
+    } else {
+      res.render('redisblock', {
+        startTime: data.startTime,
+        PerBlock: data.blockCount.toLocaleString(),
+        lastBlock: data.lastBlock,
+        blockTime: data.blockTime,
+        difficulty: data.difficulty,
+        hashrate: data.hashrate,
+        startblock: data.startblockntime,
+        endblock: data.endblockntime,
+        endTime: data.endTime,
+        consumptionTime: data.consumptionTime,
+        transactionsCount: data.txnumber.toLocaleString(),
+        FoundBlockInDB: data.dbBlock.toLocaleString(),
+        LastBlockInDB: data.dbLastBlock.toLocaleString(),
+        nowBlockNumber: blocks[0] === undefined ? 0 : blocks[0].number
+      });
+    }
   });
 });
+
+function resultToJson(err, param) {
+  var result = {};
+  result.jsonrpc = 'esn';
+  result.success = false;
+
+  if (err) {
+    result.result = err;
+  } else if (param) {
+    result.result = param;
+    result.success = true;
+  } else {
+    result.result = NaN;
+  }
+  return result;
+}
 
 function hashFormat(number) {
   if (number > 1000000000000000) {
@@ -193,4 +242,5 @@ function hashFormat(number) {
     return new Intl.NumberFormat().format((number).toFixed(4));
   }
 }
+
 module.exports = router;

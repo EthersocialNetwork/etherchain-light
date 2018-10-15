@@ -22,19 +22,22 @@ var top100_settingup = require('./routes/top100_settingup');
 var peers = require('./routes/peers');
 var redisblock = require('./routes/redisblock');
 var hashratechart = require('./routes/hashratechart');
+var servercheckchart = require('./routes/servercheckchart');
 var bitzcharts = require('./routes/bitzcharts');
 var api = require('./routes/api');
 
 var api_proxy = require('./api/proxy');
 var api_account = require('./api/account');
+var api_info = require('./api/info');
 
 var test_batch = require('./routes/test_batch');
 
-var config = new(require('./config.js'))();
+var config = new(require('./config/config.js'))();
+var configERC20 = new(require('./config/configERC20.js'))();
+var configNames = new(require('./config/configNames.js'))();
 
 var level = require('level-rocksdb');
-//var db = levelup(leveldown('/home/sejun/.local/share/io.parity.ethereum/chains/ethersocial/db/dc73f323b4681272/snapshot'));
-var db = level('/home/sejun/.local/share/io.parity.ethereum/chains/ethersocial/db/dc73f323b4681272/archive');
+var db = level(config.dbPath);
 
 var redis = require("redis"),
   client = redis.createClient();
@@ -49,9 +52,11 @@ app.use(compression({
 
 var async = require('async');
 var tokenExporterService = require('./services/tokenExporter.js');
+var serverPortCheckService = require('./services/serverPortCheck.js');
 
 var contractAccountList = [];
 var tokenExporter = {};
+var serverPortCheck = {};
 
 async.waterfall([
   function (callback) {
@@ -73,9 +78,9 @@ async.waterfall([
       var eventslength = iter[1],
         account = iter[0];
       contractAccountList.push(account);
-      var timeout = eventslength < 1 ? 50 : 50 + (eventslength * 3);
+      var timeout = eventslength < 1 ? parseInt(config.tokenLoadDelay, 10) : parseInt(config.tokenLoadDelay, 10) + (eventslength * 3);
       //console.log(account,"start", Date.now());
-      tokenExporter[account] = new tokenExporterService(config.provideripc, config.erc20ABI, account, 1, timeout);
+      tokenExporter[account] = new tokenExporterService(config.providerIpc, configERC20.erc20ABI, account, 1, timeout);
       //console.log("[timeout]", account, " : ", timeout);
       sleep(timeout).then(() => {
         forEachOfCallback();
@@ -91,7 +96,6 @@ async.waterfall([
     });
   }
 ], function (err, accountList) {
-
   //var db = levelup(leveldown('./data')); 
   // ~/esn_install/parity/chaindata/chains/ethersocial/db/dc73f323b4681272/archive/db
   // ~/esn_install/parity/chaindata/chains/ethersocial/db/dc73f323b4681272/snapshot/current
@@ -101,12 +105,32 @@ async.waterfall([
   app.set('views', path.join(__dirname, 'views'));
   app.set('view engine', 'pug');
   app.set('config', config);
+  app.set('configERC20', configERC20);
+  app.set('configNames', configNames);
   app.set('db', db);
   app.set('trust proxy', true);
 
   //APIs
+  app.all('/api_proxy/*', function (req, res, next) {
+    res.header("Access-Control-Allow-Origin", "*");
+    res.header("Access-Control-Allow-Headers", "X-Requested-With");
+    next();
+  });
   app.use('/api_proxy', api_proxy);
+
+  app.all('/api_account/*', function (req, res, next) {
+    res.header("Access-Control-Allow-Origin", "*");
+    res.header("Access-Control-Allow-Headers", "X-Requested-With");
+    next();
+  });
   app.use('/api_account', api_account);
+
+  app.all('/api_info/*', function (req, res, next) {
+    res.header("Access-Control-Allow-Origin", "*");
+    res.header("Access-Control-Allow-Headers", "X-Requested-With");
+    next();
+  });
+  app.use('/api_info', api_info);
 
   // uncomment after placing your favicon in /public
   app.use(favicon(path.join(__dirname, 'public', 'favicon.ico')));
@@ -127,10 +151,11 @@ async.waterfall([
   app.locals.numeral = require('numeral');
   app.locals.ethformatter = require('./utils/ethformatter.js');
   app.locals.numberformatter = require('./utils/numberformatter.js');
-  app.locals.nameformatter = new(require('./utils/nameformatter.js'))(config);
+  app.locals.nameformatter = new(require('./utils/nameformatter.js'))(configNames);
   app.locals.nodeStatus = new(require('./utils/nodeStatus.js'))(config);
   app.locals.config = config;
-
+  app.locals.configERC20 = configERC20;
+  app.locals.configNames = configNames;
   app.use('/', index);
   app.use('/block', block);
   app.use('/tx', tx);
@@ -146,6 +171,7 @@ async.waterfall([
   app.use('/peers', peers);
   app.use('/redisblock', redisblock);
   app.use('/hashratechart', hashratechart);
+  app.use('/servercheckchart', servercheckchart);
   app.use('/bitzcharts', bitzcharts);
   app.use('/api', api);
 
@@ -192,6 +218,27 @@ async.waterfall([
   console.log("[Loading Start]\t", serverStartTime);
   console.log("[Loading  End]\t", new Date().toLocaleString());
   //console.dir(accountList);
+
+  if (config.serverPortCheck) {
+    var serverPortCheckList = config.serverPortCheckList;
+    async.eachSeries(serverPortCheckList, function (server, forEachOfCallback) {
+      var splitIP = server.split(":");
+      if (splitIP.length > 1) {
+        serverPortCheck[server] = new serverPortCheckService(splitIP[0], parseInt(splitIP[1], 10), config.serverPortCheckDelay);
+        console.log('serverPortCheckService(', splitIP[0], parseInt(splitIP[1], 10), ')');
+      }
+      sleep(100).then(() => {
+        forEachOfCallback();
+      });
+    }, function (err) {
+      if (err) {
+        console.log("[ERROR] serverPortCheck listing: ", err);
+      } else {
+        app.set('serverPortCheck', serverPortCheck);
+        app.set('serverPortCheckList', serverPortCheckList);
+      }
+    });
+  }
 });
 
 function shouldCompress(req, res) {
