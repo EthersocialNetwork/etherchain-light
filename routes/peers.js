@@ -147,7 +147,7 @@ router.get('/:offset?', function (req, res, next) {
 					} else {
 						if (!peer_info) {
 							console.log("no peer_info: " + pre_fix.concat(field));
-						} else if (peer_info.scanmstime > (new Date()).getTime() - 60 * 60 * 24 * 2 * 1000) {
+						} else if (peer_info.scanmstime > (new Date()).getTime() - 60 * 60 * 24 * 5 * 1000) {
 							var sIP = peer_info.ip.split(".");
 							sIP[1] = "***";
 							peer_info.ip = sIP.join(".");

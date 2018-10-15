@@ -333,11 +333,6 @@ router.get('/', function (req, res, next) {
       Transactions: JSON.stringify(data.datasets[3].data[k]),
       activity: JSON.stringify(data)
     });
-    data = null;
-    tmpData = null;
-    dbSaveDatas = null;
-    list = null;
-    web3 = null;
   });
 });
 

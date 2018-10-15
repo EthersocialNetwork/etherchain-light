@@ -30,7 +30,6 @@ router.get('/pending', function (req, res, next) {
     res.render('tx_pending', {
       txs: txs
     });
-    web3 = null;
   });
 });
 
