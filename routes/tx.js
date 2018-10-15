@@ -79,7 +79,7 @@ router.get('/:tx', function (req, res, next) {
   async.waterfall([
     function (callback) {
       web3.eth.getTransaction(req.params.tx, function (err, result) {
-        return callback(err, result);
+        callback(err, result);
       });
     },
     function (result, callback) {
@@ -89,24 +89,82 @@ router.get('/:tx', function (req, res, next) {
         }, null, null);
       }
       web3.eth.getTransactionReceipt(result.hash, function (err, receipt) {
-        return callback(err, result, receipt);
+        callback(err, result, receipt);
       });
     },
     function (tx, receipt, callback) {
       web3.trace.transaction(tx.hash, function (err, traces) {
-        return callback(err, tx, receipt, traces);
+        callback(err, tx, receipt, traces);
       });
     },
     function (tx, receipt, traces, callback) {
       //console.dir(tx);
       if (tx.to) {
         db.get(tx.to, function (err, value) {
-          return callback(null, tx, receipt, traces, value);
+          callback(null, tx, receipt, traces, value);
         });
       } else {
         db.get(tx.from, function (err, value) {
-          return callback(null, tx, receipt, traces, value);
+          callback(null, tx, receipt, traces, value);
         });
+      }
+    },
+    function (tx, receipt, traces, source, callback) {
+      //console.dir(tx);
+      if (tx.to) {
+        web3.eth.getCode(tx.to, function (err, code) {
+          if (code !== "0x") {
+            tx.isContract = true;
+            var erc20Contract = web3.eth.contract(config.erc20ABI).at(tx.to);
+            if (source && source.abi) {
+              erc20Contract = web3.eth.contract(source.abi).at(tx.to);
+            }
+
+            async.eachSeries(config.erc20ABI, function (item, eachCallback) {
+              if (item.type === "function" && item.inputs.length === 0 && item.constant) {
+                try {
+                  erc20Contract[item.name](function (err, result) {
+                    if (item.name === "decimals") {
+                      tx.token_decimals = result;
+                    } else if (item.name === "symbol") {
+                      tx.token_symbol = result;
+                    }
+                    return eachCallback();
+                  });
+                } catch (e) {
+                  console.log(e);
+                  return eachCallback();
+                }
+              } else {
+                return eachCallback();
+              }
+            });
+
+            var allevents = erc20Contract.allEvents({
+              fromBlock: tx.blockNumber,
+              toBlock: tx.blockNumber
+            });
+            allevents.get(function (err, events) {
+              if (err) {
+                console.log("Error receiving historical events:", err);
+              } else {
+                async.eachSeries(events, function (event, eachCallback) {
+                  if (event.event === "Transfer" || event.event === "Approval") {
+                    if (event.args && event.args._value && tx.transactionPosition == event.transactionIndex) {
+                      tx.token_value = "0x".concat(event.args._value.toNumber().toString(16));
+                      tx.token_to = event.args._to;
+                    }
+                  }
+                  eachCallback();
+                });
+              }
+            });
+          }
+          console.dir(tx);
+          callback(null, tx, receipt, traces, source);
+        });
+      } else {
+        callback(null, tx, receipt, traces, source);
       }
     }
   ], function (err, tx, receipt, traces, source) {

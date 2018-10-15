@@ -48,3 +48,23 @@ block content
             a(href="/account/" + account.address) #{account.address}
           .divTableCell #{account.type}
           .divTableCell #{account.balance}
+  h3 Contract address list 컨트렉트 주소
+  .divTable.top100
+    .divTableHeading
+      .divTableRow
+        .divTableHead No
+        .divTableHead Address
+        .divTableHead Events
+        .divTableHead Transfer
+    .divTableBody
+      for account in contracts
+        .divTableRow
+          .divTableCell #{account.no}
+          .divTableCell
+            a(href="/account/" + account.address) #{account.address}
+          .divTableCell #{account.eventcount}
+          .divTableCell
+            if account.transfercount
+              | #{account.transfercount}
+            else
+              | 0

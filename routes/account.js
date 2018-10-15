@@ -4,7 +4,17 @@ var router = express.Router();
 var async = require('async');
 var Web3 = require('web3');
 var wabt = require('wabt');
-var EWASM_BYTES = '0x0061736d01';
+var redis = require("redis"),
+    client = redis.createClient();
+
+Object.size = function (obj) {
+    var size = 0,
+        key;
+    for (key in obj) {
+        if (obj.hasOwnProperty(key)) size++;
+    }
+    return size;
+};
 
 function hex2buf(hex) {
     let typedArray = new Uint8Array(hex.match(/[\da-f]{2}/gi).map(function (h) {
@@ -28,16 +38,27 @@ function wasm2wast(wasmBytecode) {
 }
 
 router.get('/:account/:offset?', function (req, res, next) {
+    const EWASM_BYTES = '0x0061736d01';
+    const max_blocks = 100;
 
     var config = req.app.get('config');
     var web3 = new Web3();
     web3.setProvider(config.provider);
     var db = req.app.get('db');
 
+    var codes = new Map();
+    var contractdecimals = new Map();
+    var contractsymbol = new Map();
     var data = {};
     var contractEvents = {};
     var blocks = {};
     data.contractnum = 0;
+    data.address = req.params.account;
+
+    client.on("error", function (err) {
+        console.log("Redis Error " + err);
+    });
+
     async.waterfall([
             function (callback) {
                 web3.eth.getBlock("latest", false, function (err, result) {
@@ -63,13 +84,13 @@ router.get('/:account/:offset?', function (req, res, next) {
             },
             function (targetBlock, callback) {
                 data.lastBlock = targetBlock.number;
-                web3.eth.getBalance(req.params.account, function (err, balance) {
+                web3.eth.getBalance(data.address, function (err, balance) {
                     callback(err, balance); //해당 계정의 보유량을 받아서 전달
                 });
             },
             function (balance, callback) {
                 data.balance = balance;
-                web3.eth.getCode(req.params.account, function (err, code) {
+                web3.eth.getCode(data.address, function (err, code) {
                     callback(err, code); //해당 계정의 코드를 받아서 전달
                 });
             },
@@ -84,7 +105,7 @@ router.get('/:account/:offset?', function (req, res, next) {
                         data.wast = wast;
                     }
                     /*
-                    web3.debug.storageRangeAt(data.lastBlock.toString(), 0, req.params.account, "0x0", 1000, function (err, result) {
+                    web3.debug.storageRangeAt(data.lastBlock.toString(), 0, data.address, "0x0", 1000, function (err, result) {
                         callback(err, result.storage);
                     });
                     */
@@ -99,20 +120,20 @@ router.get('/:account/:offset?', function (req, res, next) {
                     data.storage = listOfStorageKeyVals;
                 }
                 // fetch verified contract source from db
-                db.get(req.params.account.toLowerCase(), function (err, value) {
+                db.get(data.address.toLowerCase(), function (err, value) {
                     callback(null, value); //디비에서 해당 계정의 정보를 가지고 온다.
                 });
             },
             function (source, callback) {
                 if (source) {
                     data.source = JSON.parse(source);
-                    console.log(data.source);
+                    //console.log(data.source);
                     data.contractState = [];
                     if (!data.source.abi) {
-                        return callback();
+                        return callback(null, null);
                     } else {
                         var abi = JSON.parse(data.source.abi);
-                        var contract = web3.eth.contract(abi).at(req.params.account);
+                        var contract = web3.eth.contract(abi).at(data.address);
 
                         async.eachSeries(abi, function (item, eachCallback) {
                             if (item.type === "function" && item.inputs.length === 0 && item.constant) {
@@ -136,13 +157,22 @@ router.get('/:account/:offset?', function (req, res, next) {
                         });
                     }
                 } else if (data.isContract) {
-                    var erc20Contract = web3.eth.contract(config.erc20ABI).at(req.params.account);
+                    var erc20Contract = web3.eth.contract(config.erc20ABI).at(data.address);
                     data.contractState = [];
 
                     async.eachSeries(config.erc20ABI, function (item, eachCallback) {
                         if (item.type === "function" && item.inputs.length === 0 && item.constant) {
                             try {
                                 erc20Contract[item.name](function (err, result) {
+                                    if (item.name === "name") {
+                                        data.token_name = result;
+                                    } else if (item.name === "totalSupply") {
+                                        data.token_totalSupply = result;
+                                    } else if (item.name === "decimals") {
+                                        data.token_decimals = result;
+                                    } else if (item.name === "symbol") {
+                                        data.token_symbol = result;
+                                    }
                                     data.contractState.push({
                                         name: item.name,
                                         result: result
@@ -172,7 +202,7 @@ router.get('/:account/:offset?', function (req, res, next) {
                     allEvents.get(function (err, events) {
                         if (err) {
                             console.log("Error receiving historical events:", err);
-                            callback(err, null);
+                            callback(null, null);
                         } else {
                             callback(null, events);
                         }
@@ -181,9 +211,11 @@ router.get('/:account/:offset?', function (req, res, next) {
                     callback(null, null);
                 }
             },
-            function (contractevents, callback) {
-                if (contractevents) {
-                    async.eachSeries(contractevents, function (event, contracteachCallback) {
+            function (cevents, callback) {
+                data.previousBlockNumber = 1;
+                data.fromBlock = 1;
+                if (cevents) {
+                    async.eachSeries(cevents, function (event, contracteachCallback) {
                         async.waterfall([
                                 function (contractcallback) {
                                     if (event.blockNumber && (event.event === "Transfer" || event.event === "Approval")) {
@@ -193,6 +225,7 @@ router.get('/:account/:offset?', function (req, res, next) {
                                             contractcallback(null, null, null);
                                         }
                                     } else {
+                                        //console.dir(event);
                                         contractcallback(null, null, null);
                                     }
                                 },
@@ -227,130 +260,251 @@ router.get('/:account/:offset?', function (req, res, next) {
                     });
                 } else {
                     var totalblocks = [];
-                    const devide = 10000;
+                    const devide = 1000;
                     var idxblock;
-                    data.previousBlockNumber = 1;
-                    data.fromBlock = 1;
                     for (idxblock = data.lastBlock; idxblock > devide; idxblock = idxblock - devide) {
                         totalblocks.push(idxblock);
                     }
-                    totalblocks.push(idxblock);
+                    if (idxblock > devide) {
+                        totalblocks.push(idxblock);
+                    }
                     async.eachSeries(totalblocks, function (subblocks, outeachCallback) {
-                        async.waterfall([
-                                function (incallback) {
-                                    web3.trace.filter({
-                                        "fromBlock": "0x" + (subblocks - devide - 1).toString(16),
-                                        "toBlock": "0x" + subblocks.toString(16), //[req.params.account]
-                                        "toAddress": [req.params.account]
-                                    }, function (err, totraces) {
-                                        incallback(err, totraces);
-                                    });
-                                },
-                                function (totraces, incallback) {
-                                    web3.trace.filter({
-                                        "fromBlock": "0x" + (subblocks - devide - 1).toString(16),
-                                        "toBlock": "0x" + subblocks.toString(16), //[req.params.account]
-                                        "fromAddress": [req.params.account]
-                                    }, function (err, fromtraces) {
-                                        incallback(err, totraces, fromtraces);
-                                    });
-                                },
-                                function (totraces, fromtraces, incallback) {
-                                    if (Object.keys(blocks).length >= 100) {
-                                        return callback(null, null);
-                                    }
-                                    var traces = totraces.concat(fromtraces);
-                                    traces.sort(function (a, b) {
-                                        return (a.blockNumber < b.blockNumber) ? 1 : ((b.blockNumber < a.blockNumber) ? -1 : 0);
-                                    });
-                                    async.eachSeries(traces, function (trace, ineachCallback) {
-                                        const num = trace.blockNumber;
-                                        trace.isContract = false;
-                                        if (trace.type === 'reward') {
-                                            web3.eth.getBlock(num, true, function (err, result) {
-                                                if (result.transactions.length > 0) {
-                                                    var totalGasUsed = result.gasUsed * result.transactions[0].gasPrice;
-                                                    //console.log("[1] trace.action.value : ", trace.action.value, totalGasUsed);
-                                                    trace.action.value = "0x".concat((parseInt(trace.action.value, 16) + totalGasUsed).toString(16));
-                                                    //console.log("[2] trace.action.value : ", trace.action.value, totalGasUsed);
+                            if (Object.size(blocks) > max_blocks) {
+                                return callback(err, null);
+                            } else {
+                                const startblocknumber = (subblocks - devide - 1).toString(16);
+                                const endblocknumber = subblocks.toString(16);
+                                async.waterfall([
+                                        function (incallback) {
+                                            web3.trace.filter({
+                                                "fromBlock": "0x" + startblocknumber,
+                                                "toBlock": "0x" + endblocknumber,
+                                                "toAddress": [data.address]
+                                            }, function (err, totraces) {
+                                                if (err) {
+                                                    console.log("(subblocks - devide - 1): ", subblocks, devide, (subblocks - devide - 1));
+                                                    console.log("totraces Error: ", err);
                                                 }
+                                                incallback(err, totraces);
                                             });
-                                        } else if (trace.type === 'call') {
-                                            //console.dir(trace);
-                                            web3.eth.getCode(trace.action.to, function (err, code) {
-                                                if (code !== "0x") {
-                                                    trace.isContract = true;
-                                                    var erc20Contract = web3.eth.contract(config.erc20ABI).at(trace.action.to);
-                                                    if (data.source && data.source.abi) {
-                                                        erc20Contract = web3.eth.contract(data.source.abi).at(trace.action.to);
-                                                    }
-                                                    var allevents = erc20Contract.allEvents({
-                                                        fromBlock: trace.blockNumber,
-                                                        toBlock: trace.blockNumber
-                                                    });
-                                                    allevents.get(function (err, events) {
-                                                        if (err) {
-                                                            console.log("Error receiving historical events:", err);
-                                                        } else {
-                                                            console.dir(events);
-                                                            if (events[0].event === "Transfer" || events[0].event === "Approval") {
-                                                                if (events[0].args && events[0].args._value) {
-                                                                    trace.action.value = "0x".concat(events[0].args._value.toNumber().toString(16));
-                                                                    trace.action.to = events[0].args._to;
-                                                                }
-                                                            }
+                                        },
+                                        function (totraces, incallback) {
+                                            web3.trace.filter({
+                                                "fromBlock": "0x" + startblocknumber,
+                                                "toBlock": "0x" + endblocknumber,
+                                                "fromAddress": [data.address]
+                                            }, function (err, fromtraces) {
+                                                if (err) {
+                                                    console.log("fromtraces Error: ", err);
+                                                }
+                                                incallback(err, totraces, fromtraces);
+                                            });
+                                        },
+                                        function (totraces, fromtraces, incallback) {
+                                            totraces.forEach(function (item, index, array) {
+                                                totraces[index].calltype = "to";
+                                            });
+                                            fromtraces.forEach(function (item, index, array) {
+                                                fromtraces[index].calltype = "from";
+                                            });
+                                            var tmptraces = totraces.concat(fromtraces);
+                                            tmptraces.sort(function (a, b) {
+                                                return (a.blockNumber < b.blockNumber) ? 1 : ((b.blockNumber < a.blockNumber) ? -1 : 0);
+                                            });
+                                            var traces = tmptraces.splice(0, 100);
+
+                                            async.eachSeries(traces, function (trace, ineachCallback) {
+                                                const num = trace.blockNumber;
+                                                trace.isContract = false;
+                                                trace.action._value = '';
+                                                trace.action._to = '';
+                                                if (trace.type === 'reward') {
+                                                    web3.eth.getBlock(num, true, function (err, result) {
+                                                        if (result.transactions.length > 0) {
+                                                            var totalGasUsed = 0;
+                                                            result.transactions.forEach(function (item, index, array) {
+                                                                totalGasUsed += result.gasUsed * result.transactions[index].gasPrice;
+                                                            });
+
+                                                            //console.log("[1] trace.action.value : ", trace.action.value, totalGasUsed);
+                                                            trace.action.value = "0x".concat((parseInt(trace.action.value, 16) + totalGasUsed).toString(16));
+                                                            //console.log("[2] trace.action.value : ", trace.action.value, totalGasUsed);
                                                         }
+                                                        if (Object.size(blocks) < max_blocks) {
+                                                            if (!blocks[num]) {
+                                                                blocks[num] = [];
+                                                            }
+                                                            blocks[num].push(trace);
+
+                                                            data.previousBlockNumber = num - 1;
+                                                            data.fromBlock = num;
+                                                        }
+                                                        ineachCallback();
+
                                                     });
+                                                } else if (trace.type === 'call' || trace.type === 'create') {
+                                                    if (trace.type === 'create') {
+                                                        trace.action.to = trace.result.address;
+                                                        if (trace.result && trace.result.code.lenth > 1) {
+                                                            codes.set(trace.action.to, trace.result.code);
+                                                        }
+                                                    }
+                                                    async.waterfall([
+                                                        function (rediscallback) {
+                                                            client.hget('esn_contracts:contractcode', trace.action.to, function (err, result) {
+                                                                rediscallback(null, result);
+                                                            });
+                                                        },
+                                                        function (rediscode, rediscallback) {
+                                                            if (rediscode) {
+                                                                codes.set(trace.action.to, rediscode);
+                                                                rediscallback(null, null);
+                                                            } else {
+                                                                web3.eth.getCode(trace.action.to, function (err, result) {
+                                                                    rediscallback(null, result);
+                                                                });
+                                                            }
+                                                        },
+                                                        function (web3code, rediscallback) {
+                                                            if (web3code) {
+                                                                codes.set(trace.action.to, web3code);
+                                                                client.hset('esn_contracts:contractcode', trace.action.to, web3code);
+                                                                console.log("[NEW] code: ", trace.action.to, web3code);
+                                                            }
+                                                            client.hget('esn_contracts:contractdecimals', trace.action.to, function (err, result) {
+                                                                rediscallback(null, result);
+                                                            });
+                                                        },
+                                                        function (redisdecimals, rediscallback) {
+                                                            if (redisdecimals) {
+                                                                contractdecimals.set(trace.action.to, parseInt(redisdecimals));
+                                                            }
+                                                            client.hget('esn_contracts:contractsymbol', trace.action.to, function (err, result) {
+                                                                rediscallback(null, result);
+                                                            });
+                                                        },
+                                                        function (redissymbol, rediscallback) {
+                                                            if (redissymbol) {
+                                                                contractsymbol.set(trace.action.to, redissymbol);
+                                                            }
+
+                                                            if (codes.has(trace.action.to) && codes.get(trace.action.to) !== '0x') {
+                                                                trace.isContract = true;
+
+                                                                var erc20ABI = config.erc20ABI;
+                                                                if (data.source && data.source.abi) {
+                                                                    console.log(" ----------------------- data.source.abi start ----------------------- ");
+                                                                    console.dir(data.source.abi);
+                                                                    console.log(" ----------------------- data.source.abi end ----------------------- ");
+                                                                    erc20ABI = data.source.abi;
+                                                                }
+                                                                var erc20Contract = web3.eth.contract(erc20ABI).at(trace.action.to);
+
+                                                                if (contractdecimals.has(trace.action.to) && contractsymbol.has(trace.action.to)) {
+                                                                    trace.token_decimals = contractdecimals.get(trace.action.to);
+                                                                    trace.token_symbol = contractsymbol.get(trace.action.to);
+                                                                } else {
+                                                                    async.eachSeries(erc20ABI, function (item, abieachCallback) {
+                                                                        if (item.type === "function" && item.inputs.length === 0 && item.constant) {
+                                                                            try {
+                                                                                erc20Contract[item.name](function (err, result) {
+                                                                                    if (item.name === "decimals") {
+                                                                                        if (result && result.toString().length >= 1) {
+                                                                                            trace.token_decimals = result;
+                                                                                            client.hset('esn_contracts:contractdecimals', trace.action.to, result.toString());
+                                                                                        }
+                                                                                    } else if (item.name === "symbol") {
+                                                                                        if (result && result.length >= 1) {
+                                                                                            trace.token_symbol = result;
+                                                                                            client.hset('esn_contracts:contractsymbol', trace.action.to, result);
+                                                                                        }
+                                                                                    }
+                                                                                    return abieachCallback();
+                                                                                });
+                                                                            } catch (e) {
+                                                                                console.log(e);
+                                                                                return abieachCallback();
+                                                                            }
+                                                                        } else {
+                                                                            return abieachCallback();
+                                                                        }
+                                                                    });
+                                                                }
+
+                                                                var allevents = erc20Contract.allEvents({
+                                                                    fromBlock: trace.blockNumber,
+                                                                    toBlock: trace.blockNumber
+                                                                });
+                                                                allevents.get(function (err, events) {
+                                                                    if (err) {
+                                                                        console.log("Error receiving historical events:", err);
+                                                                    } else {
+                                                                        async.eachSeries(events, function (event, eventeachCallback) {
+                                                                            if (event.event === "Transfer" || event.event === "Approval") {
+                                                                                if (event.args && event.args._value && trace.transactionPosition == event.transactionIndex) {
+                                                                                    trace.action._value = "0x".concat(event.args._value.toNumber().toString(16));
+                                                                                    trace.action._to = event.args._to;
+                                                                                }
+                                                                            } else {
+                                                                                console.dir(event.args);
+                                                                            }
+                                                                            eventeachCallback();
+                                                                        });
+                                                                    }
+                                                                });
+                                                            }
+                                                            rediscallback(null, null);
+                                                        }
+                                                    ], function (err, redisresult) {
+                                                        if (Object.size(blocks) < max_blocks) {
+                                                            if (!blocks[num]) {
+                                                                blocks[num] = [];
+                                                            }
+                                                            blocks[num].push(trace);
+
+                                                            data.previousBlockNumber = num - 1;
+                                                            data.fromBlock = num;
+                                                        }
+                                                        ineachCallback();
+                                                    });
+                                                } else {
+                                                    if (Object.size(blocks) < max_blocks) {
+                                                        if (!blocks[num]) {
+                                                            blocks[num] = [];
+                                                        }
+                                                        blocks[num].push(trace);
+
+                                                        data.previousBlockNumber = num - 1;
+                                                        data.fromBlock = num;
+                                                    }
+                                                    ineachCallback();
                                                 }
                                             });
+                                            incallback(null);
                                         }
-
-                                        /*
-                                        const account_name = req.params.account.toLowerCase();
-                                        var isPush = false;
-                                        if (trace.type === 'reward' && trace.action.author && trace.action.author.toLowerCase() == account_name) {
-                                            isPush = true;
-                                        } else if (trace.type === 'call' && (trace.action.from.toLowerCase() == account_name || trace.action.to.toLowerCase() == account_name)) {
-                                            isPush = true;
+                                    ],
+                                    function (err) {
+                                        if (err) {
+                                            console.log("outeachCallback Error " + err);
                                         }
-                                        */
-                                        //if (isPush) {
-                                        if (!blocks[num]) {
-                                            blocks[num] = [];
-                                        }
-                                        blocks[num].push(trace);
-
-                                        data.previousBlockNumber = num - 1;
-                                        data.fromBlock = num;
-                                        //}
-                                        if (Object.keys(blocks).length >= 100) {
-                                            return incallback(null, null);
-                                        }
-                                        ineachCallback();
-                                    }, function (err) {
-                                        incallback(err, null);
+                                        outeachCallback();
                                     });
-                                }
-                            ],
-                            function (err) {
-                                if (Object.keys(blocks).length > 100) {
-                                    return callback(err, null);
-                                } else {
-                                    return outeachCallback();
-                                }
-                            });
-                    }, function (err) {
-                        callback(err, null);
-                    });
+                            }
+                        },
+                        function (err) {
+                            if (err) {
+                                console.log("callback Error " + err);
+                            }
+                            callback(err, null);
+                        });
                 }
             }
         ],
-        function (err, contractevents) {
+        function (err, cevents) {
             if (err) {
-                console.log("Error " + err);
+                console.log("Final Error " + err);
             }
 
-            data.address = req.params.account;
             data.officialurl = 'https://ethersocial.net/addr/' + data.address;
 
             data.blocks = [];
@@ -364,7 +518,7 @@ router.get('/:account/:offset?', function (req, res, next) {
                 data.name = config.names[data.address];
             }
 
-            data.blocks = data.blocks.reverse(); //.splice(0, 100);
+            data.blocks = data.blocks.reverse();
 
             let setNodeText = new Set();
             let mapNodeText = new Map();

@@ -1,17 +1,12 @@
 var BigNumber = require('bignumber.js');
 
-var Ether     = new BigNumber(10e+17);
-
-function tokenFormatter(config) {
+function tokenFormatter() {
   self = this;
-  self.config = config;
   
-  self.format = function(amount) {
+  self.format = function(amount, decimals, symbol) {
+    var Ether     = new BigNumber(Math.pow(10, decimals));
     var ret = new BigNumber(amount.toString());
-    //console.dir("amount:  " + amount);
-    //console.dir("toFormat:" +ret.dividedBy(Ether).toFormat(8));
-    //var divisor = (new BigNumber(10)).toPower(self.config.tokenDecimals);
-    return ret.dividedBy(Ether).toFormat(8) + " " + self.config.tokenShortName;
+    return ret.dividedBy(Ether).toFormat(8) + " " + symbol;
   };
 }
 

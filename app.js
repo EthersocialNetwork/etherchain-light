@@ -25,9 +25,10 @@ var bitzcharts = require('./routes/bitzcharts');
 
 var config = new(require('./config.js'))();
 
-var leveldown = require('leveldown');
-var levelup = require('levelup');
-var db = levelup(leveldown('/home/sejun/.local/share/io.parity.ethereum/chains/ethersocial/db/dc73f323b4681272/snapshot'));
+var level = require('level-rocksdb');
+//var db = levelup(leveldown('/home/sejun/.local/share/io.parity.ethereum/chains/ethersocial/db/dc73f323b4681272/snapshot'));
+var db = level('/home/sejun/.local/share/io.parity.ethereum/chains/ethersocial/db/dc73f323b4681272/archive');
+
 //var db = levelup(leveldown('./data')); 
 // ~/esn_install/parity/chaindata/chains/ethersocial/db/dc73f323b4681272/archive/db
 // ~/esn_install/parity/chaindata/chains/ethersocial/db/dc73f323b4681272/snapshot/current
@@ -59,7 +60,7 @@ app.use(bodyParser.urlencoded({
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 
-app.locals.tokenformatter = new(require('./utils/tokenformatter.js'))(config);
+app.locals.tokenformatter = new(require('./utils/tokenformatter.js'))();
 app.locals.moment = require('moment');
 app.locals.numeral = require('numeral');
 app.locals.ethformatter = require('./utils/ethformatter.js');

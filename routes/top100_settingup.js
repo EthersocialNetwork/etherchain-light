@@ -53,7 +53,7 @@ router.get('/:offset?', function (req, res, next) {
 			},
 			function (lastaccount, callback) {
 				console.log("esn_top100:lastaccount:", lastaccount);
-				web3.parity.listAccounts(3000, lastaccount, function (err, result) {
+				web3.parity.listAccounts(5000, lastaccount, function (err, result) {
 					callback(err, result);
 				});
 			},
@@ -66,7 +66,7 @@ router.get('/:offset?', function (req, res, next) {
 				} else {
 					if (accounts.length < 1) {
 						nowcnt = 0;
-						web3.parity.listAccounts(3000, null, function (err, result) {
+						web3.parity.listAccounts(5000, null, function (err, result) {
 							callback(err, result);
 						});
 					} else {
@@ -77,20 +77,59 @@ router.get('/:offset?', function (req, res, next) {
 			function (accounts, callback) {
 				async.eachSeries(accounts, function (account, eachCallback) {
 					data = account;
-					web3.eth.getBalance(account, function (err, balance) {
+					web3.eth.getCode(account, function (err, code) {
 						if (err) {
 							eachCallback(err);
 						} else {
-							var numBalance = new BigNumber(balance);
-							numBalance = numBalance.dividedBy(Ether);
-							nowcnt++;
-							if (numBalance >= 0.00000001) {
-								cnt++;
-								client.zadd('esn_top100', numBalance.toString(), account);
+							if (code !== "0x") {
+								var erc20Contract = web3.eth.contract(config.erc20ABI).at(account);
+								if (erc20Contract) {
+									var allEvents = erc20Contract.allEvents({
+										fromBlock: 0,
+										toBlock: "latest"
+									});
+									if (allEvents) {
+										allEvents.get(function (err, events) {
+											if (err) {
+												console.log("Error receiving historical events:", err);
+												eachCallback(err);
+											} else {
+												client.hset('esn_contracts:eventslength', account, events.length);
+												var transfercount = 0;
+												async.eachSeries(events, function (event, contracteachCallback) {
+													if (event.blockNumber && (event.event === "Transfer" || event.event === "Approval")) {
+														transfercount++;
+													}
+													contracteachCallback();
+												});
+												client.hset('esn_contracts:transfercount', account, transfercount);
+												eachCallback();
+											}
+										});
+									} else {
+										eachCallback();
+									}
+								} else {
+									eachCallback();
+								}
 							} else {
-								client.zrem('esn_top100', account);
+								web3.eth.getBalance(account, function (err, balance) {
+									if (err) {
+										eachCallback(err);
+									} else {
+										var numBalance = new BigNumber(balance);
+										numBalance = numBalance.dividedBy(Ether);
+										nowcnt++;
+										if (numBalance >= 0.00000001) {
+											cnt++;
+											client.zadd('esn_top100', numBalance.toString(), account);
+										} else {
+											client.zrem('esn_top100', account);
+										}
+										eachCallback();
+									}
+								});
 							}
-							eachCallback();
 						}
 					});
 				}, function (err) {

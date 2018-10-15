@@ -14,6 +14,9 @@ router.get('/:offset?', function (req, res, next) {
 	var allcnt = 0;
 	var nowcnt = 0;
 	var lastaccount = "";
+	var createtime = "";
+	var contracts = [];
+	var contractstransfercount = {};
 	client.on("error", function (err) {
 		console.log("Error " + err);
 	});
@@ -45,12 +48,37 @@ router.get('/:offset?', function (req, res, next) {
 					return callback(err, result);
 				});
 			},
-			function (createtime, callback) {
-				client.zrevrange(redis_args, function (err, result) {
-					return callback(err, result, createtime);
+			function (pcreatetime, callback) {
+				createtime = pcreatetime;
+				client.hgetall('esn_contracts:transfercount', function (err, replies) {
+					callback(err, replies);
 				});
 			},
-			function (accounts, create_time, callback) {
+			function (ptransfercount, callback) {
+				contractstransfercount = Object.assign({}, ptransfercount);
+
+				client.hgetall('esn_contracts:eventslength', function (err, replies) {
+					callback(err, replies);
+				});
+			},
+			function (pcontracts, callback) {
+				var contractno = 1;
+				for (var hkey in pcontracts) {
+					var tmp = {};
+					tmp.no = contractno++;
+					tmp.address = hkey;
+					tmp.eventcount = pcontracts[hkey];
+					if (contractstransfercount[hkey]) {
+						tmp.transfercount = contractstransfercount[hkey];
+					}
+					contracts.push(tmp);
+				}
+				client.zrevrange(redis_args, function (err, result) {
+					return callback(err, result);
+				});
+			},
+			function (accounts, callback) {
+				//console.dir(contracts);
 				var data_special = [];
 				var data_normal = [];
 				var rank_normal = 1;
@@ -93,13 +121,14 @@ router.get('/:offset?', function (req, res, next) {
 						eachCallback();
 					});
 				}, function (err) {
-					callback(err, lastaccount, allcnt, nowcnt, create_time, data_special, data_normal, (data_totalAccounts.toFormat(0)), (data_totalSupply.toFormat(6) + " ESN"));
+					callback(err, contracts, lastaccount, allcnt, nowcnt, createtime, data_special, data_normal, (data_totalAccounts.toFormat(0)), (data_totalSupply.toFormat(6) + " ESN"));
 				});
 			}
 		],
-		function (err, lastaccount, totalAccounts, nowAccounts, accounts_create_time, accounts_special, accounts_normal, activeAccounts, totalSupply) {
+		function (err, contracts, lastaccount, totalAccounts, nowAccounts, accounts_create_time, accounts_special, accounts_normal, activeAccounts, totalSupply) {
 			var perProgress = ((nowAccounts / totalAccounts) * 100).toLocaleString();
 			res.render("top100", {
+				"contracts": contracts,
 				"lastAccount": lastaccount,
 				"totalAccounts": totalAccounts.toLocaleString(),
 				"nowAccounts": nowAccounts.toLocaleString(),

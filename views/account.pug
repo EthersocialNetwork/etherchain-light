@@ -10,15 +10,30 @@ block content
   else
     h3 Account #{account.address}
   table.table
-    tr
-      td
-        h3 Balance:
-      td
-        h3 #{ethformatter(account.balance)}
+    if account.token_name
+      tr
+        td
+          h3 Token Name:
+        td
+          h3 #{account.token_name}
     if account.name
       tr
-        td Name:
-        td #{account.name}
+        td
+          h3 Name:
+        td
+          h3 #{account.name}
+    if account.token_totalSupply
+      tr
+        td
+          h3 Total Supply:
+        td
+          h3 #{tokenformatter.format(account.token_totalSupply, account.token_decimals, account.token_symbol)}
+    else
+      tr
+        td
+          h3 Balance:
+        td
+          h3 #{ethformatter(account.balance)}
     tr
       td Block Range:
       td 
@@ -89,7 +104,7 @@ block content
                         a(href="/account/" + event.args._from) #{event.args._from}
                       td
                         a(href="/account/" + event.args._to) #{event.args._to}
-                      td(align="right") #{tokenformatter.format(event.args._value)}
+                      td(align="right") #{tokenformatter.format(event.args._value, account.token_decimals, account.token_symbol)}
                   if event.event === "Approval"
                     tr
                       td
@@ -105,7 +120,7 @@ block content
                         a(href="/account/" + event.args._owner) #{event.args._owner}
                       td
                         a(href="/account/" + event.args._spender) #{event.args._spender}
-                      td(align="right") #{tokenformatter.format(event.args._value)}
+                      td(align="right") #{tokenformatter.format(event.args._value, account.token_decimals, account.token_symbol)}
       else
         #transactions.tab-pane(role='tabpanel')
           h3 Recent Activity 최근 활동 내역
@@ -152,16 +167,21 @@ block content
                         |  #{trace.type}
                       if trace.type === "call"
                         td
-                          if trace.action.from === account.address
-                            span.glyphicon.glyphicon-export(style="color: red;")
+                          if trace.calltype === "to"
+                            span.glyphicon.glyphicon-log-in(style="color: green;")
+                          else if trace.calltype === "from"
+                            span.glyphicon.glyphicon-log-out(style="color: red;")
                           else
-                            span.glyphicon.glyphicon-import(style="color: green;")
+                            span.glyphicon.glyphicon-new-window(style="color: blue;")
                         td
                           a(href="/account/" + trace.action.from) #{nameformatter.format(trace.action.from)}
                         td 
-                          a(href="/account/" + trace.action.to) #{nameformatter.format(trace.action.to)}
-                        if trace.isContract
-                          td(align="right") #{tokenformatter.format(trace.action.value)}
+                          if trace.action._to !== ''
+                            a(href="/account/" + trace.action._to) #{nameformatter.format(trace.action._to)}
+                          else
+                            a(href="/account/" + trace.action.to) #{nameformatter.format(trace.action.to)}
+                        if trace.action._value !== ''
+                          td(align="right") #{tokenformatter.format(trace.action._value, trace.token_decimals, trace.token_symbol)}
                         else
                           td(align="right") #{ethformatter(trace.action.value)}
                         td #{trace.isContract}
