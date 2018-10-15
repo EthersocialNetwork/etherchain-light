@@ -8,6 +8,7 @@ var redis = require("redis"),
 	client = redis.createClient();
 
 router.get('/:offset?', function (req, res, next) {
+	console.log("--------- Top100 Settingup Start: ", printDateTime(), "--------- ");
 	var config = req.app.get('config');
 	var web3 = new Web3();
 	var Ether = new BigNumber(10e+17);
@@ -17,6 +18,7 @@ router.get('/:offset?', function (req, res, next) {
 	var cnt = 0;
 	var allcnt = 0;
 	var nowcnt = 0;
+	var tokenExporter = req.app.get('tokenExporter');
 
 	client.on("error", function (err) {
 		console.log("Error " + err);
@@ -81,34 +83,29 @@ router.get('/:offset?', function (req, res, next) {
 						if (err) {
 							eachCallback(err);
 						} else {
-							if (code !== "0x") {
-								var erc20Contract = web3.eth.contract(config.erc20ABI).at(account);
-								if (erc20Contract) {
-									var allEvents = erc20Contract.allEvents({
-										fromBlock: 0,
-										toBlock: "latest"
-									});
-									if (allEvents) {
-										allEvents.get(function (err, events) {
-											if (err) {
-												console.log("Error receiving historical events:", err);
-												eachCallback(err);
-											} else {
-												client.hset('esn_contracts:eventslength', account, events.length);
-												var transfercount = 0;
-												async.eachSeries(events, function (event, contracteachCallback) {
-													if (event.blockNumber && (event.event === "Transfer" || event.event === "Approval")) {
-														transfercount++;
-													}
-													contracteachCallback();
-												});
+							if (code !== "0x" && tokenExporter[account]) {
+								var allEvents = tokenExporter[account].contract.allEvents({
+									fromBlock: 0,
+									toBlock: "latest"
+								});
+								if (allEvents) {
+									allEvents.get(function (err, events) {
+										if (err) {
+											console.log("Error receiving historical events:", err);
+											eachCallback(err);
+										} else {
+											client.hset('esn_contracts:eventslength', account, events.length);
+											var transfercount = 0;
+											async.eachSeries(events, function (event, contracteachCallback) {
+												if (event.blockNumber && (event.event === "Transfer" || event.event === "Approval")) {
+													transfercount++;
+												}
 												client.hset('esn_contracts:transfercount', account, transfercount);
-												eachCallback();
-											}
-										});
-									} else {
-										eachCallback();
-									}
+												contracteachCallback();
+											});
+											eachCallback();
+										}
+									});
 								} else {
 									eachCallback();
 								}
@@ -158,6 +155,7 @@ router.get('/:offset?', function (req, res, next) {
 				"addcount": rescount,
 				"allcount": resallcount
 			});
+			console.log("--------- Top100 Settingup End: ", printDateTime(), "--------- ");
 		});
 	}
 });

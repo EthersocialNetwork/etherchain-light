@@ -8,63 +8,85 @@ block content
   p Data update progress status 데이터 업데이트 진행 상태 : #{nowAccounts} / #{totalAccounts} ( #{perProgress}% )
   p Last Update Account 마지막 업데이트 계정 : #{lastAccount}
   p Data Generation Time 데이터 갱신시간 : #{accounts_create_time}
-  h3 Unknown address list 알려지지 않은 주소
-  .divTable.top100
-    .divTableHeading
-      .divTableRow
-        .divTableHead Rank
-        .divTableHead Address
-        .divTableHead Type
-        .divTableHead Balance
-    .divTableBody
-      for account in accounts_normal
-        .divTableRow
-          .divTableCell #{account.rank}
-          .divTableCell
-            if account.address_name
-              a(href="/account/" + account.address) #{account.address_name}
-              br
-            a(href="/account/" + account.address) #{account.address}
-            if !account.address_name
-              br
-              | &nbsp;
-          .divTableCell #{account.type}
-          .divTableCell #{account.balance}
-  h3 Known address list 알려진 주소
-  .divTable.top100
-    .divTableHeading
-      .divTableRow
-        .divTableHead Rank
-        .divTableHead Address
-        .divTableHead Type
-        .divTableHead Balance
-    .divTableBody
-      for account in accounts_special
-        .divTableRow
-          .divTableCell #{account.rank}
-          .divTableCell
-            a(href="/account/" + account.address) #{nameformatter.format(account.address)}
-            br
-            a(href="/account/" + account.address) #{account.address}
-          .divTableCell #{account.type}
-          .divTableCell #{account.balance}
-  h3 Contract address list 컨트렉트 주소
-  .divTable.top100
-    .divTableHeading
-      .divTableRow
-        .divTableHead No
-        .divTableHead Address
-        .divTableHead Events
-        .divTableHead Transfer
-    .divTableBody
-      for account in contracts
-        .divTableRow
-          .divTableCell #{account.no}
-          .divTableCell
-            a(href="/account/" + account.address) #{account.address}
-          .divTableCell #{account.eventcount}
-          .divTableCell
-            if account.transfercount
-              | #{account.transfercount}
-            else
-              | 0
+  div
+    ul.nav.nav-tabs(role='tablist')
+      if contracts
+        li.active(role='presentation')
+          a(href='#contracts', aria-controls='contracts', role='tab', data-toggle='tab') Contract address list 컨트렉트 주소
+      li(role='presentation')
+        a(href='#accounts_special', aria-controls='accounts_special', role='tab', data-toggle='tab') Known address list 알려진 주소
+      li(role='presentation')
+        a(href='#accounts_normal', aria-controls='accounts_normal', role='tab', data-toggle='tab') Unknown address list 알려지지 않은 주소
+  .tab-content
+    if contracts
+      #contracts.tab-pane.active(role='tabpanel')
+        h3 Contract address list 컨트렉트 주소
+        .divTable.top100
+          .divTableHeading
+            .divTableRow
+              .divTableHead No
+              .divTableHead Address
+              .divTableHead Name
+              //.divTableHead TotalSupply
+              .divTableHead Symbol
+              .divTableHead Decimals
+              .divTableHead Events
+              .divTableHead Transfer
+          .divTableBody
+            for account in contracts
+              .divTableRow
+                .divTableCell #{account.no}
+                .divTableCell
+                  a(href="/account/" + account.address) #{account.address}
+                .divTableCell #{account.name}
+                //.divTableCell #{tokenformatter.format(account.totalSupply, account.decimals, '')}
+                .divTableCell #{account.symbol}
+                .divTableCell #{account.decimals}
+                .divTableCell #{account.eventcount}
+                .divTableCell
+                  if account.transfercount
+                    | #{account.transfercount}
+                  else
+                    | 0
+    #accounts_special.tab-pane(role='tabpanel')
+      h3 Known address list 알려진 주소
+      .divTable.top100
+        .divTableHeading
+          .divTableRow
+            .divTableHead Rank
+            .divTableHead Address
+            .divTableHead Type
+            .divTableHead Balance
+        .divTableBody
+          for account in accounts_special
+            .divTableRow
+              .divTableCell #{account.rank}
+              .divTableCell
+                a(href="/account/" + account.address) #{nameformatter.format(account.address)}
+                br
+                a(href="/account/" + account.address) #{account.address}
+              .divTableCell #{account.type}
+              .divTableCell #{account.balance}
+    #accounts_normal.tab-pane(role='tabpanel')
+      h3 Unknown address list 알려지지 않은 주소
+      .divTable.top100
+        .divTableHeading
+          .divTableRow
+            .divTableHead Rank
+            .divTableHead Address
+            .divTableHead Type
+            .divTableHead Balance
+        .divTableBody
+          for account in accounts_normal
+            .divTableRow
+              .divTableCell #{account.rank}
+              .divTableCell
+                if account.address_name
+                  a(href="/account/" + account.address) #{account.address_name}
+                  br
+                a(href="/account/" + account.address) #{account.address}
+                if !account.address_name
+                  br
+                  | &nbsp;
+              .divTableCell #{account.type}
+              .divTableCell #{account.balance}

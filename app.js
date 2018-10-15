@@ -23,21 +23,77 @@ var redisblock = require('./routes/redisblock');
 var hashratechart = require('./routes/hashratechart');
 var bitzcharts = require('./routes/bitzcharts');
 
+var test_batch = require('./routes/test_batch');
+
 var config = new(require('./config.js'))();
 
 var level = require('level-rocksdb');
 //var db = levelup(leveldown('/home/sejun/.local/share/io.parity.ethereum/chains/ethersocial/db/dc73f323b4681272/snapshot'));
 var db = level('/home/sejun/.local/share/io.parity.ethereum/chains/ethersocial/db/dc73f323b4681272/archive');
 
-//var db = levelup(leveldown('./data')); 
-// ~/esn_install/parity/chaindata/chains/ethersocial/db/dc73f323b4681272/archive/db
-// ~/esn_install/parity/chaindata/chains/ethersocial/db/dc73f323b4681272/snapshot/current
-// /root/esn_install/parity/chaindata/chains/ethersocial/db/dc73f323b4681272/snapshot/current
+var redis = require("redis"),
+  client = redis.createClient();
+client.on("error", function (err) {
+  console.log("Error " + err);
+});
 
 var app = express();
 app.use(compression({
   filter: shouldCompress
 }));
+
+var async = require('async');
+var tokenExporterService = require('./services/tokenExporter.js');
+
+var contractAccountList = [];
+var tokenExporter = {};
+
+async.waterfall([
+  function (callback) {
+    client.hgetall('esn_contracts:transfercount', function (err, replies) {
+      callback(null, replies);
+    });
+  },
+  function (result, callback) {
+    async.eachOfSeries(result, function (value, key, forEachOfCallback) {
+      if (value > 0) {
+        contractAccountList.push(key);
+      }
+      forEachOfCallback();
+    }, function (err) {
+      if (err) {
+        console.log("[ERROR] exporter1: ", err);
+      }
+      callback(null, contractAccountList);
+    });
+  },
+  function (accountList, callback) {
+    async.eachSeries(accountList, function (account, eachSeriesCallback) {
+      tokenExporter[account] = new tokenExporterService(config, account, 1);
+      sleep(50).then(() => {
+        eachSeriesCallback();
+      });
+    }, function (err) {
+      if (err) {
+        console.log("[ERROR] exporter2: ", err);
+      } else {
+        app.set('tokenExporter', tokenExporter);
+      }
+      callback(null, accountList);
+    });
+  }
+], function (err, accountList) {
+  console.log("┌───────────────────────────────────────┐");
+  console.log("│          Token Load Complite          │");
+  console.log("└───────────────────────────────────────┘");
+  console.log(new Date().toLocaleString());
+  //console.dir(accountList);
+});
+
+//var db = levelup(leveldown('./data')); 
+// ~/esn_install/parity/chaindata/chains/ethersocial/db/dc73f323b4681272/archive/db
+// ~/esn_install/parity/chaindata/chains/ethersocial/db/dc73f323b4681272/snapshot/current
+// /root/esn_install/parity/chaindata/chains/ethersocial/db/dc73f323b4681272/snapshot/current
 
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
@@ -86,14 +142,7 @@ app.use('/redisblock', redisblock);
 app.use('/hashratechart', hashratechart);
 app.use('/bitzcharts', bitzcharts);
 
-function shouldCompress(req, res) {
-  if (req.headers['x-no-compression']) {
-    // don't compress responses with this request header
-    return false;
-  }
-  // fallback to standard filter function
-  return compression.filter(req, res);
-}
+app.use('/test_batch', test_batch);
 
 // catch 404 and forward to error handler
 app.use(function (req, res, next) {
@@ -112,5 +161,18 @@ app.use(function (err, req, res, next) {
   res.status(err.status || 500);
   res.render('error');
 });
+
+function shouldCompress(req, res) {
+  if (req.headers['x-no-compression']) {
+    // don't compress responses with this request header
+    return false;
+  }
+  // fallback to standard filter function
+  return compression.filter(req, res);
+}
+
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
 
 module.exports = app;

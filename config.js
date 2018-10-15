@@ -4,11 +4,14 @@ var net = require('net');
 var config = function () {
 
   this.logFormat = ":remote-addr [:date[clf]] :status :url :referrer :user-agent";
-  //this.ipcPath = "/home/sejun/.local/share/io.parity.ethereum/gesn.ipc";
-  //this.provideripc = new web3.providers.IpcProvider(this.ipcPath, net);
+  this.ipcPath = "/home/sejun/.local/share/io.parity.ethereum/gesn.ipc";
+  this.provideripc = new web3.providers.IpcProvider(this.ipcPath, net);
   this.provider = new web3.providers.HttpProvider("http://115.68.99.203:8545");
   this.localprovider = new web3.providers.HttpProvider("http://127.0.0.1:8545");
-
+  this.daemonRpc = {
+    "host": "115.68.99.203",
+    "port": 8545
+  };
   this.bootstrapUrl = "https://maxcdn.bootstrapcdn.com/bootswatch/3.3.7/yeti/bootstrap.min.css";
 
   this.erc20ABI = [{
@@ -183,6 +186,9 @@ var config = function () {
   this.tokenShortName = "UnnamedToken";
 
   this.names = {
+    "0xfb630243f8c9a141fd96b8ad9250bf999be76d4e": "[Mining] 8bit_mine",
+    "0xd144e30a0571aaf0d0c050070ac435deba461fab": "[Pool] esn.clona.ru",
+    "0x9bcf3e61f09fd2c9e9d60b5a590ed3ca726f6e7d": "[Pool] pool.baikalmine.com",
     "0xc02ab66f5648b6d9d511f466b772647c619f2552": "[Pool] esn.koinpool.io",
     "0x02aa3e57361752742cfd683275ade72bc9ebae97": "[Pool] esn.dragonpool.top",
     "0x0b292a321fe5e20cc943648a782184f8ab44d2eb": "[Pool] moricpool.com",
@@ -200,6 +206,7 @@ var config = function () {
     "0xf35074bbd0a9aee46f4ea137971feec024ab704e": "[Pool] esn.solopool.org",
     "0x1021286d2bffcdf1892bd9144d7a0349e336e087": "[Pool] esn.coabit.com",
     "0xe3ec5ebd3e822c972d802a0ee4e0ec080b8237ba": "[Pool] pool.sejun.info / Block Explorer served by ::pool.sejun.info::",
+    "0xf159038eed7606ae9d52e851129de2ca5d6f630a": "[Exchanges] Bit-Z",
     "0xa0c6c220a53b7dc790f7a5b462a106245c761f70": "Owned by DDENGLE, but it is going to be coin-burn.",
     "0x11d96a76166ec579e2b6cfa903f66da4af669351": "Owned by DDENGLE, but it is going to be coin-burn.",
     "0x28167a591d66ae52ab22a990954a46e1555c8098": "Owned by DDENGLE, but it is going to be coin-burn.",

@@ -17,6 +17,7 @@ router.get('/:offset?', function (req, res, next) {
 	var createtime = "";
 	var contracts = [];
 	var contractstransfercount = {};
+	var tokenExporter = req.app.get('tokenExporter');
 	client.on("error", function (err) {
 		console.log("Error " + err);
 	});
@@ -62,23 +63,52 @@ router.get('/:offset?', function (req, res, next) {
 				});
 			},
 			function (pcontracts, callback) {
-				var contractno = 1;
-				for (var hkey in pcontracts) {
-					var tmp = {};
-					tmp.no = contractno++;
-					tmp.address = hkey;
-					tmp.eventcount = pcontracts[hkey];
-					if (contractstransfercount[hkey]) {
-						tmp.transfercount = contractstransfercount[hkey];
-					}
-					contracts.push(tmp);
+				var sortable = [];
+				for (var contractkey in pcontracts) {
+					sortable.push([contractkey, pcontracts[contractkey]]);
 				}
+				sortable.sort(function (a, b) {
+					return Number(b[1]) - Number(a[1]);
+				});
+				var contractno = 1;
+				sortable.forEach(function (tokeninfo) {
+					var tmpTokeninfo = {};
+					tmpTokeninfo.no = contractno++;
+					tmpTokeninfo.address = tokeninfo[0];
+					tmpTokeninfo.eventcount = tokeninfo[1];
+					tmpTokeninfo.transfercount = 0;
+					if (contractstransfercount[tokeninfo[0]]) {
+						tmpTokeninfo.transfercount = contractstransfercount[tokeninfo[0]];
+					}
+
+					tmpTokeninfo.name = "";
+					if (tokenExporter[tokeninfo[0]] && tokenExporter[tokeninfo[0]].token_name) {
+						tmpTokeninfo.name = tokenExporter[tokeninfo[0]].token_name;
+					}
+
+					tmpTokeninfo.decimals = "";
+					if (tokenExporter[tokeninfo[0]] && tokenExporter[tokeninfo[0]].token_decimals) {
+						tmpTokeninfo.decimals = tokenExporter[tokeninfo[0]].token_decimals;
+					}
+
+					tmpTokeninfo.symbol = "";
+					if (tokenExporter[tokeninfo[0]] && tokenExporter[tokeninfo[0]].token_symbol) {
+						tmpTokeninfo.symbol = tokenExporter[tokeninfo[0]].token_symbol;
+					}
+
+					tmpTokeninfo.totalSupply = "";
+					if (tokenExporter[tokeninfo[0]] && tokenExporter[tokeninfo[0]].token_totalSupply) {
+						tmpTokeninfo.totalSupply = tokenExporter[tokeninfo[0]].token_totalSupply;
+					}
+					contracts.push(tmpTokeninfo);
+				});
+
+
 				client.zrevrange(redis_args, function (err, result) {
 					return callback(err, result);
 				});
 			},
 			function (accounts, callback) {
-				//console.dir(contracts);
 				var data_special = [];
 				var data_normal = [];
 				var rank_normal = 1;

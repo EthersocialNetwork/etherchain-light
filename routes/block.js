@@ -31,27 +31,27 @@ router.get('/:block', function (req, res, next) {
     if (err) {
       console.log("Error " + err);
     }
-
-    block.transactions.forEach(function (tx) {
-      tx.traces = [];
-      tx.failed = false;
-      if (traces != null) {
-        traces.forEach(function (trace) {
-          if (tx.hash === trace.transactionHash) {
-            tx.traces.push(trace);
-            if (trace.error) {
-              tx.failed = true;
-              tx.error = trace.error;
+    if (block && block.transactions) {
+      block.transactions.forEach(function (tx) {
+        tx.traces = [];
+        tx.failed = false;
+        if (traces != null) {
+          traces.forEach(function (trace) {
+            if (tx.hash === trace.transactionHash) {
+              tx.traces.push(trace);
+              if (trace.error) {
+                tx.failed = true;
+                tx.error = trace.error;
+              }
             }
-          }
-        });
-      }
-      // console.log(tx);
-    });
+          });
+        }
+        // console.log(tx);
+      });
+    }
     res.render('block', {
       block: block
     });
-    block = null;
   });
 
 });
