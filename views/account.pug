@@ -10,25 +10,39 @@ block content
   else
     h3 Account #{account.address}
   table.table
-    tr
-      td
-        h3 Balance:
-      td
-        h3 #{ethformatter(account.balance)}
+    if account.token_name
+      tr
+        td
+          h3 Token Name:
+        td
+          h3 #{account.token_name}
     if account.name
       tr
-        td Name:
-        td #{account.name}
+        td
+          h3 Name:
+        td
+          h3 #{account.name}
+    if account.token_totalSupply
+      tr
+        td
+          h3 Total Supply:
+        td
+          h3 #{tokenformatter.format(account.token_totalSupply, account.token_decimals, account.token_symbol)}
+    else
+      tr
+        td
+          h3 Balance:
+        td
+          h3 #{ethformatter(account.balance)}
     tr
       td Block Range:
       td 
         if account.previousBlockNumber > 999
-          a.btn.btn-primary.btn-sm(href="/account/" + account.address + "/" + account.previousBlockNumber, style="padding: 4px;") Previous
-          | &nbsp;&nbsp;&nbsp;&nbsp;from:#{account.fromBlock} ~ to:#{account.lastBlock} 정보 추출 범위 &nbsp;&nbsp;&nbsp;&nbsp;
-          //a.btn.btn-primary.btn-sm(href="/account/" + account.address + "/" + account.nextBlockNumber, style="padding: 4px;") Lastest
+          a.btn.btn-primary.btn-sm(href="/account/" + account.address + "/" + account.previousBlockNumber + "/" + account.max_blocks, style="padding: 4px;") Previous
+          | &nbsp;&nbsp;&nbsp;&nbsp;from:#{numberformatter(account.fromBlock)} ~ to:#{numberformatter(account.lastBlock)} 정보 추출 범위 &nbsp;&nbsp;&nbsp;&nbsp;
           a.btn.btn-primary.btn-sm(href="/account/" + account.address, style="padding: 4px;") Lastest
         else
-          |from:#{account.fromBlock} ~ to:#{account.lastBlock} 정보 추출 범위 &nbsp;&nbsp;&nbsp;&nbsp;
+          |from:#{numberformatter(account.fromBlock)} ~ to:#{numberformatter(account.lastBlock)} 정보 추출 범위 &nbsp;&nbsp;&nbsp;&nbsp;
           a.btn.btn-primary.btn-sm(href="/account/" + account.address, style="padding: 4px;") Lastest
     tr
       td More Infomation:
@@ -36,100 +50,223 @@ block content
         a(href=account.officialurl target='_blank') Official BlockExplorer(Previous information) 공식 익스플로러(범위 이전 정보 조회)
   div
     ul.nav.nav-tabs(role='tablist')
-      li.active(role='presentation')
-        a(href='#tracemap', aria-controls='tracemap', role='tab', data-toggle='tab') Transactions Tracing
-      li(role='presentation')
-        a(href='#transactions', aria-controls='transactions', role='tab', data-toggle='tab') Transactions
       if account.isContract
+        li.active(role='presentation')
+          a(href='#transactions', aria-controls='transactions', role='tab', data-toggle='tab') Transactions
         li(role='presentation')
           a(href='#code', aria-controls='code', role='tab', data-toggle='tab') Code
-      if account.source
-        li(role='presentation')
-          a(href='#source', aria-controls='source', role='tab', data-toggle='tab') Source
         li(role='presentation')
           a(href='#contractState', aria-controls='source', role='tab', data-toggle='tab') Contract State
+      else
+        li.active(role='presentation')
+          a(href='#tracemap', aria-controls='tracemap', role='tab', data-toggle='tab') Transactions Tracing
+        li(role='presentation')
+          a(href='#transactions', aria-controls='transactions', role='tab', data-toggle='tab') Transactions
+      if account.tokens
+        li(role='presentation')
+          a(href='#tokens', aria-controls='tokens', role='tab', data-toggle='tab') Token Balance
+      if account.tokenBlocks
+        li(role='presentation')
+          a(href='#tokentransactions', aria-controls='tokentransactions', role='tab', data-toggle='tab') Token Transactions
     .tab-content
-      #tracemap.tab-pane.active(role='tabpanel')
-        #sample
-          #myDiagramDiv(style='border: solid 1px black; width: 100%; height: 1000px')
-      #transactions.tab-pane(role='tabpanel')
-        h3 Recent Activity 최근 활동 내역
-        table.table
-          thead
-            tr
-              th Hash
-              th Block
-              th Type
-              th
-              th From
-              th To
-              th Amount
-          tbody
-            for block in account.blocks
-              for trace in block
-                if trace.type === "reward" && trace.action.author === account.address
+      if account.isContract
+        //
+      else
+        #tracemap.tab-pane.active(role='tabpanel')
+          #sample
+            #myDiagramDiv(style='border: solid 1px black; width: 100%; height: 1000px')
+      if account.tokens
+        #tokens.tab-pane(role='tabpanel')
+          h4 Token Balance
+          table.table
+            thead
+              tr
+                th Name
+                th Balance
+                th Contract Address
+            tbody
+              for item in account.tokens
+                if item.balance
                   tr
+                    td #{item.name}
+                    td(align="right") #{tokenformatter.format(item.balance.balance, item.decimals, item.symbol)}
                     td
-                      a(href="/block/" + trace.blockNumber) #{trace.blockHash.substr(0, 10)}...
-                    td
-                      a(href="/block/" + trace.blockNumber) #{trace.blockNumber}
-                    if trace.action.rewardType === "uncle"
-                      td Mining Reward(Uncle)
-                    else
-                      td Mining Reward
-                    td
-                      span.glyphicon.glyphicon-gift(style="color: blue;")
-                    td New Coins
-                    td 
-                      a(href="/account/" + trace.action.author) #{nameformatter.format(trace.action.author)}
-                    td #{ethformatter(trace.action.value)}
-                else if trace.type !== "reward"
-                  tr            
-                    td 
-                      a(href="/tx/" + trace.transactionHash)  #{trace.transactionHash.substr(0, 10)}...
-                    td
-                      a(href="/block/" + trace.blockNumber) #{trace.blockNumber}
-                    td.capitalize
-                      if trace.error
-                        span(style="color: red", data-toggle="tooltip", data-placement="left", title=trace.error).glyphicon.glyphicon-warning-sign
-                      |  #{trace.type}
-                    if trace.type === "call"
+                      a(href="/account/" + item.account target='_blank') #{item.account}
+      if account.isContract
+        #transactions.tab-pane.active(role='tabpanel')
+          h3 Recent Activity 최근 활동 내역
+          table.table
+            thead
+              tr
+                th Hash
+                th Block
+                th Date
+                th Type
+                th From
+                th To
+                th Amount
+            tbody
+                for event in account.contractEvents
+                  if event.event === "Transfer"
+                    tr
                       td
-                        if trace.action.from === account.address
-                          span.glyphicon.glyphicon-export(style="color: red;")
-                        else
-                          span.glyphicon.glyphicon-import(style="color: green;")
+                        a(href="/tx/" + event.transactionHash) #{event.transactionHash.substr(0, 10)}...
                       td
-                        a(href="/account/" + trace.action.from) #{nameformatter.format(trace.action.from)}
+                        a(href="/block/" + event.blockNumber) #{event.blockNumber}
+                      td
+                        //#{moment(event.timestamp * 1000).format()} (#{moment(event.timestamp * 1000).fromNow()})
+                        |#{event.timestamp}
+                      td
+                        //a(href="/event/" + event._id) #{event.event}
+                        |#{event.event}
+                      td
+                        a(href="/account/" + event.args._from) #{event.args._from}
+                      td
+                        a(href="/account/" + event.args._to) #{event.args._to}
+                      td(align="right") #{tokenformatter.format(event.args._value, account.token_decimals, account.token_symbol)}
+                  if event.event === "Approval"
+                    tr
+                      td
+                        a(href="/tx/" + event.transactionHash) #{event.transactionHash.substr(0, 10)}...
+                      td
+                        a(href="/block/" + event.blockNumber) #{event.blockNumber}
+                      td
+                        //a(href="/event/" + event._id) #{event.event}
+                        |#{event.timestamp}
+                      td
+                        |#{event.event}
+                      td
+                        a(href="/account/" + event.args._owner) #{event.args._owner}
+                      td
+                        a(href="/account/" + event.args._spender) #{event.args._spender}
+                      td(align="right") #{tokenformatter.format(event.args._value, account.token_decimals, account.token_symbol)}
+      else
+        #transactions.tab-pane(role='tabpanel')
+          h3 Recent Activity 최근 활동 내역
+          table.table
+            thead
+              tr
+                th Hash
+                th Block
+                th Type
+                th
+                th From
+                th To
+                th Amount
+                th isContract
+            tbody
+              for block in account.blocks
+                for trace in block
+                  if trace.type === "reward" && trace.action.author === account.address
+                    tr
+                      td
+                        a(href="/block/" + trace.blockNumber) #{trace.blockHash.substr(0, 10)}...
+                      td
+                        a(href="/block/" + trace.blockNumber) #{trace.blockNumber}
+                      if trace.action.rewardType === "uncle"
+                        td Mining Reward(Uncle)
+                      else
+                        td Mining Reward
+                      td
+                        span.glyphicon.glyphicon-gift(style="color: blue;")
+                      td New Coins
                       td 
-                        a(href="/account/" + trace.action.to) #{nameformatter.format(trace.action.to)}
-                      td #{ethformatter(trace.action.value)}
-                    else if trace.type === "create"
+                        a(href="/account/" + trace.action.author) #{nameformatter.format(trace.action.author)}
+                      td(align="right") #{ethformatter(trace.action.value)}
+                      td #{trace.isContract}
+                  else if trace.type !== "reward"
+                    tr            
+                      td 
+                        a(href="/tx/" + trace.transactionHash)  #{trace.transactionHash.substr(0, 10)}...
                       td
-                        if trace.action.from === account.address
-                          span.glyphicon.glyphicon-export(style="color: red;")
+                        a(href="/block/" + trace.blockNumber) #{trace.blockNumber}
+                      td.capitalize
+                        if trace.error
+                          span(style="color: red", data-toggle="tooltip", data-placement="left", title=trace.error).glyphicon.glyphicon-warning-sign
+                        |  #{trace.type}
+                      if trace.type === "call"
+                        td
+                          if trace.calltype === "to"
+                            span.glyphicon.glyphicon-log-in(style="color: green;")
+                          else if trace.calltype === "from"
+                            span.glyphicon.glyphicon-log-out(style="color: red;")
+                          else
+                            span.glyphicon.glyphicon-new-window(style="color: blue;")
+                        td
+                          a(href="/account/" + trace.action.from) #{nameformatter.format(trace.action.from)}
+                        td 
+                          if trace.action._to !== ''
+                            a(href="/account/" + trace.action._to) #{nameformatter.format(trace.action._to)}
+                          else
+                            a(href="/account/" + trace.action.to) #{nameformatter.format(trace.action.to)}
+                        if trace.action._value !== ''
+                          td(align="right") #{tokenformatter.format(trace.action._value, trace.token_decimals, trace.token_symbol)}
                         else
-                          span.glyphicon.glyphicon-import(style="color: green;")
+                          td(align="right") #{ethformatter(trace.action.value)}
+                        td #{trace.isContract}
+                      else if trace.type === "create"
+                        td
+                          span.glyphicon.glyphicon-asterisk(style="color: blue;")
+                        td
+                          a(href="/account/" + trace.action.from) #{nameformatter.format(trace.action.from)}
+                        td
+                          a(href="/account/" + trace.result.address) #{nameformatter.format(trace.result.address)}
+                        td(align="right") #{tokenformatter.format(trace.action.value, trace.token_decimals, trace.token_symbol)}
+                        td #{trace.isContract}
+                      else if trace.type === "suicide"
+                        td
+                          if trace.action.address === account.address
+                            span.glyphicon.glyphicon-export(style="color: red;")
+                          else
+                            span.glyphicon.glyphicon-import(style="color: green;")
+                        td
+                          a(href="/account/" + trace.action.address) #{nameformatter.format(trace.action.address)}
+                        td
+                          a(href="/account/" + trace.action.refundAddress) #{nameformatter.format(trace.action.refundAddress)}
+                        td(align="right") #{ethformatter(trace.action.balance)}
+                        td #{trace.isContract}
+        if account.tokenBlocks
+          #tokentransactions.tab-pane(role='tabpanel')
+            h3 Recent Token Activity 최근 토큰 활동 내역
+            table.table
+              thead
+                tr
+                  th Hash
+                  th Block
+                  //th Date
+                  th Type
+                  th
+                  th From
+                  th To
+                  th Amount
+              tbody
+                for block in account.tokenBlocks
+                  for trace in block
+                    tr
+                      td 
+                        a(href="/tx/" + trace.transactionHash)  #{trace.transactionHash.substr(0, 10)}...
                       td
-                        a(href="/account/" + trace.action.from) #{nameformatter.format(trace.action.from)}
+                        a(href="/block/" + trace.blockNumber) #{trace.blockNumber}
+                      //td
+                        | #{moment(trace.timestamp * 1000).format()}
+                      td.capitalize
+                        | #{trace.event}
                       td
-                        a(href="/account/" + trace.result.address) #{nameformatter.format(trace.result.address)}
-                      td #{ethformatter(trace.action.value)}
-                    else if trace.type === "suicide"
-                      td
-                        if trace.action.address === account.address
-                          span.glyphicon.glyphicon-export(style="color: red;")
+                        if trace.args._from === trace.args._to
+                          span.glyphicon.glyphicon-resize-horizontal(style="color: blue;")
+                        else if trace.args._from === account.address
+                          span.glyphicon.glyphicon-log-out(style="color: red;")
                         else
-                          span.glyphicon.glyphicon-import(style="color: green;")
+                          span.glyphicon.glyphicon-log-in(style="color: green;")
                       td
-                        a(href="/account/" + trace.action.address) #{nameformatter.format(trace.action.address)}
+                        a(href="/account/" + trace.args._from) #{nameformatter.format(trace.args._from)}
                       td
-                        a(href="/account/" + trace.action.refundAddress) #{nameformatter.format(trace.action.refundAddress)}
-                      td #{ethformatter(trace.action.balance)}
+                        a(href="/account/" + trace.args._to) #{nameformatter.format(trace.args._to)}
+                      td(align="right") #{tokenformatter.format(trace.args._value, trace.token_decimals, trace.token_symbol)}
       if account.isContract
         #code.tab-pane(role='tabpanel')
           h3 Code
-          if !account.source
+          //if !account.source
             a(href="/contract/verify") Upload source
           pre #{account.code}
           if account.wast
@@ -137,14 +274,6 @@ block content
             pre #{account.wast}
           h3 Storage
           pre #{JSON.stringify(account.storage)}
-      if account.source
-        #source.tab-pane(role='tabpanel')
-          h4 Source
-          pre #{account.source.source}
-          h4 ABI
-          pre #{account.source.abi}
-          h4 Constructor
-          pre #{account.source.constructorArgs}
         #contractState.tab-pane(role='tabpanel')
           h4 Current contract state
           table.table
@@ -157,9 +286,17 @@ block content
                 tr
                   td #{item.name}
                   td #{item.result}
+      if account.source
+        #source.tab-pane(role='tabpanel')
+          h4 Source
+          pre #{account.source.source}
+          h4 ABI
+          pre #{account.source.abi}
+          h4 Constructor
+          pre #{account.source.constructorArgs}
   //script#code
   if account.isContract
-    h3 Contract's flow map is not support
+    //
   else
     script.
       (function() {
@@ -181,7 +318,7 @@ block content
               // define the node's outer shape, which will surround the TextBlock
               $(go.Shape, "RoundedRectangle", { fill: $(go.Brush, "Linear", { 0: "#008cba", 1: "#99d2e5" }), stroke: "#008cba" }),
               $("HyperlinkText",
-                function(node) { return node.data.text=="Mining"?"http://pool.sejun.info/":"http://explorer.sejun.info/account/" + node.data.text; },
+                function(node) { return node.data.text=="Mining"?"http://pool.sejun.info/":"http://explorer.ethersocial.info/account/" + node.data.text; },
                 function(node) { return node.data.text.substr(0, 10).concat("..."); },
                 { font: "bold 10pt helvetica, bold arial, sans-serif", stroke: "white", margin: 4 }
               )

@@ -8,13 +8,16 @@ block content
     table.table
       thead
         tr
-          th Hash
+          th Block
+          th TxHash
           th From
           th To
           th Amount
       tbody
         for tx in txs
           tr
+            td
+              a(href="/block/" + tx.blockNumber) #{tx.blockNumber}
             td
               a(href="/tx/" + tx.hash) #{tx.hash.substr(0,10)}...
             td

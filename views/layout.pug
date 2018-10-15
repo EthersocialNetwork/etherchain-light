@@ -7,8 +7,8 @@ html(lang="en")
     // The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags
     
     meta(name='description', content='The explorer for the EtherSocialNetwork blockchain')
-    meta(name='author', content='bitfly')
-    meta(name='keywords', content='EtherSocialNetwork, ethereum, explorer, blockchain, etherchain, cryptocurrency, cryptocurrencies, bitcoin')
+    meta(name='author', content='bitfly, Combba(ESN)')
+    meta(name='keywords', content='ESN, EtherSocialNetwork, ethereum, explorer, blockchain, etherchain, cryptocurrency, cryptocurrencies, bitcoin')
         
     title ESN Block Explorer
     
@@ -47,8 +47,8 @@ html(lang="en")
           form.navbar-form.navbar-right(action="/search", method="POST")
               .form-group
                 .input-group
-                  input.form-control.mr-sm-2#search(type='text', placeholder='Block | Tx | Account', name='search')
                   span.input-group-btn
+                    input.form-control.mr-sm-2#search(type='text', placeholder='Block | Tx | Account', name='search')
                     button.btn.btn-secondary.my-2.my-sm-0(type='submit') Search
         #navbar.collapse.navbar-collapse
           ul.nav.navbar-nav.hover-effect
@@ -62,8 +62,6 @@ html(lang="en")
               a(href='http://pool.sejun.info') ESN Mining<br/>채굴하기
             li
               a(href='/top100') ESN Rank<br/>전체지갑주소
-            li
-              a(href='/redisblock') Blocks Avg. info<br/>블럭평균정보
             li
               a(href='/blocks') Blocks<br/>최근생성블록
             li
@@ -89,6 +87,11 @@ html(lang="en")
     div.container
       hr
       footer
+        span
+          a(href='/api') APIs service 
+          |&nbsp;&nbsp;&nbsp;&nbsp;
+        span
+          a(href='/redisblock') 1,000 Blocks Average info
         p This site is optimized for Chrome on your PC. 이 사이트는 PC의 Chrome에 최적화되어 있습니다.
           br/ This site is operated for transparent development of "EtherSocialNetwork". 이 사이트는 "EtherSocialNetwork"의 투명한 개발을 위해 운영됩니다.
           br/ This site is currently being implemented.(status: beta test) 이 사이트는 현재 구현 중입니다.(상태: 베타 테스트).

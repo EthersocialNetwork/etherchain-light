@@ -1,8 +1,9 @@
 var express = require('express');
 var router = express.Router();
-
+var getJSON = require('get-json');
 var async = require('async');
 var Web3 = require('web3');
+var BigNumber = require('bignumber.js');
 const redis = require("redis");
 const client = redis.createClient();
 const pre_fix = 'explorerBlocks:';
@@ -10,9 +11,14 @@ const divide = 10000;
 
 router.get('/', function (req, res, next) {
   var config = req.app.get('config');
+  var configNames = req.app.get('configNames');
   var web3 = new Web3();
-  web3.setProvider(config.provider);
+  web3.setProvider(config.providerSubGESN);
   var data = {};
+  data.bitzTimeoutTicker = false;
+  data.bitzTimeoutCoinrate = false;
+  data.ticker = {};
+  data.coinrate = {};
 
   client.on("error", function (err) {
     console.log("Error " + err);
@@ -20,6 +26,63 @@ router.get('/', function (req, res, next) {
 
   async.waterfall([
     function (callback) {
+      client.hgetall('bitz:'.concat('ticker'), function (err, result) {
+        return callback(err, result);
+      });
+    },
+    function (ticker, callback) {
+      if (ticker) {
+        data.ticker = ticker;
+      }
+      var now = new Date();
+      if (!ticker || ticker.time * 1000 < now - (1000 * 60)) {
+        data.bitzTimeoutTicker = true;
+        getJSON('https://apiv2.bitz.com/Market/ticker?symbol=esn_btc', function (error, response) {
+          return callback(error, response);
+        });
+      } else {
+        return callback(null, null);
+      }
+    },
+    function (ticker, callback) {
+      if (data.bitzTimeoutTicker && ticker != null && ticker.status == 200) {
+        data.ticker = ticker.data;
+        data.ticker.time = ticker.time;
+      }
+      client.hgetall('bitz:'.concat('coinrate'), function (err, result) {
+        return callback(err, result);
+      });
+    },
+    function (coinrate, callback) {
+      if (coinrate) {
+        data.coinrate = coinrate;
+      }
+      var now = new Date();
+      if (!coinrate || coinrate.time * 1000 < now - (1000 * 60)) {
+        data.bitzTimeoutCoinrate = true;
+        getJSON('https://apiv2.bitz.com/Market/coinRate?coins=esn', function (error, response) {
+          return callback(error, response);
+        });
+      } else {
+        return callback(null, null);
+      }
+    },
+    function (coinrate, callback) {
+      if (data.bitzTimeoutCoinrate && coinrate != null && coinrate.status == 200) {
+        data.coinrate = coinrate.data.esn;
+        data.coinrate.time = coinrate.time;
+      }
+
+      var ret = new BigNumber(data.coinrate.btc);
+      data.coinrate.btc = ret.toFormat(8);
+      ret = new BigNumber(data.coinrate.usd);
+      data.coinrate.usd = ret.toFormat(6);
+      ret = new BigNumber(data.coinrate.krw);
+      data.coinrate.krw = ret.toFormat(2);
+
+      client.hmset('bitz:'.concat('ticker'), data.ticker);
+      client.hmset('bitz:'.concat('coinrate'), data.coinrate);
+
       var rds_key3 = pre_fix.concat("lastblock");
       client.hget(rds_key3, "lastblock", function (err, result) {
         return callback(err, result);
@@ -145,7 +208,7 @@ router.get('/', function (req, res, next) {
       data.minersHash[keyminer] = hashFormat((data.minersDiff[keyminer] / totaDifficulty) * data.minersDiff[keyminer] / data.minersTime[keyminer]) + "H/s";
     }
 
-    data.miners = makeReturnSeries(miners, data.minersHash, config);
+    data.miners = makeReturnSeries(miners, data.minersHash, configNames);
     data.blockTime = new Intl.NumberFormat().format((totalBlockTimes / countBlockTimes).toFixed(4)) + "s";
     data.hashrate = hashFormat(totaDifficulty / totalBlockTimes) + "H/s";
 
@@ -166,7 +229,9 @@ router.get('/', function (req, res, next) {
       chartDifficultyMin: JSON.stringify(chartDifficulty.min()),
       chartBlockTimeMin: JSON.stringify(chartBlockTime.min()),
       blockCount: data.blockCount,
-      chartDataNumbers: data.chartDataNumbers
+      chartDataNumbers: data.chartDataNumbers,
+      ticker: data.ticker,
+      coinrate: data.coinrate
     });
     data = null;
   });
@@ -189,7 +254,7 @@ function hashFormat(number) {
   }
 }
 
-function makeReturnSeries(arr, hasharr, config) {
+function makeReturnSeries(arr, hasharr, configNames) {
   prcArray = [];
   prcArray = arr.reduce(function (acc, curr) {
     if (acc[curr]) {
@@ -202,7 +267,7 @@ function makeReturnSeries(arr, hasharr, config) {
   resArray = [];
   for (var kcmd in prcArray) {
     resArray.push({
-      name: config.names[kcmd] ? ((config.names[kcmd]).split("/"))[0] : (kcmd.substr(0, 8) + "..."),
+      name: configNames.names[kcmd] ? ((configNames.names[kcmd]).split("/"))[0] : configNames.holdnames[kcmd] ? (('Long-term holding: '.concat(configNames.holdnames[kcmd])).split("/"))[0] : (kcmd.substr(0, 8) + "..."),
       value: prcArray[kcmd],
       colorValue: 0,
       address: kcmd,

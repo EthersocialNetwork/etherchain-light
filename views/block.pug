@@ -21,7 +21,12 @@ block content
     tr
       td Miner: 
       td  
-        a(href="/account/" + block.author) #{nameformatter.format(block.author)}
+        if block.author
+          a(href="/account/" + block.author) #{nameformatter.format(block.author)}
+        else if block.miner
+          a(href="/account/" + block.miner) #{nameformatter.format(block.miner)}
+        else
+          | undefined (정의되지 않음)
     tr
       td Gas Limit:
       td #{numeral(block.gasLimit).format()}
@@ -41,6 +46,9 @@ block content
       td Size:
       td #{numeral(block.size).format()}
     tr
+      td Nonce:
+      td #{numeral(block.nonce).format()}
+    tr
       td Transactions:
       td #{block.transactions.length}
     tr
@@ -52,6 +60,14 @@ block content
               a(href="uncle/" + block.hash + "/" + index) #{index + " - " + uncle}
         else
           | 0
+    tr
+      td ExtraData(ASCII):
+      td
+        pre #{block.extraDataToAscii}
+    tr
+      td ExtraData(raw):
+      td
+        pre #{block.extraData}
   h4 Transactions
   if block.transactions.length === 0
     p Block does not contain any transactions.
@@ -79,29 +95,45 @@ block content
                 a(href="/account/" + tx.to) #{nameformatter.format(tx.to)}
               else
                 | New Contract
-            td #{ethformatter(tx.value)}
+            td(align="right") #{ethformatter(tx.value)}
           for trace in tx.traces
             tr
               td.text-right
                 if trace.error
                   span(style="color: red", data-toggle="tooltip", data-placement="left", title=trace.error).glyphicon.glyphicon-warning-sign
                 span.glyphicon.glyphicon-arrow-right
-              td.capitalize #{trace.type}
+              if trace._event
+                td.capitalize #{trace._event}
+              else
+                td.capitalize #{trace.type}
               if trace.type === "call"
-                td
-                  a(href="/account/" + trace.action.from) #{nameformatter.format(trace.action.from)}
-                td 
-                  a(href="/account/" + trace.action.to) #{nameformatter.format(trace.action.to)}
-                td #{ethformatter(trace.action.value)}
+                if trace._value
+                  td
+                    if trace._from
+                      a(href="/account/" + trace._from) #{nameformatter.format(trace._from)}
+                    else
+                      a(href="/account/" + trace.action.from) #{nameformatter.format(trace.action.from)}
+                  td 
+                    if trace._to
+                      a(href="/account/" + trace._to) #{nameformatter.format(trace._to)}
+                    else
+                      a(href="/account/" + trace.action.to) #{nameformatter.format(trace.action.to)}
+                  td(align="right") #{tokenformatter.format(trace._value, trace._decimals, trace._symbol)}
+                else
+                  td
+                    a(href="/account/" + trace.action.from) #{nameformatter.format(trace.action.from)}
+                  td 
+                    a(href="/account/" + trace.action.to) #{nameformatter.format(trace.action.to)}
+                  td(align="right") #{ethformatter(trace.action.value)}
               else if trace.type === "create"
                 td
                   a(href="/account/" + trace.action.from) #{nameformatter.format(trace.action.from)}
                 td
                   a(href="/account/" + trace.result.address) #{nameformatter.format(trace.result.address)}
-                td #{ethformatter(trace.action.value)}
+                td(align="right") #{ethformatter(trace.action.value)}
               else if trace.type === "suicide"
                 td
                   a(href="/account/" + trace.action.address) #{nameformatter.format(trace.action.address)}
                 td
                   a(href="/account/" + trace.action.refundAddress) #{nameformatter.format(trace.action.refundAddress)}
-                td #{ethformatter(trace.action.balance)}
+                td(align="right") #{ethformatter(trace.action.balance)}

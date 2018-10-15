@@ -7,7 +7,7 @@ router.get('/', function (req, res, next) {
 
   var config = req.app.get('config');
   var web3 = new Web3();
-  web3.setProvider(config.provider);
+  web3.setProvider(config.providerSubGESN);
 
   async.waterfall([
     function (callback) {
@@ -45,14 +45,13 @@ router.get('/', function (req, res, next) {
           return;
         }
         txs.push(tx);
+        //console.dir(tx);
       });
     });
     res.render('tx_recent', {
       blocks: blocks,
       txs: txs
     });
-    blocks = null;
-    txs = null;
   });
 });
 
