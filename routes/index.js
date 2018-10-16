@@ -231,7 +231,9 @@ router.get('/', function (req, res, next) {
       blockCount: data.blockCount,
       chartDataNumbers: data.chartDataNumbers,
       ticker: data.ticker,
-      coinrate: data.coinrate
+      coinrate: data.coinrate,
+      jsload_defer: config.jsload_defer,
+      jsload_async: config.jsload_async
     });
     data = null;
   });

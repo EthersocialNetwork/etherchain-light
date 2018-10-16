@@ -320,7 +320,9 @@ router.get('/', function (req, res, next) {
         Difficulty: JSON.stringify(data.datasets[1].data[k]),
         NetHashrate: JSON.stringify(data.datasets[2].data[k]),
         Transactions: JSON.stringify(data.datasets[3].data[k]),
-        activity: JSON.stringify(data)
+        activity: JSON.stringify(data),
+        jsload_defer: config.jsload_defer,
+        jsload_async: config.jsload_async
       });
     }
   });

@@ -1,25 +1,15 @@
 extends layout
 
 block content
-  script(defer type='text/javascript', src="/highcharts-6.1.0/highcharts.js")
-  script(defer type='text/javascript', src="/highcharts-6.1.0/modules/exporting.js")
-  script(defer type='text/javascript', src="/highcharts-6.1.0/modules/export-data.js")
-  script(defer type='text/javascript', src="/highcharts-6.1.0/modules/heatmap.js")
-  script(defer type='text/javascript', src="/highcharts-6.1.0/modules/treemap.js")
-  script(defer type='text/javascript', src="/highcharts-6.1.0/modules/series-label.js")
+  script(defer=jsload_defer async=jsload_async type='text/javascript', src="/highcharts-6.1.0/highcharts.js")
+  script(defer=jsload_defer async=jsload_async type='text/javascript', src="/highcharts-6.1.0/modules/exporting.js")
+  script(defer=jsload_defer async=jsload_async type='text/javascript', src="/highcharts-6.1.0/modules/export-data.js")
+  script(defer=jsload_defer async=jsload_async type='text/javascript', src="/highcharts-6.1.0/modules/heatmap.js")
+  script(defer=jsload_defer async=jsload_async type='text/javascript', src="/highcharts-6.1.0/modules/treemap.js")
+  script(defer=jsload_defer async=jsload_async type='text/javascript', src="/highcharts-6.1.0/modules/series-label.js")
   h3 Block Chain Summary(Calculated in the All blocks)
   div#chart_BlockTime(style="min-width: 480px; max-width: 1200px; height: 1100px; margin: 0 auto")
   script.
-    /*
-    The purpose of this demo is to demonstrate how multiple charts on the same page
-    can be linked through DOM and Highcharts events and API methods. It takes a
-    standard Highcharts config with a small variation for each data set, and a
-    mouse/touch event handler to bind the charts together.
-    */
-    /**
-    * In order to synchronize tooltips and crosshairs, override the
-    * built-in events with handlers defined on the parent element.
-    */
     $('#chart_BlockTime').bind('mousemove touchmove touchstart', function (e) {
       var chart, point, i, event;
       for (i = 0; i < Highcharts.charts.length; i++) {
@@ -80,7 +70,6 @@ block content
     $.each(!{activity}.datasets, function (i, dataset) {
       // Add X values
       dataset.data = Highcharts.map(dataset.data, function (val, j) {
-        //return [!{activity}.xData[j], val, !{activity}.xBlocknumber[j]];
         return {x:!{xData}[j], y:val, b:!{xBlocknumber}[j], n:!{xNumberOfBlocks}[j]};
       });
 
