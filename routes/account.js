@@ -23,9 +23,9 @@ router.get('/:account/:offset?/:count?/:json?', function (req, res, next) {
     var config = req.app.get('config');
     var configNames = req.app.get('configNames');
     var web3 = new Web3();
-    web3.setProvider(config.provider);
-    var web3GESN = new Web3();
-    web3GESN.setProvider(config.providerSubGESN);
+    web3.setProvider(config.selectParity());
+    var web3Gesn = new Web3();
+    web3Gesn.setProvider(config.selectGesn());
     var db = req.app.get('db');
     var tokenExporter = req.app.get('tokenExporter');
 
@@ -50,7 +50,7 @@ router.get('/:account/:offset?/:count?/:json?', function (req, res, next) {
 
     async.waterfall([
             function (callback) {
-                web3GESN.eth.getBlock("latest", false, function (err, result) {
+                web3Gesn.eth.getBlock("latest", false, function (err, result) {
                     callback(err, result); //마지막 블럭 정보를 받아서 전달
                 });
             },
@@ -67,7 +67,7 @@ router.get('/:account/:offset?/:count?/:json?', function (req, res, next) {
                     blockNumber = lastBlock.number;
                 }
 
-                web3GESN.eth.getBlock(blockNumber, false, function (err, result) {
+                web3Gesn.eth.getBlock(blockNumber, false, function (err, result) {
                     callback(err, result); //마지막 블럭 정보를 받아서 전달
                 });
             },
@@ -80,13 +80,13 @@ router.get('/:account/:offset?/:count?/:json?', function (req, res, next) {
                 if (idxblock > devide) {
                     totalblocks.push(idxblock);
                 }
-                web3GESN.eth.getBalance(data.address, function (err, balance) {
+                web3Gesn.eth.getBalance(data.address, function (err, balance) {
                     callback(err, balance); //해당 계정의 보유량을 받아서 전달
                 });
             },
             function (balance, callback) {
                 data.balance = balance;
-                web3GESN.eth.getCode(data.address, function (err, code) {
+                web3Gesn.eth.getCode(data.address, function (err, code) {
                     callback(err, code); //해당 계정의 코드를 받아서 전달
                 });
             },
@@ -299,7 +299,7 @@ router.get('/:account/:offset?/:count?/:json?', function (req, res, next) {
                                     //console.log("_value: ", amount, "blockNumber: ", blockNumber);
                                     if (amount) {
                                         event.args._value = amount;
-                                        web3GESN.eth.getBlock(blockNumber, false, function (err, block) {
+                                        web3Gesn.eth.getBlock(blockNumber, false, function (err, block) {
                                             contractcallback(block.timestamp, null);
                                         });
                                     } else {
@@ -384,7 +384,7 @@ router.get('/:account/:offset?/:count?/:json?', function (req, res, next) {
                                                     trace.action._value = '';
                                                     trace.action._to = '';
                                                     if (trace.type === 'reward') {
-                                                        web3GESN.eth.getBlock(num, true, function (err, result) {
+                                                        web3Gesn.eth.getBlock(num, true, function (err, result) {
                                                             if (!err && result.transactions && result.transactions.length > 0 && trace.action.value == '0x4563918244f40000') {
                                                                 //console.log("result.transactions: ", result.transactions);
                                                                 var gasUsed = new BigNumber(result.gasUsed);
@@ -393,7 +393,7 @@ router.get('/:account/:offset?/:count?/:json?', function (req, res, next) {
                                                                 //console.log("totalGasUsed:", totalGasUsed);
                                                                 var actionValue = new BigNumber(trace.action.value);
                                                                 //console.log("actionValue:", actionValue);
-                                                                trace.action.value = web3GESN.toHex(actionValue.plus(totalGasUsed).toNumber());
+                                                                trace.action.value = web3Gesn.toHex(actionValue.plus(totalGasUsed).toNumber());
                                                             }
 
                                                             if (Object.size(blocks) < data.max_blocks) {

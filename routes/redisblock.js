@@ -21,7 +21,7 @@ Array.prototype.clean = function (deleteValue) {
 router.get('/:end?', function (req, res, next) {
   var config = req.app.get('config');
   var web3 = new Web3();
-  web3.setProvider(config.providerSubGESN);
+  web3.setProvider(config.selectParity());
   var data = {};
   data.startTime = new Date();
   data.ip = req.headers['x-forwarded-for'] || req.connection.remoteAddress;

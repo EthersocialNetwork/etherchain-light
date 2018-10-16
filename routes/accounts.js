@@ -7,7 +7,7 @@ var Web3 = require('web3');
 router.get('/:offset?', function (req, res, next) {
     var config = req.app.get('config');
     var web3 = new Web3();
-    web3.setProvider(config.providerSubGESN);
+    web3.setProvider(config.selectGesn());
 
     async.waterfall([
         function (callback) {

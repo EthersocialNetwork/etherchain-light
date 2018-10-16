@@ -17,7 +17,7 @@ router.get('/:json?', function (req, res, next) {
 
 	var config = req.app.get('config');
 	var web3 = new Web3();
-	web3.setProvider(config.provider);
+	web3.setProvider(config.providerLocal);
 	var web3sub = new Web3();
 	web3sub.setProvider(config.providerSub);
 	var data = {};
@@ -107,7 +107,7 @@ router.get('/:json?', function (req, res, next) {
 				var existAddress = [];
 				async.eachSeries(peers, function (peer, eachCallback) {
 					if (peer.ip == '115.68.110.213') {
-						console.log("peer(115.68.110.213):", peer);
+						//console.log("peer(115.68.110.213):", peer);
 						eachCallback();
 					} else {
 						const time_now = new Date();
