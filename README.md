@@ -41,17 +41,42 @@ This blockchain explorer is intended for private Ethereum chains. As it does not
 
 Supported OS: Ubuntu 16.04
 
-Supported Ethereum backend nodes: Parity (Geth is currently not supported as it does not allow account and received/sent tx enumeration)
+Supported Ethereum backend nodes: Parity (Geth is currently not supported as it does not allow account list and received/sent tx enumeration)
 
 1. Setup a nodejs & npm environment
+    ```
+    sudo apt-get install -y build-essential
+    wget -qO- https://deb.nodesource.com/setup_10.x | sudo -E bash -
+    sudo apt-get install -y nodejs
+    ```
 2. Install the latest version of the Parity Ethereum client
-3. Start parity using the following options: `./parity --datadir ../../chaindata/ --chain ethersocial --port 50505 --mode active --ipc-path ~/.Ethersocial/gesc.ipc --fat-db=on --pruning=archive --author 0x5811590907050746b897eFE65FeA7B65710E1a2c --max-peers 15`
-4. Clone this repository to your local machine: `git clone https://github.com/EthersocialNetwork/etherchain-light --recursive` (Make sure to include `--recursive` in order to fetch the solc-bin git submodule)
+    ```
+    git clone https://github.com/ComBba/parity-ethereum.git
+    git checkout v1.11.11
+    cd parity-ethereum
+    ```
+3. Start parity using the following options for https://github.com/ComBba/parity-ethereum
+    ```
+    ./target/release/parity --config=config.toml
+    ```
+4. Clone this repository to your local machine: 
+    ```
+    git clone https://github.com/EthersocialNetwork/etherchain-light --recursive` (Make sure to include `--recursive` in order to fetch the solc-bin git submodule)
+    ```
 5. Install all dependencies: `npm install`
-6. Rename `config.js.example` into `config.js` and adjust the file to your local environment
-7. Start the explorer: `npm start`
-8. Browse to `http://localhost:3000`
-9. How to use "Forever": `forever start ./bin/www`
+6. Edit `config/config.js` and adjust the file to your local environment
+7. Install 'Redis'
+    ```
+    cd ~
+    wget http://download.redis.io/releases/redis-4.0.11.tar.gz
+    tar xzf redis-4.0.11.tar.gz
+    cd redis-4.0.11
+    make
+    ./src/redis-server
+    ```
+8. Start the explorer: `npm start`
+9. Browse to `http://localhost:3000`
+#### How to use "Forever": `forever start ./bin/www`
 
 ```crontab
 7 */2 * * *             curl 'http://127.0.0.1/hashratechart'
