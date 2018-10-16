@@ -429,7 +429,9 @@ router.get('/:json?', function (req, res, next) {
 					oss: data.oss,
 					goversions: data.goversions,
 					geo: data.geo,
-					geoCategories: data.geoCategories
+					geoCategories: data.geoCategories,
+					jsload_defer: config.jsload_defer,
+					jsload_async: config.jsload_async
 				});
 			}
 		}

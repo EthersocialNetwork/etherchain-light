@@ -5,7 +5,7 @@ Etherchain Light is an Ethereum blockchain explorer built with NodeJS, Express a
 
 While there are several excellent Ethereum blockchain explorers available (etherscan, ether.camp and etherchain) they operate on a fixed subset of Ethereum networks, usually the mainnet and testnet. Currently there are no network agnostic blockchain explorers available. If you want to develop Dapps on a private testnet or would like to launch a private / consortium network, Etherchain Light will allow you to quickly explore such chains.
 
-A demo instance connected to the EtherSocialNetwork is available at [http://explorer.sejun.info](http://http://explorer.sejun.info).
+A demo instance connected to the EtherSocialNetwork is available at [http://explorer.ethersocial.info/](http://explorer.ethersocial.info/).
 
 ## Current Features
 * Browse blocks, transactions, accounts and contracts
@@ -25,11 +25,12 @@ A demo instance connected to the EtherSocialNetwork is available at [http://expl
 * Supports IPC and HTTP backend connections
 * Responsive layout
 * ERC20 Token support
-
-## Planned features
 * API service
 
-Missing a feature? Please request it by creating a new [Issue](https://github.com/gobitfly/etherchain-light/issues).
+## Planned features
+* Responsive web page
+
+Missing a feature? Please request it by creating a new [Issue](https://github.com/ComBba/etherchain-light/issues).
 
 ## Usage notes
 This blockchain explorer is intended for private Ethereum chains. As it does not have a dedicated database all data will be retrived on demand from a backend Parity node. Some of those calls are ressource intensive (e.g. retrieval of the full tx list of an account) and do not scale well for acounts with a huge number of transactions. We currently develop the explorer using the Kovan testnet but it will work with every Parity compatible Ethereum network configuration. The explorer is still under heavy development, if you find any problems please create an issue or prepare a pull request.
@@ -53,8 +54,8 @@ Supported Ethereum backend nodes: Parity (Geth is currently not supported as it 
 9. How to use "Forever": `forever start ./bin/www`
 
 ```crontab
-7 */2 * * *             curl 'http://explorer.sejun.info/hashratechart'
-3,15,27,39,51 * * * *   curl 'http://explorer.sejun.info/redisblock'
-*/2 * * * *             curl 'http://explorer.sejun.info/top100_settingup'
-5,25,45 * * * *         curl 'http://explorer.sejun.info/peers'
+7 */2 * * *             curl 'http://127.0.0.1/hashratechart'
+3,15,27,39,51 * * * *   curl 'http://127.0.0.1/redisblock'
+*/2 * * * *             curl 'http://127.0.0.1/top100_settingup'
+5,25,45 * * * *         curl 'http://127.0.0.1/peers'
 ```

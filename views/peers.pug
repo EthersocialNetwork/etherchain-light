@@ -1,12 +1,12 @@
 extends layout
 
 block content
-  script(defer type='text/javascript', src="/highcharts-6.1.0/highcharts.js")
-  script(defer type='text/javascript', src="/highcharts-6.1.0/modules/exporting.js")
-  script(defer type='text/javascript', src="/highcharts-6.1.0/modules/export-data.js")
-  script(defer type='text/javascript', src="/highcharts-6.1.0/modules/heatmap.js")
-  script(defer type='text/javascript', src="/highcharts-6.1.0/modules/treemap.js")
-  script(defer type='text/javascript', src="/highcharts-6.1.0/modules/series-label.js")
+  script(defer=jsload_defer async=jsload_async type='text/javascript', src="/highcharts-6.1.0/highcharts.js")
+  script(defer=jsload_defer async=jsload_async type='text/javascript', src="/highcharts-6.1.0/modules/exporting.js")
+  script(defer=jsload_defer async=jsload_async type='text/javascript', src="/highcharts-6.1.0/modules/export-data.js")
+  script(defer=jsload_defer async=jsload_async type='text/javascript', src="/highcharts-6.1.0/modules/heatmap.js")
+  script(defer=jsload_defer async=jsload_async type='text/javascript', src="/highcharts-6.1.0/modules/treemap.js")
+  script(defer=jsload_defer async=jsload_async type='text/javascript', src="/highcharts-6.1.0/modules/series-label.js")
   div
     ul.nav.nav-tabs(role='tablist')
       li.active(role='presentation')
