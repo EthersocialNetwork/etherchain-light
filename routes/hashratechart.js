@@ -23,6 +23,12 @@ router.get('/', function (req, res, next) {
   data.dbChartLastBlock = 0;
   data.blockCount = 1000;
 
+  // IP 주소에 콜론(:)이 있는 경우 맨 마지막 값을 IP주소로 지정
+  if(data.ip.indexOf(':') >= 0) {
+      var ipDatas = data.ip.split(":");
+      if(ipDatas.length > 0)  data.ip = ipDatas[ipDatas.length - 1];
+  }
+
   data.xData = [];
   data.xBlocknumber = [];
   data.xNumberOfBlocks = [];
@@ -245,7 +251,7 @@ router.get('/', function (req, res, next) {
           callback(err, blocks);
         });
       } else {
-        callback(null, null);
+        callback("Not found block.", null);
       }
     }
   ], function (err, blocks) {
@@ -253,7 +259,7 @@ router.get('/', function (req, res, next) {
       console.log("Error " + err);
     }
 
-    if (data.ip == config.cronIP) {
+    if(data.ip == config.cronIP) {
       if (data.lastnumber > 0) {
         client.hset(pre_fix_chart.concat("lastblock"), "lastblock", data.lastnumber);
       }
@@ -286,7 +292,7 @@ router.get('/', function (req, res, next) {
     //2) sort:
     list.sort(function (a, b) {
       return ((a.xData < b.xData) ? -1 : ((a.xData == b.xData) ? 0 : 1));
-      //Sort could be modified to, for example, sort on the age 
+      //Sort could be modified to, for example, sort on the age
       // if the xData is the same.
     });
 
@@ -308,7 +314,7 @@ router.get('/', function (req, res, next) {
     console.log("final data.datasets[1].data: " + data.datasets[1].data.length);
     console.log("final data.datasets[2].data: " + data.datasets[2].data.length);
     */
-    if (data.ip == config.cronIP) {
+    if(data.ip == config.cronIP) {
       res.json(resultToJson(null, data));
     } else {
       res.render('hashratechart', {

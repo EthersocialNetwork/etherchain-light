@@ -28,6 +28,12 @@ router.get('/:end?', function (req, res, next) {
   data.dbLastBlock = 0;
   data.blockCount = 1000;
 
+  // IP 주소에 콜론(:)이 있는 경우 맨 마지막 값을 IP주소로 지정
+  if(data.ip.indexOf(':') >= 0) {
+      var ipDatas = data.ip.split(":");
+      if(ipDatas.length > 0)  data.ip = ipDatas[ipDatas.length - 1];
+  }
+
   client.on("error", function (err) {
     console.log("Error " + err);
   });
@@ -188,7 +194,8 @@ router.get('/:end?', function (req, res, next) {
     data.consumptionTime = ((data.endTime - data.startTime) / 1000).toLocaleString(undefined, {
       maximumFractionDigits: 4
     }) + " s";
-    if (data.ip == config.cronIP) {
+
+    if(data.ip == config.cronIP) {
       res.json(resultToJson(null, data));
     } else {
       res.render('redisblock', {
