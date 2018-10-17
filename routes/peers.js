@@ -15,6 +15,12 @@ router.get('/:json?', function (req, res, next) {
 	var ip = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
 	//console.log("\nclient ip: "+ip+"\n");
 
+	// IP 주소에 콜론(:)이 있는 경우 맨 마지막 값을 IP주소로 지정
+	if(ip.indexOf(':') >= 0) {
+        var ipDatas = ip.split(":");
+        if(ipDatas.length > 0)  ip = ipDatas[ipDatas.length - 1];
+    }
+
 	var config = req.app.get('config');
 	var web3 = new Web3();
 	web3.setProvider(config.providerLocal);

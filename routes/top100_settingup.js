@@ -21,6 +21,14 @@ router.get('/:offset?', function (req, res, next) {
 	var nowcnt = 0;
 	var tokenExporter = req.app.get('tokenExporter');
 
+	console.log(tokenExporter);
+
+	// IP 주소에 콜론(:)이 있는 경우 맨 마지막 값을 IP주소로 지정
+	if(ip.indexOf(':') >= 0) {
+        var ipDatas = ip.split(":");
+        if(ipDatas.length > 0)  ip = ipDatas[ipDatas.length - 1];
+    }
+
 	client.on("error", function (err) {
 		console.log("Error " + err);
 	});
