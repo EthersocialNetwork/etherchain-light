@@ -18,13 +18,11 @@ var nodeStatus = function (config) {
 
     var web3 = new Web3();
     web3.setProvider(new web3.providers.HttpProvider(self.arrParity[self.idx]));
-    //http://13.125.102.74:8545
     if (!self.arrParity[self.idx]) {
       console.log(self.idx, '\n[self.arrParity]', self.arrParity);
     }
     var sres = self.arrParity[self.idx].split("/");
     if (sres[2]) {
-      //13.125.102.74:8545
       var sreses = sres[2].split(":");
       if (sreses.length == 2) {
         self.ip = sreses[0];
@@ -67,10 +65,16 @@ var nodeStatus = function (config) {
         console.log("Error updating node status:", err);
       }
 
+      var sIP = self.ip.split(".");
+      sIP[1] = "?";
+      sIP[2] = "?";
+      var displayIP = sIP.join(".");
+
+      var descriptionNode = '['.concat(self.idx).concat('] [').concat(version).concat('] [').concat(displayIP).concat('] [').concat((diffms == 'Off' ? ('Off] ') : (diffms + 'ms] ['))).concat(nbrPeers).concat('peers ]');
       if (self.VersionAndPeers[self.idx]) {
-        self.VersionAndPeers[self.idx] = '['.concat(self.idx).concat('] ').concat(version).concat(' | ').concat((diffms == 'Off' ? (' [Off] ') : (' [' + diffms + 'ms] '))).concat(nbrPeers);
+        self.VersionAndPeers[self.idx] = descriptionNode;
       } else {
-        self.VersionAndPeers.push('['.concat(self.idx).concat('] ').concat(version).concat(' | ').concat((diffms == 'Off' ? (' [Off] ') : (' [' + diffms + 'ms] '))).concat(nbrPeers));
+        self.VersionAndPeers.push(descriptionNode);
       }
 
       self.idx = self.idx + 1;

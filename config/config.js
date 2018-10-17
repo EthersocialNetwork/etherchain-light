@@ -12,7 +12,7 @@ var config = function () {
 
   this.arrParity = ['http://127.0.0.1:8545'];
 
-  this.getArrParity =  function () {
+  this.getArrParity = function () {
     return self.arrParity;
   };
 
@@ -23,6 +23,11 @@ var config = function () {
   this.networkPortString = "50505";
   this.networkPortNumber = parseInt(this.networkPortString, 10);
 
+  this.accountBalanceServiceInterval = 2 * 60 * 1000; // ms
+  this.blockStoreServiceInterval = 1 * 60 * 1000; // ms
+  this.peerCollectorServiceInterval = 5 * 60 * 1000; // ms
+  this.hashrateCollectorServiceInterval = 2 * 60 * 60 * 1000; // ms
+
   this.serverPortCheck = true;
   this.serverPortCheckDelay = 60000; // ms
   this.serverPortCheckList = ['127.0.0.1:80', '127.0.0.1:8545', '127.0.0.1:7545'];
@@ -32,7 +37,6 @@ var config = function () {
   this.jsload_defer = false;
   this.jsload_async = false;
 
-  this.cronIP = "127.0.0.1";
   this.bootstrapUrl = "https://maxcdn.bootstrapcdn.com/bootswatch/3.3.7/yeti/bootstrap.min.css";
 };
 

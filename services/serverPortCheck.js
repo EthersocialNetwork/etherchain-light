@@ -1,19 +1,19 @@
 const async = require('async');
 const tcpPortUsed = require('tcp-port-used');
 const redis = require("redis");
-const client = redis.createClient();
 
 var checker = function (ip, port, delay) {
   var self = this;
   self.ip = ip;
   self.port = port;
   self.prevTime = new Date();
-  client.on("error", function (err) {
-    console.log("Error " + err);
-  });
-
   async.forever(
     function (next) {
+      const client = redis.createClient();
+      client.on("error", function (err) {
+        console.log("Error " + err);
+      });
+
       self.prevTime = new Date();
       var rds_key = 'PortCheck:'.concat(self.ip).concat(':').concat(self.port);
       tcpPortUsed.check(self.port, self.ip)
@@ -28,7 +28,7 @@ var checker = function (ip, port, delay) {
           } else {
             client.hset(rds_key, msnow, diffms);
           }
-          client.expireat(rds_key, parseInt((+new Date())/1000) + 86400);
+          client.expireat(rds_key, parseInt((+new Date()) / 1000) + 86400);
 
           setTimeout(function () {
             next();
@@ -38,7 +38,7 @@ var checker = function (ip, port, delay) {
           console.log('PortCheck Error:', self.ip, self.port, ':', now);
           console.error('PortCheck Error:', err.message);
           client.hset(rds_key, msnow, 0);
-          client.expireat(rds_key, parseInt((+new Date())/1000) + 86400);
+          client.expireat(rds_key, parseInt((+new Date()) / 1000) + 86400);
           setTimeout(function () {
             next();
           }, delay);

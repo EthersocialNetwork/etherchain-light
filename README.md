@@ -79,10 +79,7 @@ Supported Ethereum backend nodes: Parity (Geth is currently not supported as it 
 9. Browse to `http://localhost:3000`
 ###### How to use "Forever": `forever start ./bin/www`
 
-#### crontab -e for sync
-```
-7 */2 * * *             curl 'http://127.0.0.1/hashratechart'
-3,15,27,39,51 * * * *   curl 'http://127.0.0.1/redisblock'
-*/2 * * * *             curl 'http://127.0.0.1/top100_settingup'
-5,25,45 * * * *         curl 'http://127.0.0.1/peers'
+#### crontab -e for geoIP update
+```sh
+* * */5 * * node ~/esn_service/etherchain-light/node_modules/geoip-lite/scripts/updatedb.js
 ```
