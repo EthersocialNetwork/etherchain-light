@@ -245,7 +245,7 @@ router.get('/', function (req, res, next) {
           callback(err, blocks);
         });
       } else {
-        callback(err, null);
+        callback("Not found block.", null);
       }
     }
   ], function (err, blocks) {
@@ -286,7 +286,7 @@ router.get('/', function (req, res, next) {
     //2) sort:
     list.sort(function (a, b) {
       return ((a.xData < b.xData) ? -1 : ((a.xData == b.xData) ? 0 : 1));
-      //Sort could be modified to, for example, sort on the age 
+      //Sort could be modified to, for example, sort on the age
       // if the xData is the same.
     });
 
