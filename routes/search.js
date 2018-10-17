@@ -7,7 +7,7 @@ router.post('/', function (req, res, next) {
 	var searchString = req.body.search.trim().toLowerCase();
 	var config = req.app.get('config');
 	var web3 = new Web3();
-	web3.setProvider(config.providerSubGESN);
+	web3.setProvider(config.selectParity());
 
 	if (searchString.length > 22 && searchString.substr(0, 2) != '0x')
 		searchString = '0x' + searchString;

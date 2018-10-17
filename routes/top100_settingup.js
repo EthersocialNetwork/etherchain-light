@@ -13,7 +13,7 @@ router.get('/:offset?', function (req, res, next) {
 	var configERC20 = req.app.get('configERC20');
 	var web3 = new Web3();
 	var Ether = new BigNumber(10e+17);
-	web3.setProvider(config.providerSub);
+	web3.setProvider(config.selectParity());
 	var ip = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
 	var data = "";
 	var cnt = 0;

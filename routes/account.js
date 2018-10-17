@@ -23,9 +23,7 @@ router.get('/:account/:offset?/:count?/:json?', function (req, res, next) {
     var config = req.app.get('config');
     var configNames = req.app.get('configNames');
     var web3 = new Web3();
-    web3.setProvider(config.provider);
-    var web3GESN = new Web3();
-    web3GESN.setProvider(config.providerSubGESN);
+    web3.setProvider(config.selectParity());
     var db = req.app.get('db');
     var tokenExporter = req.app.get('tokenExporter');
 
@@ -46,11 +44,12 @@ router.get('/:account/:offset?/:count?/:json?', function (req, res, next) {
 
 
     var totalblocks = [];
-    const devide = 1000;
+    const devide = 10000;
+    const cntDevide = 10;
 
     async.waterfall([
             function (callback) {
-                web3GESN.eth.getBlock("latest", false, function (err, result) {
+                web3.eth.getBlock("latest", false, function (err, result) {
                     callback(err, result); //마지막 블럭 정보를 받아서 전달
                 });
             },
@@ -67,26 +66,35 @@ router.get('/:account/:offset?/:count?/:json?', function (req, res, next) {
                     blockNumber = lastBlock.number;
                 }
 
-                web3GESN.eth.getBlock(blockNumber, false, function (err, result) {
+                web3.eth.getBlock(blockNumber, false, function (err, result) {
                     callback(err, result); //마지막 블럭 정보를 받아서 전달
                 });
             },
             function (targetBlock, callback) {
                 data.lastBlock = targetBlock.number;
+                var cntDivide = 1;
                 var idxblock;
                 for (idxblock = data.lastBlock; idxblock > devide; idxblock = idxblock - devide) {
+                    if (cntDivide++ > cntDevide) {
+                        break;
+                    }
                     totalblocks.push(idxblock);
                 }
-                if (idxblock > devide) {
+                if (idxblock > devide && cntDivide < cntDevide + 1) {
                     totalblocks.push(idxblock);
                 }
-                web3GESN.eth.getBalance(data.address, function (err, balance) {
+                /*
+                totalblocks.forEach(function (item, index, array) {
+                    console.log('totalblocks[', index, '] ', item);
+                });
+                */
+                web3.eth.getBalance(data.address, function (err, balance) {
                     callback(err, balance); //해당 계정의 보유량을 받아서 전달
                 });
             },
             function (balance, callback) {
                 data.balance = balance;
-                web3GESN.eth.getCode(data.address, function (err, code) {
+                web3.eth.getCode(data.address, function (err, code) {
                     callback(err, code); //해당 계정의 코드를 받아서 전달
                 });
             },
@@ -173,7 +181,7 @@ router.get('/:account/:offset?/:count?/:json?', function (req, res, next) {
                         });
                         //TokenDB End
                     }, function (err) {
-                        return callback(null, allContractObject.tokenlist);
+                        callback(null, allContractObject.tokenlist);
                     });
                     //callback(null, null);
                 } else {
@@ -274,12 +282,13 @@ router.get('/:account/:offset?/:count?/:json?', function (req, res, next) {
                         callback(null, null);
                     }
                 } else {
-                    return callback(null, null);
+                    callback(null, null);
                 }
             },
             function (cevents, callback) {
-                data.previousBlockNumber = 1;
-                data.fromBlock = 1;
+                var startNum = totalblocks[totalblocks.length - 1] - devide;
+                data.previousBlockNumber = (startNum - 1 < devide) ? 1 : (startNum - 1);
+                data.fromBlock = startNum < devide ? 1 : startNum;
                 if (cevents) {
                     async.eachSeries(cevents, function (event, contracteachCallback) {
                         async.waterfall([
@@ -299,7 +308,8 @@ router.get('/:account/:offset?/:count?/:json?', function (req, res, next) {
                                     //console.log("_value: ", amount, "blockNumber: ", blockNumber);
                                     if (amount) {
                                         event.args._value = amount;
-                                        web3GESN.eth.getBlock(blockNumber, false, function (err, block) {
+                                        web3.setProvider(config.selectParity());
+                                        web3.eth.getBlock(blockNumber, false, function (err, block) {
                                             contractcallback(block.timestamp, null);
                                         });
                                     } else {
@@ -334,6 +344,7 @@ router.get('/:account/:offset?/:count?/:json?', function (req, res, next) {
                                 const endblocknumber = subblocks.toString(16);
                                 async.waterfall([
                                         function (incallback) {
+                                            web3.setProvider(config.selectParity());
                                             web3.trace.filter({
                                                 "fromBlock": "0x" + startblocknumber,
                                                 "toBlock": "0x" + endblocknumber,
@@ -353,6 +364,7 @@ router.get('/:account/:offset?/:count?/:json?', function (req, res, next) {
                                             });
                                         },
                                         function (totraces, incallback) {
+                                            web3.setProvider(config.selectParity());
                                             web3.trace.filter({
                                                 "fromBlock": "0x" + startblocknumber,
                                                 "toBlock": "0x" + endblocknumber,
@@ -375,6 +387,7 @@ router.get('/:account/:offset?/:count?/:json?', function (req, res, next) {
                                                 return (a.blockNumber < b.blockNumber) ? 1 : ((b.blockNumber < a.blockNumber) ? -1 : 0);
                                             });
 
+                                            data.prevNum = 0;
                                             async.eachSeries(sortedTraces, function (trace, ineachCallback) {
                                                 if (Object.size(blocks) >= data.max_blocks) {
                                                     return incallback(null);
@@ -384,7 +397,8 @@ router.get('/:account/:offset?/:count?/:json?', function (req, res, next) {
                                                     trace.action._value = '';
                                                     trace.action._to = '';
                                                     if (trace.type === 'reward') {
-                                                        web3GESN.eth.getBlock(num, true, function (err, result) {
+                                                        web3.setProvider(config.selectParity());
+                                                        web3.eth.getBlock(num, true, function (err, result) {
                                                             if (!err && result.transactions && result.transactions.length > 0 && trace.action.value == '0x4563918244f40000') {
                                                                 //console.log("result.transactions: ", result.transactions);
                                                                 var gasUsed = new BigNumber(result.gasUsed);
@@ -393,7 +407,7 @@ router.get('/:account/:offset?/:count?/:json?', function (req, res, next) {
                                                                 //console.log("totalGasUsed:", totalGasUsed);
                                                                 var actionValue = new BigNumber(trace.action.value);
                                                                 //console.log("actionValue:", actionValue);
-                                                                trace.action.value = web3GESN.toHex(actionValue.plus(totalGasUsed).toNumber());
+                                                                trace.action.value = web3.toHex(actionValue.plus(totalGasUsed).toNumber());
                                                             }
 
                                                             if (Object.size(blocks) < data.max_blocks) {
@@ -401,11 +415,9 @@ router.get('/:account/:offset?/:count?/:json?', function (req, res, next) {
                                                                     blocks[num] = [];
                                                                 }
                                                                 blocks[num].push(trace);
-
-                                                                data.previousBlockNumber = num - 1;
-                                                                data.fromBlock = num;
-                                                                return ineachCallback();
+                                                                data.prevNum = num;
                                                             }
+                                                            ineachCallback();
                                                         });
                                                     } else if (trace.type === 'call') {
                                                         if (tokenExporter[trace.action.to]) {
@@ -449,9 +461,7 @@ router.get('/:account/:offset?/:count?/:json?', function (req, res, next) {
                                                                 blocks[num] = [];
                                                             }
                                                             blocks[num].push(trace);
-
-                                                            data.previousBlockNumber = num - 1;
-                                                            data.fromBlock = num;
+                                                            data.prevNum = num;
                                                         }
                                                         ineachCallback();
                                                     } else if (trace.type === 'create') {
@@ -477,9 +487,7 @@ router.get('/:account/:offset?/:count?/:json?', function (req, res, next) {
                                                                 blocks[num] = [];
                                                             }
                                                             blocks[num].push(trace);
-
-                                                            data.previousBlockNumber = num - 1;
-                                                            data.fromBlock = num;
+                                                            data.prevNum = num;
                                                         }
                                                         ineachCallback();
                                                     }
@@ -689,11 +697,20 @@ router.get('/:account/:offset?/:count?/:json?', function (req, res, next) {
                         //console.dir(data.contractEvents);
                     }
 
+                    //console.log('[Last] data.prevNum:', data.prevNum);
+                    if (data.isContract) {
+                        data.previousBlockNumber = 1;
+                        data.fromBlock = 1;
+                    } else if (data.prevNum > 0 && data.blocks && data.blocks.length >= data.max_blocks) {
+                        data.previousBlockNumber = data.prevNum - 1;
+                        data.fromBlock = data.prevNum;
+                    }
                     if (req.params.json && (req.params.json == 'true' || req.params.json == 'json')) {
                         res.json(resultToJson(err, data));
                     } else {
                         res.render('account', {
                             account: data,
+                            countBlocks: data.blocks ? data.blocks.length : 0,
                             nodedata: JSON.stringify(data.nodeDataArray),
                             linkdata: JSON.stringify(data.linkDataArray)
                         });

@@ -13,7 +13,7 @@ router.get('/', function (req, res, next) {
   var config = req.app.get('config');
   var configNames = req.app.get('configNames');
   var web3 = new Web3();
-  web3.setProvider(config.providerSubGESN);
+  web3.setProvider(config.selectParity());
   var data = {};
   data.bitzTimeoutTicker = false;
   data.bitzTimeoutCoinrate = false;

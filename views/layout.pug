@@ -15,24 +15,6 @@ html(lang="en")
     link(rel='stylesheet', href='/stylesheets/style.css')
     link(rel='stylesheet', href='/font-awesome/css/font-awesome.min.css')
     link(rel='stylesheet', href='/bootstrap-3.3.7-dist/css/bootstrap.min.css', crossorigin="anonymous")
-    // -- Global site tag (gtag.js) - Google Analytics
-    script.
-      (function() {
-        function async_load(){
-          var s = document.createElement('script');
-          s.type = 'text/javascript';
-          s.async = true;
-          s.src = 'https://www.googletagmanager.com/gtag/js?id=UA-120936757-2';
-          var x = document.getElementsByTagName('script')[0];
-          x.parentNode.insertBefore(s, x);
-
-          window.dataLayer = window.dataLayer || [];
-          function gtag(){dataLayer.push(arguments);}
-          gtag('js', new Date());
-          gtag('config', 'UA-120936757-2');
-        }
-        window.attachEvent ? window.attachEvent('onload', async_load) : window.addEventListener('load', async_load, false);
-      })();
   body
     nav.navbar.navbar-inverse.navbar-fixed-top
       .container
@@ -97,4 +79,6 @@ html(lang="en")
           br/ This site is currently being implemented.(status: beta test) 이 사이트는 현재 구현 중입니다.(상태: 베타 테스트).
         p
           a(href="https://github.com/gobitfly/etherchain-light") Etherchain Light
-          |  | #{nodeStatus.version} | #{nodeStatus.nbrPeers} Peers connected
+          for VersionAndPeer in nodeStatus.VersionAndPeers
+            br/
+            |   #{VersionAndPeer} Peers connected

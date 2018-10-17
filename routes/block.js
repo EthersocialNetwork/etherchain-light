@@ -44,9 +44,7 @@ var hex2ascii = function (hexIn) {
 router.get('/:block', function (req, res, next) {
   var config = req.app.get('config');
   var web3 = new Web3();
-  web3.setProvider(config.provider);
-  var web3GESN = new Web3();
-  web3GESN.setProvider(config.providerSubGESN);
+  web3.setProvider(config.selectParity());
 
   var tokenExporter = req.app.get('tokenExporter');
   client.on("error", function (err) {
@@ -55,7 +53,7 @@ router.get('/:block', function (req, res, next) {
 
   async.waterfall([
     function (callback) {
-      web3GESN.eth.getBlock(req.params.block, true, function (err, result) {
+      web3.eth.getBlock(req.params.block, true, function (err, result) {
         callback(err, result);
       });
     },
@@ -195,12 +193,12 @@ router.get('/:block', function (req, res, next) {
 router.get('/uncle/:hash/:number', function (req, res, next) {
 
   var config = req.app.get('config');
-  var web3GESN = new Web3();
-  web3GESN.setProvider(config.providerSubGESN);
+  var web3 = new Web3();
+  web3.setProvider(config.selectParity());
 
   async.waterfall([
     function (callback) {
-      web3GESN.eth.getUncle(req.params.hash, req.params.number, true, function (err, result) {
+      web3.eth.getUncle(req.params.hash, req.params.number, true, function (err, result) {
         callback(err, result);
       });
     },

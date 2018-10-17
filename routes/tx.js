@@ -10,7 +10,7 @@ router.get('/pending', function (req, res, next) {
 
   var config = req.app.get('config');
   var web3 = new Web3();
-  web3.setProvider(config.provider);
+  web3.setProvider(config.selectParity());
 
   async.waterfall([
     function (callback) {
@@ -47,7 +47,7 @@ router.post('/submit', function (req, res, next) {
 
   var config = req.app.get('config');
   var web3 = new Web3();
-  web3.setProvider(config.provider);
+  web3.setProvider(config.selectParity());
 
   async.waterfall([
     function (callback) {
@@ -72,7 +72,7 @@ router.get('/:tx', function (req, res, next) {
 
   var config = req.app.get('config');
   var web3 = new Web3();
-  web3.setProvider(config.provider);
+  web3.setProvider(config.selectParity());
 
   var tokenExporter = req.app.get('tokenExporter');
 
@@ -225,7 +225,7 @@ router.get('/raw/:tx', function (req, res, next) {
 
   var config = req.app.get('config');
   var web3 = new Web3();
-  web3.setProvider(config.provider);
+  web3.setProvider(config.selectParity());
 
   async.waterfall([
     function (callback) {
