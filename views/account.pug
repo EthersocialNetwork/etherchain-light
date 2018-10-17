@@ -48,6 +48,12 @@ block content
       td More Infomation:
       td
         a(href=account.officialurl target='_blank') Official BlockExplorer(Previous information) 공식 익스플로러(범위 이전 정보 조회)
+    if countBlocks < 1 && !account.isContract
+      tr
+        td
+          h5 Notice:
+        td
+          h5 No transactions within that block range. 해당 블록 범위 내에서 트랜잭션이 없습니다.
   div
     ul.nav.nav-tabs(role='tablist')
       if account.isContract

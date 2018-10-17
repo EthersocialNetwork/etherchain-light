@@ -9,11 +9,8 @@ var config = function () {
 
   this.ipcPath = "/home/username/.local/share/io.parity.ethersocial/jsonrpc.ipc";
   this.providerIpc = new web3.providers.IpcProvider(this.ipcPath, net);
-  this.providerLocal = new web3.providers.HttpProvider("http://127.0.0.1:8545");
-  this.providerSub = new web3.providers.HttpProvider("http://127.0.0.1:8545");
 
   this.arrParity = ['http://127.0.0.1:8545'];
-  this.arrGesn = ['http://127.0.0.1:8545'];
 
   this.getArrParity =  function () {
     return self.arrParity;
@@ -21,10 +18,6 @@ var config = function () {
 
   this.selectParity = function () {
     return new web3.providers.HttpProvider(self.arrParity[Math.floor(Math.random() * self.arrParity.length)]);
-  };
-
-  this.selectGesn = function () {
-    return new web3.providers.HttpProvider(self.arrGesn[Math.floor(Math.random() * self.arrGesn.length)]);
   };
 
   this.networkPortString = "50505";

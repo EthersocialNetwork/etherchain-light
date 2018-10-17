@@ -17,9 +17,7 @@ router.get('/:json?', function (req, res, next) {
 
 	var config = req.app.get('config');
 	var web3 = new Web3();
-	web3.setProvider(config.providerLocal);
-	var web3sub = new Web3();
-	web3sub.setProvider(config.providerSub);
+    web3.setProvider(config.selectParity());
 	var data = {};
 	data.peers = [];
 
@@ -40,37 +38,14 @@ router.get('/:json?', function (req, res, next) {
 			}
 		},
 		function (peers, callback) {
-			if (ip == config.cronIP) {
-				web3sub.parity.netPeers(function (err, result) {
-					//console.log("result.connected: " + result.connected);
-					callback(err, peers, result.peers);
-				});
-			} else {
-				callback(null, null, null);
-			}
-		},
-		function (localpeers, subpeers, callback) {
-			if (!localpeers || !subpeers) {
+			if (!peers) {
 				callback(null);
 			} else {
-				subpeers.slice(0).forEach(function (element) {
+				peers.slice(0).forEach(function (element) {
 					if (element.network.remoteAddress == 'Handshake') {
-						subpeers.splice(subpeers.indexOf(element), 1);
+						peers.splice(peers.indexOf(element), 1);
 					}
 				});
-				localpeers.slice(0).forEach(function (element) {
-					if (element.network.remoteAddress == 'Handshake') {
-						localpeers.splice(localpeers.indexOf(element), 1);
-					} else {
-						subpeers.forEach(subelement => {
-							if (element.network.remoteAddress == subelement.network.remoteAddress) {
-								localpeers.splice(localpeers.indexOf(element), 1);
-							}
-						});
-					}
-				});
-
-				var peers = localpeers.concat(subpeers);
 				peers.forEach(element => {
 					var rres = element.network.remoteAddress.split(":");
 					element.ip = rres[0];

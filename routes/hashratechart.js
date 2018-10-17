@@ -245,7 +245,7 @@ router.get('/', function (req, res, next) {
           callback(err, blocks);
         });
       } else {
-        callback(err, null);
+        callback(null, null);
       }
     }
   ], function (err, blocks) {
