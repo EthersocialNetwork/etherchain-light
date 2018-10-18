@@ -221,15 +221,13 @@ async.waterfall([
   cronServices.blockStoreService = new blockStoreService(config);
   cronServices.peerCollectorService = new peerCollectorService(config);
   cronServices.hashrateCollectorService = new hashrateCollectorService(config);
-  
+
   if (config.serverPortCheck) {
-    var serverPortCheckList = config.serverPortCheckList;
+    var serverPortCheckList = config.getArrParity();
+
     async.eachSeries(serverPortCheckList, function (server, forEachOfCallback) {
-      var splitIP = server.split(":");
-      if (splitIP.length > 1) {
-        serverPortCheck[server] = new serverPortCheckService(splitIP[0], parseInt(splitIP[1], 10), config.serverPortCheckDelay);
-        console.log('serverPortCheckService(', splitIP[0], parseInt(splitIP[1], 10), ')');
-      }
+      serverPortCheck[server] = new serverPortCheckService(server, config);
+      console.log('[serverPortCheckService]', server);
       sleep(100).then(() => {
         forEachOfCallback();
       });

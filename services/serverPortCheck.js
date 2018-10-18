@@ -2,10 +2,18 @@ const async = require('async');
 const tcpPortUsed = require('tcp-port-used');
 const redis = require("redis");
 
-var checker = function (ip, port, delay) {
+var checker = function (address, config) {
   var self = this;
-  self.ip = ip;
-  self.port = port;
+  self.address = address;
+
+  var sres = address.split("/");
+  if (sres[2]) {
+    var sreses = sres[2].split(":");
+    if (sreses.length == 2) {
+      self.ip = sreses[0];
+      self.port = parseInt(sreses[1], 10);
+    }
+  }
   self.prevTime = new Date();
   async.forever(
     function (next) {
@@ -25,23 +33,26 @@ var checker = function (ip, port, delay) {
 
           if (!inUse) {
             client.hset(rds_key, msnow, 0);
+            config.changeToArrParityDisconnect(self.address);
           } else {
             client.hset(rds_key, msnow, diffms);
+            config.changeToArrParity(self.address);
           }
           client.expireat(rds_key, parseInt((+new Date()) / 1000) + 86400);
 
           setTimeout(function () {
             next();
-          }, delay);
+          }, config.serverPortCheckDelay);
         }, function (err) {
           var now = new Date();
-          console.log('PortCheck Error:', self.ip, self.port, ':', now);
+          console.log('[[[[PortCheck Error]]]]', self.ip, self.port, ':', now);
           console.error('PortCheck Error:', err.message);
           client.hset(rds_key, msnow, 0);
           client.expireat(rds_key, parseInt((+new Date()) / 1000) + 86400);
+          config.changeToArrParityDisconnect(self.address);
           setTimeout(function () {
             next();
-          }, delay);
+          }, config.serverPortCheckDelay);
         });
     },
     function (err) {

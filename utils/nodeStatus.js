@@ -6,12 +6,12 @@ var nodeStatus = function (config) {
   var self = this;
   this.conf = config;
   this.VersionAndPeers = [];
-  this.arrParity = config.getArrParity();
   this.idx = 0;
   this.port = '';
   this.ip = '';
 
   this.updateStatus = function () {
+    this.arrParity = config.getArrParity();
     if (self.idx > self.arrParity.length - 1) {
       self.idx = 0;
     }
