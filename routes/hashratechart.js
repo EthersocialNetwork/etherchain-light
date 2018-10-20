@@ -56,7 +56,7 @@ router.get('/', function (req, res, next) {
     "valueDecimals": 0
   };
 
-  const client = redis.createClient();
+  var client = redis.createClient();
   client.on("error", function (err) {
     console.log("Error " + err);
   });

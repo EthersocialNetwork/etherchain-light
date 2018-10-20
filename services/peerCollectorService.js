@@ -4,27 +4,44 @@ const redis = require("redis");
 const geoip = require('geoip-lite');
 const iso = require('iso-3166-1');
 const tcpPortUsed = require('tcp-port-used');
-
 const pre_fix = 'explorerPeers:';
+var client = redis.createClient();
+client.on("error", function (err) {
+	console.log("Error " + err);
+});
+
+function getRedis() {
+	if (client && client.connected) {
+		return client;
+	}
+
+	if (client) {
+		client.end(); // End and open once more
+	}
+
+	client = redis.createClient();
+	client.on("error", function (err) {
+		console.log("Error " + err);
+	});
+	return client;
+}
 
 var peercollector = function (config) {
 	async.forever(
 		function (next) {
 			console.log("[▷▷▷ Start ▷▷▷][peerCollectorService]", printDateTime());
 			var web3 = new Web3();
-			web3.setProvider(config.selectParity());
+			web3.setProvider(config.providerIpc);
 			var data = {};
 			data.peers = [];
-
-			const client = redis.createClient();
-			client.on("error", function (err) {
-				console.log("Error " + err);
-			});
-
 			async.waterfall([
 				function (callback) {
 					web3.parity.netPeers(function (err, result) {
-						callback(err, result.peers);
+						if (result) {
+							callback(null, result.peers);
+						} else {
+							callback(err, null);
+						}
 					});
 				},
 				function (peers, callback) {
@@ -150,9 +167,9 @@ var peercollector = function (config) {
 												geo: txt_geo
 											};
 											var rds_key = pre_fix.concat(h);
-											client.hmset(rds_key, rds_value);
+											getRedis().hmset(rds_key, rds_value);
 											var rds_key2 = pre_fix.concat("list");
-											client.hset(rds_key2, h, tmp_data.id);
+											getRedis().hset(rds_key2, h, tmp_data.id);
 											if (!existAddress.includes(tmp_data.ip)) {
 												existAddress.push(tmp_data.ip);
 											}
@@ -182,9 +199,9 @@ var peercollector = function (config) {
 														geo: txt_geo
 													};
 													var rds_key = pre_fix.concat(h);
-													client.hmset(rds_key, rds_value);
+													getRedis().hmset(rds_key, rds_value);
 													var rds_key2 = pre_fix.concat("list");
-													client.hset(rds_key2, h, tmp_data.id);
+													getRedis().hset(rds_key2, h, tmp_data.id);
 													if (!existAddress.includes(tmp_data.ip)) {
 														existAddress.push(tmp_data.ip);
 													}
@@ -209,9 +226,9 @@ var peercollector = function (config) {
 															geo: txt_geo
 														};
 														var rds_key = pre_fix.concat(h);
-														client.hmset(rds_key, rds_value);
+														getRedis().hmset(rds_key, rds_value);
 														var rds_key2 = pre_fix.concat("list");
-														client.hset(rds_key2, h, tmp_data.id);
+														getRedis().hset(rds_key2, h, tmp_data.id);
 														if (!existAddress.includes(tmp_data.ip)) {
 															existAddress.push(tmp_data.ip);
 														}

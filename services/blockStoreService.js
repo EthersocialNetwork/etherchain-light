@@ -3,29 +3,33 @@ var Web3 = require('web3');
 const redis = require("redis");
 const pre_fix = 'explorerBlocks:';
 const divide = 10000;
+var client = redis.createClient();
+client.on("error", function (err) {
+	console.log("Error " + err);
+});
 
-Array.prototype.clean = function (deleteValue) {
-	for (var i = 0; i < this.length; i++) {
-		if (this[i] == deleteValue) {
-			this.splice(i, 1);
-			i--;
-		}
+function getRedis() {
+	if (client && client.connected) {
+		return client;
 	}
-	return this;
-};
+
+	if (client) {
+		client.end(); // End and open once more
+	}
+
+	client = redis.createClient();
+	client.on("error", function (err) {
+		console.log("Error " + err);
+	});
+	return client;
+}
 
 var blockstore = function (config) {
 	async.forever(
 		function (next) {
 			console.log("[▷▷▷ Start ▷▷▷][blockStoreService]", printDateTime());
 			var web3 = new Web3();
-			web3.setProvider(config.selectParity());
-
-			const client = redis.createClient();
-			client.on("error", function (err) {
-				console.log("Error " + err);
-			});
-
+			web3.setProvider(config.providerIpc);
 			var data = {};
 			data.dbLastBlock = 0;
 			data.blockCount = 1000;
@@ -33,7 +37,7 @@ var blockstore = function (config) {
 			async.waterfall([
 				function (callback) {
 					var rds_key3 = pre_fix.concat("lastblock");
-					client.hget(rds_key3, "lastblock", function (err, result) {
+					getRedis().hget(rds_key3, "lastblock", function (err, result) {
 						callback(err, result);
 					});
 				},
@@ -101,48 +105,53 @@ var blockstore = function (config) {
 			], function (err, blocks) {
 				if (err || !blocks) {
 					console.log("Error " + err);
-					next();
-				}
-				var maxBlockNumber = 0;
-				blocks.clean(undefined);
-				blocks.forEach(function (block) {
-					if (block && block != undefined) {
-						if (data.dbLastBlock <= block.number) {
-							var rds_value = {
-								number: block.number.toString(),
-								hash: block.hash,
-								parentHash: block.parentHash,
-								nonce: block.nonce,
-								sha3Uncles: block.sha3Uncles,
-								//logsBloom: block.logsBloom,
-								transactionsRoot: block.transactionsRoot,
-								stateRoot: block.stateRoot,
-								miner: block.miner,
-								difficulty: block.difficulty.toString(),
-								totalDifficulty: block.totalDifficulty.toString(),
-								extraData: block.extraData,
-								size: block.size.toString(),
-								gasLimit: block.gasLimit.toString(),
-								gasUsed: block.gasUsed.toString(),
-								timestamp: block.timestamp.toString(),
-								transactions: block.transactions ? block.transactions.length : 0,
-								uncles: block.uncles ? block.uncles.length : 0
-							};
-							var rds_key = pre_fix.concat("list");
-							client.hset(rds_key, block.number, block.miner);
-							var rds_key2 = pre_fix.concat((block.number - (block.number % divide)) + ":").concat(block.number);
-							client.hmset(rds_key2, rds_value);
-							maxBlockNumber = maxBlockNumber < block.number ? block.number : maxBlockNumber;
-							var rds_key3 = pre_fix.concat("lastblock");
-							client.hset(rds_key3, "lastblock", maxBlockNumber);
+				} else {
+					var maxBlockNumber = 0;
+					for (var i = 0; i < blocks.length; i++) {
+						if (blocks[i] == null || blocks[i] == undefined || typeof blocks[i] === undefined) {
+							blocks.splice(i, 1);
+							i--;
 						}
 					}
-				});
+					blocks.forEach(function (block) {
+						if (block && block != undefined) {
+							if (data.dbLastBlock <= block.number) {
+								var rds_value = {
+									number: block.number.toString(),
+									hash: block.hash,
+									parentHash: block.parentHash,
+									nonce: block.nonce,
+									sha3Uncles: block.sha3Uncles,
+									//logsBloom: block.logsBloom,
+									transactionsRoot: block.transactionsRoot,
+									stateRoot: block.stateRoot,
+									miner: block.miner,
+									difficulty: block.difficulty.toString(),
+									totalDifficulty: block.totalDifficulty.toString(),
+									extraData: block.extraData,
+									size: block.size.toString(),
+									gasLimit: block.gasLimit.toString(),
+									gasUsed: block.gasUsed.toString(),
+									timestamp: block.timestamp.toString(),
+									transactions: block.transactions ? block.transactions.length : 0,
+									uncles: block.uncles ? block.uncles.length : 0
+								};
+								var rds_key = pre_fix.concat("list");
+								getRedis().hset(rds_key, block.number, block.miner);
+								var rds_key2 = pre_fix.concat((block.number - (block.number % divide)) + ":").concat(block.number);
+								getRedis().hmset(rds_key2, rds_value);
+								maxBlockNumber = maxBlockNumber < block.number ? block.number : maxBlockNumber;
+								var rds_key3 = pre_fix.concat("lastblock");
+								getRedis().hset(rds_key3, "lastblock", maxBlockNumber);
+							}
+						}
+					});
+				}
 				console.log("[□□□□ End □□□□][blockStoreService]", printDateTime());
 				setTimeout(function () {
 					next();
 				}, config.blockStoreServiceInterval);
-				});
+			});
 		},
 		function (err) {
 			console.log('!!!! blockStoreService STOP !!!!', err);
