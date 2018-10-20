@@ -6,6 +6,10 @@ var web3 = new Web3();
 var BigNumber = require('bignumber.js');
 var redis = require("redis"),
   client = redis.createClient();
+client.on("error", function (err) {
+  console.log("Redis Error " + err);
+});
+
 var provider = new web3.providers.HttpProvider("http://127.0.0.1:8545");
 web3.setProvider(provider);
 //console.dir(app.locals.config);
@@ -90,10 +94,6 @@ router.get('/txlist/:address/:startblock?/:endblock?', function (req, res, next)
 
 //http://explorer.ethersocial.info/api_account/esnsupply
 router.get('/esnsupply', function (req, res, next) {
-  client.on("error", function (err) {
-    console.log("Redis Error " + err);
-  });
-
   /*
   client.hset('esn_top100:apisupport', 'totalAccounts', totalAccounts);
   client.hset('esn_top100:apisupport', 'activeAccounts', activeAccounts);
@@ -218,9 +218,6 @@ router.get('/tokeninfo/:contractaddress', function (req, res, next) {
 //http://explorer.ethersocial.info/api_account/tokenbalance/0x3e2c6a622c29cf30c04c9ed8ed1e985da8c95662/0x0146b9dcd9fb2abc1b5b136c28d20d0037526961
 router.get('/tokenbalance/:address/:contractaddress?', function (req, res, next) {
   var tokenExporter = req.app.get('tokenExporter');
-  client.on("error", function (err) {
-    console.log("Redis Error " + err);
-  });
 
   if (tokenExporter[req.params.address] || (req.params.contractaddress && !tokenExporter[req.params.contractaddress])) {
     res.json(resultToJson(null, null));

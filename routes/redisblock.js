@@ -4,7 +4,6 @@ var router = express.Router();
 var async = require('async');
 var Web3 = require('web3');
 const redis = require("redis");
-const client = redis.createClient();
 const pre_fix = 'explorerBlocks:';
 const divide = 10000;
 
@@ -24,10 +23,10 @@ router.get('/:end?', function (req, res, next) {
   web3.setProvider(config.selectParity());
   var data = {};
   data.startTime = new Date();
-  data.ip = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
   data.dbLastBlock = 0;
   data.blockCount = 1000;
 
+  const client = redis.createClient();
   client.on("error", function (err) {
     console.log("Error " + err);
   });
@@ -47,18 +46,7 @@ router.get('/:end?', function (req, res, next) {
     },
     function (latestBlock, callback) {
       data.lastBlock = new Intl.NumberFormat().format(latestBlock.number);
-      if (data.ip == config.cronIP) {
-        if (data.dbLastBlock > 0) {
-          var tmpblocknumber = data.dbLastBlock + data.blockCount > latestBlock.number ? latestBlock.number : data.dbLastBlock + data.blockCount;
-          web3.eth.getBlock(tmpblocknumber, false, function (err, result) {
-            callback(err, result);
-          });
-        } else {
-          web3.eth.getBlock(data.blockCount, false, function (err, result) {
-            callback(err, result);
-          });
-        }
-      } else if (req.params.end && req.params.end < data.blockCount) {
+      if (req.params.end && req.params.end < data.blockCount) {
         web3.eth.getBlock(data.blockCount, false, function (err, result) {
           callback(err, result);
         });
@@ -121,7 +109,7 @@ router.get('/:end?', function (req, res, next) {
     var totaDifficulty = 0;
     data.txnumber = 0;
     data.dbBlock = 0;
-    maxBlockNumber = 0;
+    var maxBlockNumber = 0;
 
     blocks.clean(undefined);
     blocks.forEach(function (block) {
@@ -138,35 +126,6 @@ router.get('/:end?', function (req, res, next) {
           data.dbBlock++;
         } else {
           data.txnumber += block.transactions ? block.transactions.length : 0;
-          if (data.ip == config.cronIP) {
-            var rds_value = {
-              number: block.number.toString(),
-              hash: block.hash,
-              parentHash: block.parentHash,
-              nonce: block.nonce,
-              sha3Uncles: block.sha3Uncles,
-              //logsBloom: block.logsBloom,
-              transactionsRoot: block.transactionsRoot,
-              stateRoot: block.stateRoot,
-              miner: block.miner,
-              difficulty: block.difficulty.toString(),
-              totalDifficulty: block.totalDifficulty.toString(),
-              extraData: block.extraData,
-              size: block.size.toString(),
-              gasLimit: block.gasLimit.toString(),
-              gasUsed: block.gasUsed.toString(),
-              timestamp: block.timestamp.toString(),
-              transactions: block.transactions ? block.transactions.length : 0,
-              uncles: block.uncles ? block.uncles.length : 0
-            };
-            var rds_key = pre_fix.concat("list");
-            client.hset(rds_key, block.number, block.miner);
-            var rds_key2 = pre_fix.concat((block.number - (block.number % divide)) + ":").concat(block.number);
-            client.hmset(rds_key2, rds_value);
-            maxBlockNumber = maxBlockNumber < block.number ? block.number : maxBlockNumber;
-            var rds_key3 = pre_fix.concat("lastblock");
-            client.hset(rds_key3, "lastblock", maxBlockNumber);
-          }
         }
       }
     });
@@ -188,26 +147,24 @@ router.get('/:end?', function (req, res, next) {
     data.consumptionTime = ((data.endTime - data.startTime) / 1000).toLocaleString(undefined, {
       maximumFractionDigits: 4
     }) + " s";
-    if (data.ip == config.cronIP) {
-      res.json(resultToJson(null, data));
-    } else {
-      res.render('redisblock', {
-        startTime: data.startTime,
-        PerBlock: data.blockCount.toLocaleString(),
-        lastBlock: data.lastBlock,
-        blockTime: data.blockTime,
-        difficulty: data.difficulty,
-        hashrate: data.hashrate,
-        startblock: data.startblockntime,
-        endblock: data.endblockntime,
-        endTime: data.endTime,
-        consumptionTime: data.consumptionTime,
-        transactionsCount: data.txnumber.toLocaleString(),
-        FoundBlockInDB: data.dbBlock.toLocaleString(),
-        LastBlockInDB: data.dbLastBlock.toLocaleString(),
-        nowBlockNumber: blocks[0] === undefined ? 0 : blocks[0].number
-      });
-    }
+
+
+    res.render('redisblock', {
+      startTime: data.startTime,
+      PerBlock: data.blockCount.toLocaleString(),
+      lastBlock: data.lastBlock,
+      blockTime: data.blockTime,
+      difficulty: data.difficulty,
+      hashrate: data.hashrate,
+      startblock: data.startblockntime,
+      endblock: data.endblockntime,
+      endTime: data.endTime,
+      consumptionTime: data.consumptionTime,
+      transactionsCount: data.txnumber.toLocaleString(),
+      FoundBlockInDB: data.dbBlock.toLocaleString(),
+      LastBlockInDB: data.dbLastBlock.toLocaleString(),
+      nowBlockNumber: blocks[0] === undefined ? 0 : blocks[0].number
+    });
   });
 });
 

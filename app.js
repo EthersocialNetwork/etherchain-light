@@ -18,7 +18,6 @@ var contract = require('./routes/contract');
 var signature = require('./routes/signature');
 var search = require('./routes/search');
 var top100 = require('./routes/top100');
-var top100_settingup = require('./routes/top100_settingup');
 var peers = require('./routes/peers');
 var redisblock = require('./routes/redisblock');
 var hashratechart = require('./routes/hashratechart');
@@ -53,11 +52,16 @@ app.use(compression({
 var async = require('async');
 var tokenExporterService = require('./services/tokenExporter.js');
 var serverPortCheckService = require('./services/serverPortCheck.js');
+var accountBalanceService = require('./services/accountBalanceService');
+var blockStoreService = require('./services/blockStoreService');
+var peerCollectorService = require('./services/peerCollectorService');
+var hashrateCollectorService = require('./services/hashrateCollectorService');
 
 var contractAccountList = [];
 var tokenExporter = {};
 var serverPortCheck = {};
 
+var cronServices = {};
 async.waterfall([
   function (callback) {
     client.hgetall('esn_contracts:eventslength', function (err, replies) {
@@ -96,11 +100,6 @@ async.waterfall([
     });
   }
 ], function (err, accountList) {
-  //var db = levelup(leveldown('./data')); 
-  // ~/esn_install/parity/chaindata/chains/ethersocial/db/dc73f323b4681272/archive/db
-  // ~/esn_install/parity/chaindata/chains/ethersocial/db/dc73f323b4681272/snapshot/current
-  // /root/esn_install/parity/chaindata/chains/ethersocial/db/dc73f323b4681272/snapshot/current
-
   // view engine setup
   app.set('views', path.join(__dirname, 'views'));
   app.set('view engine', 'pug');
@@ -167,7 +166,6 @@ async.waterfall([
   app.use('/top100', top100);
   app.use('/blocks', blocks);
   app.use('/tx_recent', tx_recent);
-  app.use('/top100_settingup', top100_settingup);
   app.use('/peers', peers);
   app.use('/redisblock', redisblock);
   app.use('/hashratechart', hashratechart);
@@ -219,14 +217,17 @@ async.waterfall([
   console.log("[Loading  End]\t", new Date().toLocaleString());
   //console.dir(accountList);
 
+  cronServices.accountBalanceService = new accountBalanceService(config, configERC20, app);
+  cronServices.blockStoreService = new blockStoreService(config);
+  cronServices.peerCollectorService = new peerCollectorService(config);
+  cronServices.hashrateCollectorService = new hashrateCollectorService(config);
+
   if (config.serverPortCheck) {
-    var serverPortCheckList = config.serverPortCheckList;
+    var serverPortCheckList = config.getArrParity();
+
     async.eachSeries(serverPortCheckList, function (server, forEachOfCallback) {
-      var splitIP = server.split(":");
-      if (splitIP.length > 1) {
-        serverPortCheck[server] = new serverPortCheckService(splitIP[0], parseInt(splitIP[1], 10), config.serverPortCheckDelay);
-        console.log('serverPortCheckService(', splitIP[0], parseInt(splitIP[1], 10), ')');
-      }
+      serverPortCheck[server] = new serverPortCheckService(server, config);
+      console.log('[serverPortCheckService]', server);
       sleep(100).then(() => {
         forEachOfCallback();
       });
