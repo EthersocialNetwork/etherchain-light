@@ -16,7 +16,7 @@ var nodeStatus = function (config) {
     if (arrParity.indexOf(self.conf.localRPCaddress) === -1 && arrDisconnectParity.indexOf(self.conf.localRPCaddress) === -1) {
       arrParity.splice(0, 0, self.conf.localRPCaddress);
     }
-    if (self.idx > arrParity.length) {
+    if (self.idx > arrParity.length - 1) {
       self.idx = 0;
     }
 
