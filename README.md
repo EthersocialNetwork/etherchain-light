@@ -29,7 +29,6 @@ A demo instance connected to the EtherSocialNetwork is available at [http://expl
 
 ## Planned features
 * Responsive web page
-* cron job in nodejs
 
 Missing a feature? Please request it by creating a new [Issue](https://github.com/ComBba/etherchain-light/issues).
 
