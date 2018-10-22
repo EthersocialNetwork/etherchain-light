@@ -28,9 +28,13 @@ router.get('/:offset?', function (req, res, next) {
 			}
 		],
 		function (err, resData) {
-			res.render("bitzcharts", {
-				"chartdata": resData
-			});
+			if (err) {
+				return next(err);
+			} else {
+				res.render("bitzcharts", {
+					"chartdata": resData
+				});
+			}
 		});
 });
 

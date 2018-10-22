@@ -7,7 +7,7 @@ const tcpPortUsed = require('tcp-port-used');
 const pre_fix = 'explorerPeers:';
 var client = redis.createClient();
 client.on("error", function (err) {
-	console.log("Error " + err);
+	console.log("Error ", err);
 });
 
 function getRedis() {
@@ -21,7 +21,7 @@ function getRedis() {
 
 	client = redis.createClient();
 	client.on("error", function (err) {
-		console.log("Error " + err);
+		console.log("Error ", err);
 	});
 	return client;
 }
@@ -178,7 +178,6 @@ var peercollector = function (config) {
 											var inUse = true; // wait until the port is in use
 											tcpPortUsed.waitForStatus(config.networkPortNumber, tmp_data.ip, inUse, 200, 400)
 												.then(function () {
-													//console.log("tcpPortUsed.waitForStatus:", config.networkPortString, tmp_data.ip, "\n", inUse);
 													tmp_data.orgPort = tmp_data.port;
 													tmp_data.port = config.networkPortString;
 													var enode = "enode://";
@@ -248,7 +247,7 @@ var peercollector = function (config) {
 				}
 			], function (err) {
 				if (err) {
-					console.log("Error " + err);
+					console.log("Error ", err);
 				}
 				console.log("[□□□□ End □□□□][peerCollectorService]", printDateTime());
 				setTimeout(function () {

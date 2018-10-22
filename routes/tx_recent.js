@@ -32,26 +32,27 @@ router.get('/', function (req, res, next) {
     }
   ], function (err, blocks) {
     if (err) {
-      console.log("Error " + err);
-    }
-
-    var txs = [];
-    blocks.forEach(function (block) {
-      if (txs.length >= 100) {
-        return;
-      }
-      block.transactions.forEach(function (tx) {
+      console.log("Error ", err);
+      return next(err);
+    } else {
+      var txs = [];
+      blocks.forEach(function (block) {
         if (txs.length >= 100) {
           return;
         }
-        txs.push(tx);
-        //console.dir(tx);
+        block.transactions.forEach(function (tx) {
+          if (txs.length >= 100) {
+            return;
+          }
+          txs.push(tx);
+          //console.dir(tx);
+        });
       });
-    });
-    res.render('tx_recent', {
-      blocks: blocks,
-      txs: txs
-    });
+      res.render('tx_recent', {
+        blocks: blocks,
+        txs: txs
+      });
+    }
   });
 });
 

@@ -21,7 +21,7 @@ router.get('/', function (req, res, next) {
   data.coinrate = {};
 
   client.on("error", function (err) {
-    console.log("Error " + err);
+    console.log("Error ", err);
   });
 
   async.waterfall([
@@ -138,7 +138,8 @@ router.get('/', function (req, res, next) {
     }
   ], function (err, tmpBlocks, blocks) {
     if (err) {
-      console.log("Error " + err);
+      console.log("Error ", err);
+      return next(err);
     }
 
     var rBlocks = [];

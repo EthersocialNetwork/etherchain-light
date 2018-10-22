@@ -42,7 +42,7 @@ router.get('/summary/:count?', function (req, res, next) {
   var data = {};
 
   client.on("error", function (err) {
-    console.log("Error " + err);
+    console.log("Error ", err);
   });
 
   async.waterfall([
@@ -86,7 +86,8 @@ router.get('/summary/:count?', function (req, res, next) {
     }
   ], function (err, blocks) {
     if (err) {
-      console.log("Error " + err);
+      console.log("Error ", err);
+      res.json(resultToJson(err, null));
     }
 
     var totalBlockTimes = 0;

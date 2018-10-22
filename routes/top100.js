@@ -19,7 +19,7 @@ router.get('/:json?', function (req, res, next) {
 	var contractstransfercount = {};
 	var tokenExporter = req.app.get('tokenExporter');
 	client.on("error", function (err) {
-		console.log("Error " + err);
+		console.log("Error ", err);
 	});
 	async.waterfall([
 			function (callback) {
@@ -164,6 +164,10 @@ router.get('/:json?', function (req, res, next) {
 			}
 		],
 		function (err, contracts, lastaccount, totalAccounts, nowAccounts, accounts_create_time, accounts_special, accounts_normal, activeAccounts, totalSupply, specialSupply, normalSupply) {
+			if (err) {
+				console.log("Error ", err);
+				return next(err);
+			}
 			var perProgress = ((nowAccounts / totalAccounts) * 100).toLocaleString();
 			if (req.params.json && (req.params.json == 'true' || req.params.json == 'json')) {
 				var jsonData = {};
@@ -173,7 +177,8 @@ router.get('/:json?', function (req, res, next) {
 				jsonData.accounts_normal = accounts_normal;
 				jsonData.accounts_special = accounts_special;
 				res.json(resultToJson(err, jsonData));
-			}if (req.params.json && req.params.json == 'summary') {
+			}
+			if (req.params.json && req.params.json == 'summary') {
 				var jsonSummary = {};
 				jsonSummary.TotalNumberOfAccounts = totalAccounts;
 				jsonSummary.ActiveNumberOfAccounts = activeAccounts;
@@ -181,7 +186,7 @@ router.get('/:json?', function (req, res, next) {
 				jsonSummary.LongTermHoldingAmount = specialSupply;
 				jsonSummary.CirculatingSupply = normalSupply;
 				res.json(resultToJson(err, jsonSummary));
-			}  else {
+			} else {
 				res.render("top100", {
 					"contracts": contracts,
 					"lastAccount": lastaccount,

@@ -48,7 +48,7 @@ router.get('/:block', function (req, res, next) {
 
   var tokenExporter = req.app.get('tokenExporter');
   client.on("error", function (err) {
-    console.log("Redis Error " + err);
+    console.log("Redis Error ", err);
   });
 
   async.waterfall([
@@ -114,7 +114,7 @@ router.get('/:block', function (req, res, next) {
             }
           ], function (err, events) {
             if (err) {
-              console.log("Error " + err);
+              console.log("Error ", err);
             } else {
               async.eachSeries(events, function (event, eventsEachCallback) {
                 tokenEvents.push(event);
@@ -133,7 +133,8 @@ router.get('/:block', function (req, res, next) {
     }
   ], function (err, tokenEvents, block, traces) {
     if (err) {
-      console.log("Error " + err);
+      console.log("Error ", err);
+      return next(err);
     }
 
     if (block && block.transactions) {
@@ -180,12 +181,12 @@ router.get('/:block', function (req, res, next) {
         name: "BlockNotFoundError",
         message: "Block not found!"
       });
+    } else {
+      //console.dir(block);
+      res.render('block', {
+        block: block
+      });
     }
-
-    //console.dir(block);
-    res.render('block', {
-      block: block
-    });
   });
 
 });
@@ -213,15 +214,14 @@ router.get('/uncle/:hash/:number', function (req, res, next) {
     }
   ], function (err, uncle) {
     if (err) {
-      console.log("Error " + err);
+      console.log("Error ", err);
+      return next(err);
+    } else {
+      res.render('uncle', {
+        uncle: uncle,
+        blockHash: req.params.hash
+      });
     }
-
-    //console.log(uncle);
-
-    res.render('uncle', {
-      uncle: uncle,
-      blockHash: req.params.hash
-    });
   });
 
 });

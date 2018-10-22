@@ -20,16 +20,17 @@ router.get('/pending', function (req, res, next) {
     }
   ], function (err, txs) {
     if (err) {
-      console.log("Error " + err);
+      console.log("Error ", err);
+      return next(err);
+    } else {
+      txs.forEach(function (tx) {
+        tx.gasPrice = parseInt(tx.gasPrice, 16);
+      });
+
+      res.render('tx_pending', {
+        txs: txs
+      });
     }
-
-    txs.forEach(function (tx) {
-      tx.gasPrice = parseInt(tx.gasPrice, 16);
-    });
-
-    res.render('tx_pending', {
-      txs: txs
-    });
   });
 });
 
@@ -57,8 +58,9 @@ router.post('/submit', function (req, res, next) {
     }
   ], function (err, hash) {
     if (err) {
-      res.render('tx_submit', {
-        message: "Error submitting transaction: " + err
+      console.log("Error ", err);
+      return next({
+        message: "Error submitting transaction: "
       });
     } else {
       res.render('tx_submit', {
@@ -175,48 +177,54 @@ router.get('/:tx', function (req, res, next) {
     }
   ], function (err, tx, receipt, traces, _value, _to) {
     if (err) {
-      console.log("Error " + err);
-    }
+      console.log("TX Error ", err);
+      return next(err);
+    } else {
 
-    //console.dir(tx);
+      //console.dir(tx);
 
-    // Try to match the tx to a solidity function call if the contract source is available
-    /* TODO: logs
-    if (events) {
-      tx.source = JSON.parse(source);
-      try {
-        var jsonAbi = JSON.parse(tx.source.abi);
-        abiDecoder.addABI(jsonAbi);
-        tx.logs = abiDecoder.decodeLogs(receipt.logs);
-        tx.callInfo = abiDecoder.decodeMethod(tx.input);
-      } catch (e) {
-        console.log("Error parsing ABI:", tx.source.abi, e);
+      // Try to match the tx to a solidity function call if the contract source is available
+      /* TODO: logs
+      if (events) {
+        tx.source = JSON.parse(source);
+        try {
+          var jsonAbi = JSON.parse(tx.source.abi);
+          abiDecoder.addABI(jsonAbi);
+          tx.logs = abiDecoder.decodeLogs(receipt.logs);
+          tx.callInfo = abiDecoder.decodeMethod(tx.input);
+        } catch (e) {
+          console.log("Error parsing ABI:", tx.source.abi, e);
+        }
+      }
+      */
+      if (tx) {
+        tx.traces = [];
+        tx.failed = false;
+        tx.gasUsed = 0;
+        if (traces != null) {
+          traces.forEach(function (trace) {
+            tx.traces.push(trace);
+            if (trace.error) {
+              tx.failed = true;
+              tx.error = trace.error;
+            }
+            if (trace.result && trace.result.gasUsed) {
+              tx.gasUsed += parseInt(trace.result.gasUsed, 16);
+            }
+          });
+
+          /*if (tx.traces.length > 1) {
+            console.dir(tx.traces);
+            console.log("============== [ tx.traces.length > 1 ] ==============");
+          }*/
+        }
+        res.render('tx', {
+          tx: tx
+        });
+      } else {
+        res.status(404).send('tx not found.');
       }
     }
-    */
-    tx.traces = [];
-    tx.failed = false;
-    tx.gasUsed = 0;
-    if (traces != null) {
-      traces.forEach(function (trace) {
-        tx.traces.push(trace);
-        if (trace.error) {
-          tx.failed = true;
-          tx.error = trace.error;
-        }
-        if (trace.result && trace.result.gasUsed) {
-          tx.gasUsed += parseInt(trace.result.gasUsed, 16);
-        }
-      });
-
-      /*if (tx.traces.length > 1) {
-        console.dir(tx.traces);
-        console.log("============== [ tx.traces.length > 1 ] ==============");
-      }*/
-    }
-    res.render('tx', {
-      tx: tx
-    });
   });
 
 });
@@ -241,12 +249,14 @@ router.get('/raw/:tx', function (req, res, next) {
     }
   ], function (err, tx) {
     if (err) {
-      console.log("Error " + err);
+      console.log("TX Error ", err);
+      return next(err);
+    } else {
+      //console.dir(tx);
+      res.render('tx_raw', {
+        tx: tx
+      });
     }
-    //console.dir(tx);
-    res.render('tx_raw', {
-      tx: tx
-    });
   });
 });
 

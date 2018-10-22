@@ -28,7 +28,7 @@ router.get('/:end?', function (req, res, next) {
 
   const client = redis.createClient();
   client.on("error", function (err) {
-    console.log("Error " + err);
+    console.log("Error ", err);
   });
 
   async.waterfall([
@@ -99,9 +99,15 @@ router.get('/:end?', function (req, res, next) {
       });
     }
   ], function (err, blocks) {
-    if (err || !blocks) {
-      console.log("Error " + err);
-      next();
+    if (err) {
+      console.log("Error ", err);
+      return next(err);
+    }
+    if (!blocks) {
+      return next({
+        name: "BlocksNotFoundError",
+        message: "Blocks not found!"
+      });
     }
     var totalBlockTimes = 0;
     var lastBlockTimes = -1;

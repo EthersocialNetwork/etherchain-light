@@ -5,7 +5,7 @@ const pre_fix_chart = 'explorerBlocksChart:';
 const divide = 10000;
 var client = redis.createClient();
 client.on("error", function (err) {
-	console.log("Error " + err);
+	console.log("Error ", err);
 });
 
 function getRedis() {
@@ -19,7 +19,7 @@ function getRedis() {
 
 	client = redis.createClient();
 	client.on("error", function (err) {
-		console.log("Error " + err);
+		console.log("Error ", err);
 	});
 	return client;
 }
@@ -166,7 +166,6 @@ var hashratecollector = function (config) {
 								getRedis().hmget(fieldkey, 'timestamp', 'difficulty', 'number', 'transactions', function (err, block_info) {
 									if (err || !block_info) {
 										console.log(fieldkey + ": no block infomation");
-										return next(err, null);
 									} else {
 										var baseOneTime = (60 * 60 * 1 * 1000);
 										var baseTime = (60 * 60 * 2 * 1000);
@@ -264,22 +263,23 @@ var hashratecollector = function (config) {
 				}
 			], function (err, blocks) {
 				if (err) {
-					console.log("Error " + err);
-				}
+					console.log("Error ", err);
+				} else {
 
-				if (data.lastnumber > 0) {
-					getRedis().hset(pre_fix_chart.concat("lastblock"), "lastblock", data.lastnumber);
+					if (data.lastnumber > 0) {
+						getRedis().hset(pre_fix_chart.concat("lastblock"), "lastblock", data.lastnumber);
+					}
+					for (let i = 0; i < dbSaveDatas.xData.length; i++) {
+						getRedis().rpush(pre_fix_chart.concat('xData'), dbSaveDatas.xData[i]);
+						getRedis().rpush(pre_fix_chart.concat('xBlocknumber'), dbSaveDatas.xBlocknumber[i]);
+						getRedis().rpush(pre_fix_chart.concat('xNumberOfBlocks'), dbSaveDatas.xNumberOfBlocks[i]);
+						getRedis().rpush(pre_fix_chart.concat('BlockTime'), dbSaveDatas.BlockTime[i]);
+						getRedis().rpush(pre_fix_chart.concat('Difficulty'), dbSaveDatas.Difficulty[i]);
+						getRedis().rpush(pre_fix_chart.concat('NetHashrate'), dbSaveDatas.NetHashrate[i]);
+						getRedis().rpush(pre_fix_chart.concat('Transactions'), dbSaveDatas.Transactions[i]);
+					}
+					console.log("[□□□□ End □□□□][hashrateCollectorService]", printDateTime());
 				}
-				for (let i = 0; i < dbSaveDatas.xData.length; i++) {
-					getRedis().rpush(pre_fix_chart.concat('xData'), dbSaveDatas.xData[i]);
-					getRedis().rpush(pre_fix_chart.concat('xBlocknumber'), dbSaveDatas.xBlocknumber[i]);
-					getRedis().rpush(pre_fix_chart.concat('xNumberOfBlocks'), dbSaveDatas.xNumberOfBlocks[i]);
-					getRedis().rpush(pre_fix_chart.concat('BlockTime'), dbSaveDatas.BlockTime[i]);
-					getRedis().rpush(pre_fix_chart.concat('Difficulty'), dbSaveDatas.Difficulty[i]);
-					getRedis().rpush(pre_fix_chart.concat('NetHashrate'), dbSaveDatas.NetHashrate[i]);
-					getRedis().rpush(pre_fix_chart.concat('Transactions'), dbSaveDatas.Transactions[i]);
-				}
-				console.log("[□□□□ End □□□□][hashrateCollectorService]", printDateTime());
 				setTimeout(function () {
 					next();
 				}, config.hashrateCollectorServiceInterval);

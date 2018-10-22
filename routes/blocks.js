@@ -15,7 +15,7 @@ router.get('/', function (req, res, next) {
   var data = {};
 
   client.on("error", function (err) {
-    console.log("Error " + err);
+    console.log("Error ", err);
   });
 
   async.waterfall([
@@ -63,7 +63,8 @@ router.get('/', function (req, res, next) {
     }
   ], function (err, blocks) {
     if (err) {
-      console.log("Error " + err);
+      console.log("Error", err);
+      return next(err);
     }
 
     res.render('blocks', {

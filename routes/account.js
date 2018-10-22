@@ -39,7 +39,7 @@ router.get('/:account/:offset?/:count?/:json?', function (req, res, next) {
     data.address = req.params.account;
 
     client.on("error", function (err) {
-        console.log("Redis Error " + err);
+        console.log("Redis Error ", err);
     });
 
 
@@ -168,7 +168,7 @@ router.get('/:account/:offset?/:count?/:json?', function (req, res, next) {
                             }
                         ], function (err, tokeninfo) {
                             if (err) {
-                                console.log("Error " + err);
+                                console.log("Error ", err);
                             } else {
                                 //console.dir(tokeninfo);
                                 if (tokeninfo && tokeninfo.balance && tokeninfo.balance.balance > 0) {
@@ -499,7 +499,7 @@ router.get('/:account/:offset?/:count?/:json?', function (req, res, next) {
                                     ],
                                     function (err) {
                                         if (err) {
-                                            console.log("outeachCallback Error " + err);
+                                            console.log("outeachCallback Error ", err);
                                         }
                                         outeachCallback();
                                     });
@@ -507,7 +507,7 @@ router.get('/:account/:offset?/:count?/:json?', function (req, res, next) {
                         },
                         function (err) {
                             if (err) {
-                                console.log("callback Error " + err);
+                                console.log("callback Error ", err);
                             }
                             callback(err, null);
                         });
@@ -551,13 +551,8 @@ router.get('/:account/:offset?/:count?/:json?', function (req, res, next) {
         ],
         function (err, tokenEvents) {
             if (err) {
-                console.log("Final Error " + err);
-                res.locals.message = err.message;
-                res.locals.error = {};
-                res.locals.error = req.app.get('env') === 'development' ? err : {};
-                // render the error page
-                res.status(err.status || 500);
-                res.render('error');
+                console.log("Final Error ", err);
+                return next(err);
             } else {
                 if (req.params.json && (req.params.json == 'jsontxs')) {
                     var jsonData = {};
