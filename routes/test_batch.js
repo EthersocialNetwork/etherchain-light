@@ -29,7 +29,7 @@ router.get('/', function (req, res, next) {
     }
   ], function (err, requests, balances) {
     if (err) {
-      console.log("Error " + err);
+      console.log("Error ", err);
     }
     console.dir(requests); // uncomment it to print out
     /*

@@ -5,7 +5,7 @@ const pre_fix = 'explorerBlocks:';
 const divide = 10000;
 var client = redis.createClient();
 client.on("error", function (err) {
-	console.log("Error " + err);
+	console.log("Error ", err);
 });
 
 function getRedis() {
@@ -19,7 +19,7 @@ function getRedis() {
 
 	client = redis.createClient();
 	client.on("error", function (err) {
-		console.log("Error " + err);
+		console.log("Error ", err);
 	});
 	return client;
 }
@@ -104,7 +104,7 @@ var blockstore = function (config) {
 				}
 			], function (err, blocks) {
 				if (err || !blocks) {
-					console.log("Error " + err);
+					console.log("Error ", err);
 				} else {
 					var maxBlockNumber = 0;
 					for (var i = 0; i < blocks.length; i++) {

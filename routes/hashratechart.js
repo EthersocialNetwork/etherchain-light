@@ -58,7 +58,7 @@ router.get('/', function (req, res, next) {
 
   var client = redis.createClient();
   client.on("error", function (err) {
-    console.log("Error " + err);
+    console.log("Error ", err);
   });
 
   async.waterfall([
@@ -144,7 +144,7 @@ router.get('/', function (req, res, next) {
             client.hmget(fieldkey, 'timestamp', 'difficulty', 'number', 'transactions', function (err, block_info) {
               if (err || !block_info) {
                 console.log(fieldkey + ": no block infomation");
-                return next(err, null);
+                return next(err);
               } else {
                 var baseOneTime = (60 * 60 * 1 * 1000);
                 var baseTime = (60 * 60 * 2 * 1000);
@@ -227,54 +227,55 @@ router.get('/', function (req, res, next) {
     }
   ], function (err, blocks) {
     if (err) {
-      console.log("Error " + err);
-    }
+      console.log("Error ", err);
+      return next(err);
+    } else {
+      //1) combine the arrays:
+      var list = [];
+      for (let j = 0; j < data.xData.length; j++) {
+        list.push({
+          'xData': data.xData[j],
+          'xBlocknumber': data.xBlocknumber[j],
+          'xNumberOfBlocks': data.xNumberOfBlocks[j],
+          'BlockTime': data.datasets[0].data[j],
+          'Difficulty': data.datasets[1].data[j],
+          'NetHashrate': data.datasets[2].data[j],
+          'Transactions': data.datasets[3].data[j]
+        });
+      }
 
-    //1) combine the arrays:
-    var list = [];
-    for (let j = 0; j < data.xData.length; j++) {
-      list.push({
-        'xData': data.xData[j],
-        'xBlocknumber': data.xBlocknumber[j],
-        'xNumberOfBlocks': data.xNumberOfBlocks[j],
-        'BlockTime': data.datasets[0].data[j],
-        'Difficulty': data.datasets[1].data[j],
-        'NetHashrate': data.datasets[2].data[j],
-        'Transactions': data.datasets[3].data[j]
+      //2) sort:
+      list.sort(function (a, b) {
+        return ((a.xData < b.xData) ? -1 : ((a.xData == b.xData) ? 0 : 1));
+        //Sort could be modified to, for example, sort on the age
+        // if the xData is the same.
+      });
+
+      //3) separate them back out:
+      for (var k = 0; k < list.length; k++) {
+        data.xData[k] = list[k].xData + (60 * 60 * 9 * 1000);
+        data.xBlocknumber[k] = list[k].xBlocknumber;
+        data.xNumberOfBlocks[k] = list[k].xNumberOfBlocks;
+        data.datasets[0].data[k] = list[k].BlockTime;
+        data.datasets[1].data[k] = list[k].Difficulty;
+        data.datasets[2].data[k] = list[k].NetHashrate;
+        data.datasets[3].data[k] = list[k].Transactions;
+      }
+
+      res.render('hashratechart', {
+        xDataLength: JSON.stringify(data.xData.length + 1),
+        xData: JSON.stringify(data.xData),
+        xBlocknumber: JSON.stringify(data.xBlocknumber),
+        xNumberOfBlocks: JSON.stringify(data.xNumberOfBlocks),
+        BlockTime: JSON.stringify(data.datasets[0].data[k]),
+        Difficulty: JSON.stringify(data.datasets[1].data[k]),
+        NetHashrate: JSON.stringify(data.datasets[2].data[k]),
+        Transactions: JSON.stringify(data.datasets[3].data[k]),
+        activity: JSON.stringify(data),
+        jsload_defer: config.jsload_defer,
+        jsload_async: config.jsload_async
       });
     }
-
-    //2) sort:
-    list.sort(function (a, b) {
-      return ((a.xData < b.xData) ? -1 : ((a.xData == b.xData) ? 0 : 1));
-      //Sort could be modified to, for example, sort on the age
-      // if the xData is the same.
-    });
-
-    //3) separate them back out:
-    for (var k = 0; k < list.length; k++) {
-      data.xData[k] = list[k].xData + (60 * 60 * 9 * 1000);
-      data.xBlocknumber[k] = list[k].xBlocknumber;
-      data.xNumberOfBlocks[k] = list[k].xNumberOfBlocks;
-      data.datasets[0].data[k] = list[k].BlockTime;
-      data.datasets[1].data[k] = list[k].Difficulty;
-      data.datasets[2].data[k] = list[k].NetHashrate;
-      data.datasets[3].data[k] = list[k].Transactions;
-    }
-
-    res.render('hashratechart', {
-      xDataLength: JSON.stringify(data.xData.length + 1),
-      xData: JSON.stringify(data.xData),
-      xBlocknumber: JSON.stringify(data.xBlocknumber),
-      xNumberOfBlocks: JSON.stringify(data.xNumberOfBlocks),
-      BlockTime: JSON.stringify(data.datasets[0].data[k]),
-      Difficulty: JSON.stringify(data.datasets[1].data[k]),
-      NetHashrate: JSON.stringify(data.datasets[2].data[k]),
-      Transactions: JSON.stringify(data.datasets[3].data[k]),
-      activity: JSON.stringify(data),
-      jsload_defer: config.jsload_defer,
-      jsload_async: config.jsload_async
-    });
   });
 });
 

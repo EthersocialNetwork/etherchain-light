@@ -7,7 +7,7 @@ var BigNumber = require('bignumber.js');
 var redis = require("redis"),
   client = redis.createClient();
 client.on("error", function (err) {
-  console.log("Redis Error " + err);
+  console.log("Redis Error ", err);
 });
 
 var provider = new web3.providers.HttpProvider("http://127.0.0.1:8545");
@@ -188,7 +188,7 @@ router.get('/tokenevents/:address/:contractaddress/:count?/:page?', function (re
       }
     ], function (err, tokeninfo) {
       if (err) {
-        console.log("Error " + err);
+        console.log("Error ", err);
         res.json(resultToJson(err, null));
       } else {
         res.json(resultToJson(null, tokeninfo));
@@ -248,8 +248,8 @@ router.get('/tokenbalance/:address/:contractaddress?', function (req, res, next)
       }
     ], function (err, tokeninfo) {
       if (err) {
-        console.log("Error " + err);
-        res.json(resultToJson(null, null));
+        console.log("Error ", err);
+        res.json(resultToJson(err, null));
       } else {
         if (tokeninfo && tokeninfo.balance && tokeninfo.balance >= 0) {
           res.json(resultToJson(null, tokeninfo));
@@ -316,8 +316,8 @@ router.get('/tokenbalance/:address/:contractaddress?', function (req, res, next)
       }
     ], function (err, tokenList) {
       if (err) {
-        console.log("Error " + err);
-        res.json(resultToJson(null, null));
+        console.log("Error ", err);
+        res.json(resultToJson(err, null));
       } else {
         if (tokenList && tokenList.length > 0) {
           res.json(resultToJson(null, tokenList));

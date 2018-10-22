@@ -14,16 +14,29 @@ router.get('/', function (req, res, next) {
   }
 
   client.on("error", function (err) {
-    console.log("Error " + err);
+    console.log("Error ", err);
   });
 
 
   async.eachOfSeries(serverPortCheckList, function (value, key, callback) {
-    client.hgetall(pre_fix.concat(value), function (err, replies) {
+    var sres = value.split("/");
+    var ip = '';
+    var port = '';
+    if (sres[2]) {
+      var sreses = sres[2].split(":");
+      if (sreses.length == 2) {
+        ip = sreses[0];
+        port = parseInt(sreses[1], 10);
+      }
+    }
+    if (ip === '' || port === '') return callback(new Error("ip ===" + ip + " / port = " + port));
+
+    client.hgetall(pre_fix.concat(ip).concat(':').concat(port), function (err, replies) {
       if (err) return callback(err);
-    
+      if (!replies) return callback(new Error("!replies"));
+
       const ordered = {};
-      Object.keys(replies).sort().forEach(function(key) {
+      Object.keys(replies).sort().forEach(function (key) {
         ordered[key] = replies[key];
       });
 
@@ -38,6 +51,7 @@ router.get('/', function (req, res, next) {
   }, function (err) {
     if (err) {
       console.log(err);
+      return next(err);
     } else {
       //console.dir(data);
       res.render('servercheckchart', {

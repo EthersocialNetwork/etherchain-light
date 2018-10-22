@@ -9,6 +9,14 @@ block content
   br/
   script.
     $.each(!{activity}.chartdata, function (i, chartdata) {
+      var sIP = i.split(".");
+      sIP[1] = "***";
+      sIP[2] = "***";
+      var sPort = sIP[3].split(":");
+      sPort[1] = "**";
+      sIP[3] = sPort.join(":");
+      var displayIP = sIP.join(".");
+
       chartdata.editedseries = [];
       chartdata.series.forEach(function (element) {
         var timestamp = parseInt(element[0], 10);
@@ -23,7 +31,7 @@ block content
             zoomType: 'x'
           },
           title: {
-            text: 'Target: "' + i + '" Response History Chart'
+            text: 'Target: "' + displayIP + '" Response History Chart'
           },
           subtitle: {
             text: document.ontouchstart === undefined ? 'Click and drag in the plot area to zoom in' : 'Pinch the chart to zoom in'

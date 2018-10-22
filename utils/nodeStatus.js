@@ -70,8 +70,8 @@ var nodeStatus = function (config) {
         }
 
         var sIP = self.ip.split(".");
-        sIP[1] = "?";
-        sIP[2] = "?";
+        sIP[1] = "***";
+        sIP[2] = "***";
         var displayIP = sIP.join(".");
 
         var descriptionNode = '['.concat(self.idx).concat('] [').concat(version).concat('] [').concat(displayIP).concat('] [').concat((diffms == 'Off' ? ('Off] ') : (diffms + 'ms] ['))).concat(nbrPeers).concat('peers ]');
@@ -84,7 +84,7 @@ var nodeStatus = function (config) {
         self.idx = self.idx + 1;
       });
     }
-    setTimeout(self.updateStatus, 1000 * 60);
+    setTimeout(self.updateStatus, 1000 * Math.floor(60 / arrParity.length));
   };
   this.updateStatus();
 };

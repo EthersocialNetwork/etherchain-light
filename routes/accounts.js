@@ -58,15 +58,14 @@ router.get('/:offset?', function (req, res, next) {
         }
     ], function (err, accounts, lastAccount) {
         if (err) {
-            console.log("Error " + err);
+            console.log("Error ", err);
+            return next(err);
+        } else {
+            res.render("accounts", {
+                accounts: accounts,
+                lastAccount: lastAccount
+            });
         }
-
-        res.render("accounts", {
-            accounts: accounts,
-            lastAccount: lastAccount
-        });
-        accounts = null;
-        lastAccount = null;
     });
 });
 

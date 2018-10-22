@@ -3,7 +3,7 @@ const tcpPortUsed = require('tcp-port-used');
 const redis = require("redis");
 var client = redis.createClient();
 client.on("error", function (err) {
-  console.log("Error " + err);
+  console.log("Error ", err);
 });
 
 function getRedis() {
@@ -17,7 +17,7 @@ function getRedis() {
 
   client = redis.createClient();
   client.on("error", function (err) {
-    console.log("Error " + err);
+    console.log("Error ", err);
   });
   return client;
 }

@@ -41,7 +41,7 @@ var db = level(config.dbPath);
 var redis = require("redis"),
   client = redis.createClient();
 client.on("error", function (err) {
-  console.log("Error " + err);
+  console.log("Error ", err);
 });
 
 var app = express();

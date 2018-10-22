@@ -19,7 +19,7 @@ router.get('/:json?', function (req, res, next) {
 
 	const client = redis.createClient();
 	client.on("error", function (err) {
-		console.log("Error " + err);
+		console.log("Error ", err);
 	});
 
 	async.waterfall([
@@ -53,125 +53,126 @@ router.get('/:json?', function (req, res, next) {
 			});
 		}
 	], function (peers, err) {
-		//client.quit();
 		if (err) {
-			console.log("Error " + err);
-		}
-
-		if (req.params.json || req.params.json !== undefined) {
-			peers = peers.sort((a, b) => {
-				if (!b.port) {
-					return -1;
-				}
-				if (!a.port) {
-					return 1;
-				}
-
-				if (parseInt(a.port, 10) == 50505) {
-					return -1;
-				}
-				if (parseInt(b.port, 10) == 50505) {
-					return 1;
-				}
-
-				if (parseInt(a.port, 10) < parseInt(b.port, 10)) {
-					return 1;
-				}
-				if (parseInt(a.port, 10) > parseInt(b.port, 10)) {
-					return -1;
-				}
-				return 0;
-			});
-
-			var stringJson;
-			if (req.params.json == "gesn") {
-				stringJson = "[\n";
-				peers.forEach(element => {
-					//console.dir(element.enode);
-					if (element.enode) {
-						stringJson = stringJson.concat('"', element.enode, '",', '\n');
-					}
-				});
-				stringJson = stringJson.slice(0, -1); //'\n'
-				stringJson = stringJson.slice(0, -1); //','
-				stringJson = stringJson.concat('\n]');
-				res.type('text/plain; charset=utf-8');
-				res.set('Content-Type', 'text/plain');
-				res.send(new Buffer(stringJson));
-			} else if (req.params.json == "addpeer") {
-				stringJson = "";
-				peers.forEach(element => {
-					//console.dir(element.enode);
-					if (element.enode) {
-						stringJson = stringJson.concat('admin.addPeer("', element.enode, '")\n');
-					}
-				});
-				res.type('text/plain; charset=utf-8');
-				res.set('Content-Type', 'text/plain');
-				res.send(new Buffer(stringJson));
-			} else if (req.params.json == "parity") {
-				stringJson = "";
-				peers.forEach(element => {
-					//console.dir(element.enode);
-					if (element.enode) {
-						stringJson = stringJson.concat(element.enode, '\n');
-					}
-				});
-				res.type('text/plain; charset=utf-8');
-				res.set('Content-Type', 'text/plain');
-				res.send(new Buffer(stringJson));
-			} else {
-				res.json(resultToJson(null, peers));
-			}
+			console.log("Error ", err);
+			return next(err);
 		} else {
-			data.peers = data.peers.sort((a, b) => {
-				if (!b.scanmstime) {
-					return -1;
-				}
-				if (!a.scanmstime) {
-					return 1;
-				}
-				if (a.scanmstime < b.scanmstime) {
-					return 1;
-				}
-				if (a.scanmstime > b.scanmstime) {
-					return -1;
-				}
-				return 0;
-			});
-			var arrExe = [];
-			var arrVer = [];
-			var arrOs = [];
-			var arrGover = [];
-			var arrGeo = [];
-			for (var h in data.peers) {
-				if (typeof data.peers[h].exe === 'undefined' || typeof data.peers[h].ver === 'undefined' || typeof data.peers[h].os === 'undefined' || typeof data.peers[h].gover === 'undefined' || typeof data.peers[h].geo === 'undefined') {
-					continue;
-				}
-				arrExe.push(data.peers[h].exe);
-				arrVer.push(data.peers[h].ver);
-				arrOs.push(data.peers[h].os);
-				arrGover.push(data.peers[h].gover);
-				arrGeo.push(data.peers[h].geo);
-			}
 
-			data.commands = makeReturnSeries(arrExe);
-			data.versions = makeReturnSeries(arrVer);
-			data.oss = makeReturnSeries(arrOs);
-			data.goversions = makeReturnSeries(arrGover);
-			data.geo = makeReturnSeries(arrGeo);
-			data.geoCategories = makeGeoCategories(arrGeo);
-			res.render('peers', {
-				peers: data.peers,
-				commands: data.commands,
-				versions: data.versions,
-				oss: data.oss,
-				goversions: data.goversions,
-				geo: data.geo,
-				geoCategories: data.geoCategories,
-				jsload_defer: config.jsload_defer,
-				jsload_async: config.jsload_async
-			});
+			if (req.params.json || req.params.json !== undefined) {
+				peers = peers.sort((a, b) => {
+					if (!b.port) {
+						return -1;
+					}
+					if (!a.port) {
+						return 1;
+					}
+
+					if (parseInt(a.port, 10) == 50505) {
+						return -1;
+					}
+					if (parseInt(b.port, 10) == 50505) {
+						return 1;
+					}
+
+					if (parseInt(a.port, 10) < parseInt(b.port, 10)) {
+						return 1;
+					}
+					if (parseInt(a.port, 10) > parseInt(b.port, 10)) {
+						return -1;
+					}
+					return 0;
+				});
+
+				var stringJson;
+				if (req.params.json == "gesn") {
+					stringJson = "[\n";
+					peers.forEach(element => {
+						//console.dir(element.enode);
+						if (element.enode) {
+							stringJson = stringJson.concat('"', element.enode, '",', '\n');
+						}
+					});
+					stringJson = stringJson.slice(0, -1); //'\n'
+					stringJson = stringJson.slice(0, -1); //','
+					stringJson = stringJson.concat('\n]');
+					res.type('text/plain; charset=utf-8');
+					res.set('Content-Type', 'text/plain');
+					res.send(new Buffer(stringJson));
+				} else if (req.params.json == "addpeer") {
+					stringJson = "";
+					peers.forEach(element => {
+						//console.dir(element.enode);
+						if (element.enode) {
+							stringJson = stringJson.concat('admin.addPeer("', element.enode, '")\n');
+						}
+					});
+					res.type('text/plain; charset=utf-8');
+					res.set('Content-Type', 'text/plain');
+					res.send(new Buffer(stringJson));
+				} else if (req.params.json == "parity") {
+					stringJson = "";
+					peers.forEach(element => {
+						//console.dir(element.enode);
+						if (element.enode) {
+							stringJson = stringJson.concat(element.enode, '\n');
+						}
+					});
+					res.type('text/plain; charset=utf-8');
+					res.set('Content-Type', 'text/plain');
+					res.send(new Buffer(stringJson));
+				} else {
+					res.json(resultToJson(null, peers));
+				}
+			} else {
+				data.peers = data.peers.sort((a, b) => {
+					if (!b.scanmstime) {
+						return -1;
+					}
+					if (!a.scanmstime) {
+						return 1;
+					}
+					if (a.scanmstime < b.scanmstime) {
+						return 1;
+					}
+					if (a.scanmstime > b.scanmstime) {
+						return -1;
+					}
+					return 0;
+				});
+				var arrExe = [];
+				var arrVer = [];
+				var arrOs = [];
+				var arrGover = [];
+				var arrGeo = [];
+				for (var h in data.peers) {
+					if (typeof data.peers[h].exe === 'undefined' || typeof data.peers[h].ver === 'undefined' || typeof data.peers[h].os === 'undefined' || typeof data.peers[h].gover === 'undefined' || typeof data.peers[h].geo === 'undefined') {
+						continue;
+					}
+					arrExe.push(data.peers[h].exe);
+					arrVer.push(data.peers[h].ver);
+					arrOs.push(data.peers[h].os);
+					arrGover.push(data.peers[h].gover);
+					arrGeo.push(data.peers[h].geo);
+				}
+
+				data.commands = makeReturnSeries(arrExe);
+				data.versions = makeReturnSeries(arrVer);
+				data.oss = makeReturnSeries(arrOs);
+				data.goversions = makeReturnSeries(arrGover);
+				data.geo = makeReturnSeries(arrGeo);
+				data.geoCategories = makeGeoCategories(arrGeo);
+				res.render('peers', {
+					peers: data.peers,
+					commands: data.commands,
+					versions: data.versions,
+					oss: data.oss,
+					goversions: data.goversions,
+					geo: data.geo,
+					geoCategories: data.geoCategories,
+					jsload_defer: config.jsload_defer,
+					jsload_async: config.jsload_async
+				});
+			}
 		}
 	});
 });

@@ -7,7 +7,7 @@ const tcpPortUsed = require('tcp-port-used');
 const pre_fix = 'explorerPeers:';
 var client = redis.createClient();
 client.on("error", function (err) {
-	console.log("Error " + err);
+	console.log("Error ", err);
 });
 
 function getRedis() {
@@ -21,7 +21,7 @@ function getRedis() {
 
 	client = redis.createClient();
 	client.on("error", function (err) {
-		console.log("Error " + err);
+		console.log("Error ", err);
 	});
 	return client;
 }
@@ -248,7 +248,7 @@ var peercollector = function (config) {
 				}
 			], function (err) {
 				if (err) {
-					console.log("Error " + err);
+					console.log("Error ", err);
 				}
 				console.log("[□□□□ End □□□□][peerCollectorService]", printDateTime());
 				setTimeout(function () {
