@@ -37,32 +37,23 @@ var checker = function (address, config) {
   }
   async.forever(
     function (next) {
-
       self.prevTime = new Date();
       var rds_key = 'PortCheck:'.concat(self.ip).concat(':').concat(self.port);
-      tcpPortUsed.check(self.port, self.ip)
-        .then(function (inUse) {
+      var inUse = true; // wait until the port is in use
+      tcpPortUsed.waitForStatus(self.port, self.ip, inUse, 200, 400)
+        .then(function () {
           var now = new Date();
           var msnow = Date.parse(now);
           var diffms = now - self.prevTime;
-          //console.log('PortCheck:', self.ip, self.port, ':', inUse, now, msnow, diffms);
-
-          if (!inUse) {
-            getRedis().hset(rds_key, msnow, 0);
-            config.changeToArrParityDisconnect(self.address);
-          } else {
-            getRedis().hset(rds_key, msnow, diffms);
-            config.changeToArrParity(self.address);
-          }
+          getRedis().hset(rds_key, msnow, diffms);
           getRedis().expireat(rds_key, parseInt((+new Date()) / 1000) + 86400);
-
+          config.changeToArrParity(self.address);
           setTimeout(function () {
             next();
           }, config.serverPortCheckDelay);
         }, function (err) {
           var now = new Date();
-          console.log('[[[[PortCheck Error]]]]', self.ip, self.port, ':', now);
-          console.error('PortCheck Error:', err.message);
+          var msnow = Date.parse(now);
           getRedis().hset(rds_key, msnow, 0);
           getRedis().expireat(rds_key, parseInt((+new Date()) / 1000) + 86400);
           config.changeToArrParityDisconnect(self.address);

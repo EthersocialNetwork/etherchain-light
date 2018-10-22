@@ -4,9 +4,7 @@ const router = express.Router();
 const async = require('async');
 const Web3 = require('web3');
 const redis = require("redis");
-const geoip = require('geoip-lite');
 const iso = require('iso-3166-1');
-const tcpPortUsed = require('tcp-port-used');
 
 const pre_fix = 'explorerPeers:';
 
