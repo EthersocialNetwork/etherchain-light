@@ -27,7 +27,7 @@ var config = function () {
   this.serverPortCheck = true;
   this.serverPortCheckDelay = 60 * 1000; // ms
 
-  this.tokenLoadDelay = 100;
+  this.tokenLoadDelay = 10;
 
   this.jsload_defer = false;
   this.jsload_async = false;
@@ -42,7 +42,10 @@ var config = function () {
 
   this.changeToArrParityDisconnect = function (address) {
     var idx = self.arrParity.indexOf(address);
+    var disidx = self.arrParityDisconnect.indexOf(address);
     if (idx === -1) {
+      return false;
+    } else if (disidx >= -1) {
       return false;
     } else {
       self.arrParityDisconnect.push(address);
@@ -53,12 +56,15 @@ var config = function () {
   };
 
   this.changeToArrParity = function (address) {
-    var idx = self.arrParityDisconnect.indexOf(address);
-    if (idx === -1) {
+    var idx = self.arrParity.indexOf(address);
+    var disidx = self.arrParityDisconnect.indexOf(address);
+    if (disidx === -1) {
+      return false;
+    } else if (idx >= -1) {
       return false;
     } else {
       self.arrParity.splice(0, 0, address);
-      var removed = self.arrParityDisconnect.splice(idx, 1);
+      var removed = self.arrParityDisconnect.splice(disidx, 1);
       console.log("[NodeInfo][ReConnect]", address, "\t", removed, "\n", "[arrParity]", self.arrParity, "\n", "[Disconnect]", self.arrParityDisconnect);
       return removed == address;
     }

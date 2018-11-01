@@ -170,10 +170,7 @@ router.get('/:account/:offset?/:count?/:json?', function (req, res, next) {
                             if (err) {
                                 console.log("Error ", err);
                             } else {
-                                //console.dir(tokeninfo);
                                 if (tokeninfo && tokeninfo.balance && tokeninfo.balance.balance > 0) {
-                                    //console.log("tokeninfo: " + tokeninfo);
-                                    //console.dir(tokeninfo);
                                     allContractObject.tokenlist[tokeninfo.account] = tokeninfo;
                                 }
                             }
@@ -183,7 +180,6 @@ router.get('/:account/:offset?/:count?/:json?', function (req, res, next) {
                     }, function (err) {
                         callback(null, allContractObject.tokenlist);
                     });
-                    //callback(null, null);
                 } else {
                     callback(null, null);
                 }
@@ -707,7 +703,8 @@ router.get('/:account/:offset?/:count?/:json?', function (req, res, next) {
                             account: data,
                             countBlocks: data.blocks ? data.blocks.length : 0,
                             nodedata: JSON.stringify(data.nodeDataArray),
-                            linkdata: JSON.stringify(data.linkDataArray)
+                            linkdata: JSON.stringify(data.linkDataArray),
+                            hostname: req.hostname
                         });
                     }
                 }

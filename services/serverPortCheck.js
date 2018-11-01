@@ -27,6 +27,10 @@ var checker = function (address, config) {
   this.address = address;
   this.prevTime = new Date();
 
+  if (address === undefined) {
+    console.log("[PortChecker] address: ", address);
+    return null;
+  }
   var sres = address.split("/");
   if (sres[2]) {
     var sreses = sres[2].split(":");
@@ -40,7 +44,7 @@ var checker = function (address, config) {
       self.prevTime = new Date();
       var rds_key = 'PortCheck:'.concat(self.ip).concat(':').concat(self.port);
       var inUse = true; // wait until the port is in use
-      tcpPortUsed.waitForStatus(self.port, self.ip, inUse, 200, 400)
+      tcpPortUsed.waitForStatus(self.port, self.ip, inUse, 400, 1200)
         .then(function () {
           var now = new Date();
           var msnow = Date.parse(now);

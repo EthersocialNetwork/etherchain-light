@@ -29,7 +29,7 @@ var blockstore = function (config) {
 		function (next) {
 			console.log("[▷▷▷ Start ▷▷▷][blockStoreService]", printDateTime());
 			var web3 = new Web3();
-			web3.setProvider(config.providerIpc);
+			web3.setProvider(config.selectParity());
 			var data = {};
 			data.dbLastBlock = 0;
 			data.blockCount = 1000;

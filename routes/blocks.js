@@ -50,10 +50,12 @@ router.get('/', function (req, res, next) {
           });
         } else {
           web3.eth.getBlock(lastBlock.number - n, false, function (err, block) {
-            block.isDB = false;
-            block.author = block.miner;
-            block.transactionsCount = block.transactions.length;
-            block.unclesCount = block.uncles.length;
+            if (!err && block) {
+              block.isDB = false;
+              block.author = block.miner;
+              block.transactionsCount = block.transactions.length;
+              block.unclesCount = block.uncles.length;
+            }
             next(err, block);
           });
         }

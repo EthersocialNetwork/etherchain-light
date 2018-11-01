@@ -39,7 +39,7 @@ var nodeStatus = function (config) {
           if (self.ip != '' && self.port != '') {
             self.prevTime = new Date();
             var inUse = true; // wait until the port is in use
-            tcpPortUsed.waitForStatus(parseInt(self.port, 10), self.ip, inUse, 200, 400)
+            tcpPortUsed.waitForStatus(parseInt(self.port, 10), self.ip, inUse, 400, 1200)
               .then(function () {
                 var now = new Date();
                 var diffms = now - self.prevTime;

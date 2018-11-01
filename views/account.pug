@@ -1,10 +1,8 @@
 extends layout
 
 block content
-  script(type='text/javascript', src='/GoJS-1.8.26/release/go.js')
-  script(type='text/javascript', src='/GoJS-1.8.26/extensions/HyperlinkText.js')
-  //script(type='text/javascript', src='/GoJS-1.8.26/assets/js/goSamples.js')
-  // this is only for the GoJS Samples framework 
+  script(type='text/javascript', src='https://cdnjs.cloudflare.com/ajax/libs/gojs/1.8.32/go.js')
+  script(type='text/javascript', src='/GoJS-1.8.32/extensions/HyperlinkText.js')
   if account.isContract
     h3 Contract #{account.address}
   else
@@ -324,7 +322,7 @@ block content
               // define the node's outer shape, which will surround the TextBlock
               $(go.Shape, "RoundedRectangle", { fill: $(go.Brush, "Linear", { 0: "#008cba", 1: "#99d2e5" }), stroke: "#008cba" }),
               $("HyperlinkText",
-                function(node) { return node.data.text=="Mining"?"http://pool.sejun.info/":"http://explorer.ethersocial.info/account/" + node.data.text; },
+                function(node) { return node.data.text=="Mining"?"http://pool.sejun.info/":"http://!{hostname}/account/" + node.data.text; },
                 function(node) { return node.data.text.substr(0, 10).concat("..."); },
                 { font: "bold 10pt helvetica, bold arial, sans-serif", stroke: "white", margin: 4 }
               )

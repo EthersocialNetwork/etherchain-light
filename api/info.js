@@ -8,8 +8,6 @@ const redis = require("redis");
 const client = redis.createClient();
 const pre_fix = 'explorerBlocks:';
 const divide = 10000;
-var provider = new web3.providers.HttpProvider("http://127.0.0.1:8545");
-web3.setProvider(provider);
 
 function resultToJson(err, param) {
   var result = {};
@@ -44,6 +42,9 @@ router.get('/summary/:count?', function (req, res, next) {
   client.on("error", function (err) {
     console.log("Error ", err);
   });
+
+  if (!web3.currentProvider)
+    web3.setProvider(new web3.providers.HttpProvider(req.app.get('config').localRPCaddress));
 
   async.waterfall([
     function (callback) {

@@ -3,7 +3,7 @@ extends layout
 block content
   h3 Bit-Z Charts
   style(type='text/css').
-    @import '/jquery-ui-1.12.1/jquery-ui.css';
+    @import 'https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.css';
     #main-content {
         background: #fff;
         color: #4e4f4d;
@@ -404,8 +404,8 @@ block content
         cursor: crosshair;
     }
 
-  script(src='/jquery-3.3.1.min.js')
-  script(src='/jquery-ui-1.12.1/jquery-ui.min.js')
+  script(src='https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js')
+  script(src='https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.js')
   script(src='/highstock-6.1.1/highstock.js')
   script(src='/highstock-6.1.1/modules/annotations.js')
   script(src='/highstock-6.1.1/modules/drag-panes.js')

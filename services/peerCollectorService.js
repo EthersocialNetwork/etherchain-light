@@ -31,7 +31,7 @@ var peercollector = function (config) {
 		function (next) {
 			console.log("[▷▷▷ Start ▷▷▷][peerCollectorService]", printDateTime());
 			var web3 = new Web3();
-			web3.setProvider(config.providerIpc);
+			web3.setProvider(config.selectParity());
 			var data = {};
 			data.peers = [];
 			async.waterfall([
@@ -88,7 +88,18 @@ var peercollector = function (config) {
 
 						var existAddress = [];
 						async.eachSeries(peers, function (peer, eachCallback) {
-							if (peer.ip == '115.68.110.213') {
+							var arrIps = [];
+							var arrParity = config.getArrParity();
+							arrParity.forEach(element => {
+								var sres = element.split("/");
+								if (sres[2]) {
+									var sreses = sres[2].split(":");
+									if (sreses.length == 2) {
+										arrIps.push(sreses[0]);
+									}
+								}
+							});
+							if (arrIps.indexOf(peer.ip)) {
 								eachCallback();
 							} else {
 								const time_now = new Date();
@@ -176,7 +187,7 @@ var peercollector = function (config) {
 											eachCallback();
 										} else {
 											var inUse = true; // wait until the port is in use
-											tcpPortUsed.waitForStatus(config.networkPortNumber, tmp_data.ip, inUse, 200, 400)
+											tcpPortUsed.waitForStatus(config.networkPortNumber, tmp_data.ip, inUse, 400, 1200)
 												.then(function () {
 													tmp_data.orgPort = tmp_data.port;
 													tmp_data.port = config.networkPortString;
