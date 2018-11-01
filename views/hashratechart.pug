@@ -1,13 +1,13 @@
 extends layout
 
 block content
-  script(defer=jsload_defer async=jsload_async type='text/javascript', src="/highcharts-6.1.0/highcharts.js")
-  script(defer=jsload_defer async=jsload_async type='text/javascript', src="/highcharts-6.1.0/modules/exporting.js")
-  script(defer=jsload_defer async=jsload_async type='text/javascript', src="/highcharts-6.1.0/modules/export-data.js")
-  script(defer=jsload_defer async=jsload_async type='text/javascript', src="/highcharts-6.1.0/modules/heatmap.js")
-  script(defer=jsload_defer async=jsload_async type='text/javascript', src="/highcharts-6.1.0/modules/treemap.js")
-  script(defer=jsload_defer async=jsload_async type='text/javascript', src="/highcharts-6.1.0/modules/series-label.js")
-  h3 Block Chain Summary(Calculated in the All blocks)
+  script(defer=jsload_defer async=jsload_async type='text/javascript', src="https://cdnjs.cloudflare.com/ajax/libs/highcharts/6.2.0/highcharts.js")
+  script(defer=jsload_defer async=jsload_async type='text/javascript', src="https://cdnjs.cloudflare.com/ajax/libs/highcharts/6.2.0/modules/exporting.js")
+  script(defer=jsload_defer async=jsload_async type='text/javascript', src="https://cdnjs.cloudflare.com/ajax/libs/highcharts/6.2.0/modules/export-data.js")
+  script(defer=jsload_defer async=jsload_async type='text/javascript', src="https://cdnjs.cloudflare.com/ajax/libs/highcharts/6.2.0/modules/heatmap.js")
+  script(defer=jsload_defer async=jsload_async type='text/javascript', src="https://cdnjs.cloudflare.com/ajax/libs/highcharts/6.2.0/modules/treemap.js")
+  script(defer=jsload_defer async=jsload_async type='text/javascript', src="https://cdnjs.cloudflare.com/ajax/libs/highcharts/6.2.0/modules/series-label.js")
+  h3 Block Chain Summary(Calculated in the All blocks) / Total number of TX: #{numberformatter(totalTxCount)}
   div#chart_BlockTime(style="min-width: 480px; max-width: 1200px; height: 1100px; margin: 0 auto")
   script.
     $('#chart_BlockTime').bind('mousemove touchmove touchstart', function (e) {
@@ -67,10 +67,11 @@ block content
     }
 
     // Get the data. The contents of the data file can be viewed at
-    $.each(!{activity}.datasets, function (i, dataset) {
+    var nodeDatas = !{JSON.stringify(activity)};
+    $.each(nodeDatas.datasets, function (i, dataset) {
       // Add X values
       dataset.data = Highcharts.map(dataset.data, function (val, j) {
-        return {x:!{xData}[j], y:val, b:!{xBlocknumber}[j], n:!{xNumberOfBlocks}[j]};
+        return {x:nodeDatas.xData[j], y:val, b:nodeDatas.xBlocknumber[j], n:nodeDatas.xNumberOfBlocks[j]};
       });
 
       $('<div style="min-width: 480px; max-width: 1200px; height: 250px; margin: 0 auto">')

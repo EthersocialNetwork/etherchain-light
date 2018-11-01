@@ -6,6 +6,7 @@ var favicon = require('serve-favicon');
 var logger = require('morgan');
 var cookieParser = require('cookie-parser');
 var bodyParser = require('body-parser');
+var waitUntil = require('wait-until');
 
 var index = require('./routes/index');
 var blocks = require('./routes/blocks');
@@ -24,8 +25,10 @@ var hashratechart = require('./routes/hashratechart');
 var servercheckchart = require('./routes/servercheckchart');
 var bitzcharts = require('./routes/bitzcharts');
 var api = require('./routes/api');
+var prices = require('./routes/prices');
 
 var api_proxy = require('./api/proxy');
+var api_parity = require('./api/parity');
 var api_account = require('./api/account');
 var api_info = require('./api/info');
 
@@ -43,6 +46,22 @@ var redis = require("redis"),
 client.on("error", function (err) {
   console.log("Error ", err);
 });
+
+function getRedis() {
+  if (client && client.connected) {
+    return client;
+  }
+
+  if (client) {
+    client.end(); // End and open once more
+  }
+
+  client = redis.createClient();
+  client.on("error", function (err) {
+    console.log("Error ", err);
+  });
+  return client;
+}
 
 var app = express();
 app.use(compression({
@@ -64,7 +83,7 @@ var serverPortCheck = {};
 var cronServices = {};
 async.waterfall([
   function (callback) {
-    client.hgetall('esn_contracts:eventslength', function (err, replies) {
+    getRedis().hgetall('esn_contracts:eventslength', function (err, replies) {
       callback(null, replies);
     });
   },
@@ -82,12 +101,27 @@ async.waterfall([
       var eventslength = iter[1],
         account = iter[0];
       contractAccountList.push(account);
-      var timeout = eventslength < 1 ? parseInt(config.tokenLoadDelay, 10) : parseInt(config.tokenLoadDelay, 10) + (eventslength * 3);
       //console.log(account,"start", Date.now());
-      tokenExporter[account] = new tokenExporterService(config.providerIpc, configERC20.erc20ABI, account, 1, timeout);
-      //console.log("[timeout]", account, " : ", timeout);
-      sleep(timeout).then(() => {
-        forEachOfCallback();
+
+      getRedis().hget('ExportToken:createBlock:', account, function (err, result) {
+        if (!result) {
+          result = 1;
+        }
+        var now = new Date();
+        tokenExporter[account] = new tokenExporterService(config.providerIpc, configERC20.erc20ABI, account, result, now.getTime());
+        waitUntil()
+          .interval(10)
+          .times(100)
+          .condition(function (cb) {
+            process.nextTick(function () {
+              cb(tokenExporter[account].isLoaded);
+            });
+          })
+          .done(function (result) {
+            sleep(10).then(() => {
+              forEachOfCallback();
+            });
+          });
       });
     }, function (err) {
       if (err) {
@@ -116,6 +150,13 @@ async.waterfall([
     next();
   });
   app.use('/api_proxy', api_proxy);
+
+  app.all('/api_parity/*', function (req, res, next) {
+    res.header("Access-Control-Allow-Origin", "*");
+    res.header("Access-Control-Allow-Headers", "X-Requested-With");
+    next();
+  });
+  app.use('/api_parity', api_parity);
 
   app.all('/api_account/*', function (req, res, next) {
     res.header("Access-Control-Allow-Origin", "*");
@@ -172,6 +213,7 @@ async.waterfall([
   app.use('/servercheckchart', servercheckchart);
   app.use('/bitzcharts', bitzcharts);
   app.use('/api', api);
+  app.use('/prices', prices);
 
   app.use('/test_batch', test_batch);
 

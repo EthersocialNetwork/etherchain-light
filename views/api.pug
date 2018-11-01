@@ -7,13 +7,15 @@ block content
       li.active(role='presentation')
         a(href='#proxy', aria-controls='proxy', role='tab', data-toggle='tab') Proxy 중개
       li(role='presentation')
+        a(href='#parity', aria-controls='parity', role='tab', data-toggle='tab') Parity-Proxy 패리티 중개
+      li(role='presentation')
         a(href='#realtime', aria-controls='realtime', role='tab', data-toggle='tab') Real-time 실시간
       li(role='presentation')
-        a(href='#webtojson', aria-controls='webtojson', role='tab', data-toggle='tab') Web to Json 웹을 데이터로 제공
+        a(href='#webtojson', aria-controls='webtojson', role='tab', data-toggle='tab') Web to Json 웹 데이터
     .tab-content
       #proxy.tab-pane.active(role='tabpanel')
         h3 Proxy APIs web3.eth 중개 API 목록
-        | ex) #[strong http://explorer.ethersocial.info/api_proxy/eth_blockNumber]
+        | ex) #[strong http://!{hostname}/api_proxy/eth_blockNumber]
         table.table
           thead
             tr
@@ -55,7 +57,7 @@ block content
                 | [, returnTransactionObjects]
               td #[strong blockHashOrBlockNumber]: Hex or Number, 
                 br
-                | #[strong uncleNumber]: Number, 
+                | #[strong uncleNumber]: Number,
                 br
                 | #[strong returnTransactionObjects]: true or false
               td /eth_getUncleByBlockNumberAndIndex/1522579/0/false
@@ -116,7 +118,7 @@ block content
                 | { #[strong addressHexString]: Hex, 
                 br
                 | #[strong data]: Hex }
-              td /eth_call/0x5811590907050746b897efe65fea7b65710e1a2c/0xc6888fa1000000000000000000000000000...
+              td /eth_call/0x5811590907050746b897efe65fea7b65710e1a2c/0xcdcd77c(0x63)45(0x63)1
             tr
               td web3.eth.getCode(
                 br
@@ -157,9 +159,97 @@ block content
                 br
                 | #[strong gas]: Hex}
               td /eth_estimateGas/0x5811590907050746b897efe65fea7b65710e1a2c/100/0x051da038cc/0xffffff
+      #parity.tab-pane(role='tabpanel')
+        h3 "Parity" Proxy APIs 중개 API 목록
+        | ex) #[strong http://!{hostname}/api_parity/eth_blockNumber]
+        table.table
+          thead
+            tr
+              th Parameter
+              th Example
+          tbody
+            tr
+              td #[strong addressHexString]: Hex, 
+                br
+                | #[strong defaultBlock](Optional): Number
+              td http://!{hostname}/api_parity/eth_getBalance/0x5811590907050746b897efe65fea7b65710e1a2c/1522934
+            tr
+              td none
+              td http://!{hostname}/api_parity/eth_blockNumber
+            tr
+              td #[strong blockHashOrBlockNumber]: Hex or Number, 
+                br
+                | #[strong returnTransactionObjects]: true or false
+              td http://!{hostname}/api_parity/eth_getBlockByNumber/1522660/false
+                br
+                | http://!{hostname}/api_parity/eth_getBlockByHash/0xdc19939dc468c85538f40acc5da4c5f806d93b8e5106b3619da19c78ddbf62b5/false
+            tr
+              td #[strong blockHashOrBlockNumber]: Hex or Number, 
+                br
+                | #[strong uncleNumber]: Number
+              td http://!{hostname}/api_parity/eth_getUncleByBlockNumberAndIndex/1522579/0
+            tr
+              td #[strong blockHashOrBlockNumber]: Hex or Number
+              td http://!{hostname}/api_parity/eth_getBlockTransactionCountByNumber/1522660
+            tr
+              td #[strong transactionHash]: Hex
+              td http://!{hostname}/api_parity/eth_getTransactionByHash/0x6fd1bb5a71d16ad342ac9f8d86c299ce768eec0bafede55d7b7a9e82d816942a
+            tr
+              td #[strong blockHashOrBlockNumber]: Hex or Number, 
+                br
+                | #[strong indexNumber]: Number
+              td http://!{hostname}/api_parity/eth_getTransactionByBlockNumberAndIndex/1522660/0
+            tr
+              td #[strong addressHexString]: Hex, 
+                br
+                | #[strong defaultBlock](Optional): Number
+              td http://!{hostname}/api_parity/eth_getTransactionCount/0xe3ec5ebd3e822c972d802a0ee4e0ec080b8237ba/1522934
+            tr
+              td #[strong signedTransactionData]: 
+                br
+                | signed_tx.serialize().toString('hex')
+                br
+                | 280 bytes(hexadecimal)
+              td http://!{hostname}/api_parity/eth_sendRawTransaction/"Parameter:signedTransactionData"
+            tr
+              td #[strong transactionHash]: Hex
+              td http://!{hostname}/api_parity/eth_getTransactionReceipt/0xb3663023a01cc2862845d72bae657b5ef2f559c9982b3fcdfdbe840950fb6914
+            tr
+              td callObject: 
+                br
+                | { #[strong addressHexString]: Hex, 
+                br
+                | #[strong data]: Hex }
+              td http://!{hostname}/api_parity/eth_call/0x5811590907050746b897efe65fea7b65710e1a2c/0xcdcd77c(0x63)45(0x63)1
+            tr
+              td #[strong addressHexString]: Hex, 
+                br
+                | #[strong defaultBlock](Optional): Number
+              td http://!{hostname}/api_parity/eth_getCode/0x0146b9dcd9fb2abc1b5b136c28d20d0037526961
+            tr
+              td #[strong addressHexString]: Hex, 
+                br
+                | #[strong position]: Number
+                br
+                | #[strong defaultBlock](Optional): Number
+              td http://!{hostname}/api_parity/eth_getStorageAt/0x5811590907050746b897efe65fea7b65710e1a2c/0/1522934
+            tr
+              td #[strong none]
+              td http://!{hostname}/api_parity/eth_gasPrice
+            tr
+              td callObject: 
+                br
+                | {#[strong addressHexString]: Hex, 
+                br
+                | #[strong value]: Number, 
+                br
+                | #[strong gasPrice]: Hex, 
+                br
+                | #[strong gas]: Hex}
+              td http://!{hostname}/eth_estimateGas/0x5811590907050746b897efe65fea7b65710e1a2c/100/0x051da038cc/0xffffff
       #realtime.tab-pane(role='tabpanel')
         h3 Real-time response APIs 실시간 응답 API 목록
-        | ex) #[strong http://explorer.ethersocial.info/api_account/eth_balancemulti/0x5811590907050746b897efe65fea7b65710e1a2c,0xe3ec5ebd3e822c972d802a0ee4e0ec080b8237ba/1522934]
+        | ex) #[strong http://!{hostname}/api_account/eth_balancemulti/0x5811590907050746b897efe65fea7b65710e1a2c,0xe3ec5ebd3e822c972d802a0ee4e0ec080b8237ba/1522934]
         table.table
           thead
             tr
@@ -222,7 +312,7 @@ block content
               th JSON Returns
           tbody
             tr
-              td http://explorer.ethersocial.info/top100/json
+              td http://!{hostname}/top100/json
               td #[strong activeAccounts]: String
                 br
                 | #[strong totalAccounts]: Number
@@ -233,9 +323,9 @@ block content
                 br
                 | #[strong special accounts]: address, type, balance, rank
             tr
-              td http://explorer.ethersocial.info/account/0x3e2c6a622c29cf30c04c9ed8ed1e985da8c95662/1657927/10(Count)/json
+              td http://!{hostname}/account/0x3e2c6a622c29cf30c04c9ed8ed1e985da8c95662/1657927/10(Count)/json
                 br
-                | http://explorer.ethersocial.info/account/0x3e2c6a622c29cf30c04c9ed8ed1e985da8c95662/1657927/10(Count)/jsontxs
+                | http://!{hostname}/account/0x3e2c6a622c29cf30c04c9ed8ed1e985da8c95662/1657927/10(Count)/jsontxs
               td #[strong blocks]: Traces
                 br
                 | #[strong tokenBlocks]: events
@@ -246,13 +336,13 @@ block content
                 br
                 | #[strong linkDataArray]: GoJS link data
             tr
-              td http://explorer.ethersocial.info/peers/parity
+              td http://!{hostname}/peers/parity
                 br
-                | http://explorer.ethersocial.info/peers/addpeer
+                | http://!{hostname}/peers/addpeer
                 br
-                | http://explorer.ethersocial.info/peers/gesn
+                | http://!{hostname}/peers/gesn
                 br
-                | http://explorer.ethersocial.info/peers/json
+                | http://!{hostname}/peers/json
               td #[strong TextList]: for Parity's reserved_peers
                 br
                 | #[strong Command]: for GESN's Console

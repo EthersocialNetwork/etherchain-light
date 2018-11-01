@@ -5,9 +5,31 @@ var BigNumber = require('bignumber.js');
 var async = require('async');
 var redis = require("redis"),
 	client = redis.createClient();
+client.on("error", function (err) {
+	console.log("Error ", err);
+});
+
+function getRedis() {
+	if (client && client.connected) {
+		return client;
+	}
+
+	if (client) {
+		client.end(); // End and open once more
+	}
+
+	client = redis.createClient();
+	client.on("error", function (err) {
+		console.log("Error ", err);
+	});
+	return client;
+}
+
 var max = 0,
 	min = -1;
 var redis_args = ['esn_top100', max, min, 'WITHSCORES'];
+const finalRdsKey = 'esn_top100';
+const readyRdsKey = 'ready_esn_top100';
 
 router.get('/:json?', function (req, res, next) {
 	var configNames = req.app.get('configNames');
@@ -18,12 +40,9 @@ router.get('/:json?', function (req, res, next) {
 	var contracts = [];
 	var contractstransfercount = {};
 	var tokenExporter = req.app.get('tokenExporter');
-	client.on("error", function (err) {
-		console.log("Error ", err);
-	});
 	async.waterfall([
 			function (callback) {
-				client.hget('esn_top100:lastaccount', 'count', function (err, result) {
+				getRedis().hget('esn_top100:lastaccount', 'count', function (err, result) {
 					return callback(err, result);
 				});
 			},
@@ -31,7 +50,7 @@ router.get('/:json?', function (req, res, next) {
 				if (pallcnt != null && pallcnt != "Nan") {
 					allcnt = parseInt(pallcnt);
 				}
-				client.hget('esn_top100:lastaccount', 'nowcount', function (err, result) {
+				getRedis().hget('esn_top100:lastaccount', 'nowcount', function (err, result) {
 					return callback(err, result);
 				});
 			},
@@ -39,26 +58,26 @@ router.get('/:json?', function (req, res, next) {
 				if (pnowcount != null && pnowcount != "Nan") {
 					nowcnt = parseInt(pnowcount);
 				}
-				client.hget('esn_top100:lastaccount', 'address', function (err, result) {
+				getRedis().hget('esn_top100:lastaccount', 'address', function (err, result) {
 					return callback(err, result);
 				});
 			},
 			function (plastaccount, callback) {
 				lastaccount = plastaccount;
-				client.hget('esn_top100:createtime', 'datetime', function (err, result) {
+				getRedis().hget('esn_top100:createtime', 'datetime', function (err, result) {
 					return callback(err, result);
 				});
 			},
 			function (pcreatetime, callback) {
 				createtime = pcreatetime;
-				client.hgetall('esn_contracts:transfercount', function (err, replies) {
+				getRedis().hgetall('esn_contracts:transfercount', function (err, replies) {
 					callback(err, replies);
 				});
 			},
 			function (ptransfercount, callback) {
 				contractstransfercount = Object.assign({}, ptransfercount);
 
-				client.hgetall('esn_contracts:eventslength', function (err, replies) {
+				getRedis().hgetall('esn_contracts:eventslength', function (err, replies) {
 					callback(err, replies);
 				});
 			},
@@ -104,19 +123,30 @@ router.get('/:json?', function (req, res, next) {
 						contracts.push(tmpTokeninfo);
 					}
 				});
-
-
-				client.zrevrange(redis_args, function (err, result) {
+				return callback(null);
+			},
+			function (callback) {
+				getRedis().hget(finalRdsKey.concat(':apisupport'), 'activeAccounts', function (err, result) {
 					return callback(err, result);
 				});
 			},
-			function (accounts, callback) {
+			function (activeAccounts, callback) {
+				getRedis().hget(finalRdsKey.concat(':apisupport'), 'totalSupply', function (err, result) {
+					return callback(err, activeAccounts, result);
+				});
+			},
+			function (activeAccounts, totalSupply, callback) {
+				getRedis().zrevrange(redis_args, function (err, result) {
+					return callback(err, activeAccounts, totalSupply, result);
+				});
+			},
+			function (activeAccounts, totalSupply, accounts, callback) {
 				var data_special = [];
 				var data_normal = [];
 				var rank_normal = 1;
 				var rank_special = 1;
-				let data_totalAccounts = new BigNumber(0);
-				let data_totalSupply = new BigNumber(0);
+				let data_totalAccounts = new BigNumber(activeAccounts);
+				let data_totalSupply = new BigNumber(totalSupply);
 				let data_specialSupply = new BigNumber(0);
 				let data_normalSupply = new BigNumber(0);
 				var isAccount = true;
@@ -125,17 +155,12 @@ router.get('/:json?', function (req, res, next) {
 				async.eachSeries(accounts, function (account, eachCallback) {
 					async.setImmediate(function () {
 						if (isAccount) {
-							data_totalAccounts = data_totalAccounts.plus(1);
-							//if (rank_normal < 5001) {
 							tmp = {};
 							tmp.address = account;
 							tmp.type = "Account";
-							//}
 							isAccount = false;
 						} else {
 							let ret = new BigNumber(account);
-							data_totalSupply = data_totalSupply.plus(ret);
-							//if (rank_normal < 5001) {
 							tmp.balance = ret.toFormat(8) + " ESN";
 							const name = configNames.names[tmp.address];
 							const holdname = configNames.holdnames[tmp.address];
@@ -148,17 +173,16 @@ router.get('/:json?', function (req, res, next) {
 								if (name) {
 									tmp.address_name = name;
 								}
-								data_normalSupply = data_normalSupply.plus(ret);
 								tmp.rank = "Rank " + rank_normal++;
 								data_normal.push(tmp);
 								tmp = null;
 							}
-							//}
 							isAccount = true;
 						}
 						eachCallback();
 					});
 				}, function (err) {
+					data_normalSupply = data_totalSupply.minus(data_specialSupply);
 					callback(err, contracts, lastaccount, allcnt, nowcnt, createtime, data_special, data_normal, (data_totalAccounts.toFormat(0)), (data_totalSupply.toFormat(6) + " ESN"), (data_specialSupply.toFormat(6) + " ESN"), (data_normalSupply.toFormat(6) + " ESN"));
 				});
 			}

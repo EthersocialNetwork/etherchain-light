@@ -6,15 +6,15 @@ var config = function () {
 
   this.logFormat = "[:status][:date[clf]][:remote-addr] :url :referrer :user-agent";
 
-  this.dbPath = '/home/username/.local/share/io.parity.ethersocial/chains/ethersocial/db/dc73f323b4681272/archive';
+  this.dbPath = '/home/barahime/.local/share/io.parity.ethersocial/chains/ethersocial/db/dc73f323b4681272/archive';
 
-  this.ipcPath = "/home/username/.local/share/io.parity.ethersocial/jsonrpc.ipc";
+  this.ipcPath = "/home/barahime/.local/share/io.parity.ethersocial/jsonrpc.ipc";
   this.providerIpc = new web3.providers.IpcProvider(this.ipcPath, net); // localhost uses only ipc. However, the API uses localhost RPC. 'http://127.0.0.1:8545'
 
-  this.arrParity = ['http://127.0.0.1:8545'];
+  this.arrParity = ['http://112.187.62.204:17545' /*office*/ , 'http://218.149.67.46:17545' /*home*/ , 'http://1.214.152.195:50509'];
   this.arrParityDisconnect = [];
 
-  this.localRPCaddress = 'http://127.0.0.1:8545';
+  this.localRPCaddress = 'http://127.0.0.1:17545';
 
   this.networkPortString = "50505";
   this.networkPortNumber = parseInt(this.networkPortString, 10);
@@ -27,7 +27,7 @@ var config = function () {
   this.serverPortCheck = true;
   this.serverPortCheckDelay = 60 * 1000; // ms
 
-  this.tokenLoadDelay = 100;
+  this.tokenLoadDelay = 10;
 
   this.jsload_defer = false;
   this.jsload_async = false;
@@ -42,7 +42,10 @@ var config = function () {
 
   this.changeToArrParityDisconnect = function (address) {
     var idx = self.arrParity.indexOf(address);
+    var disidx = self.arrParityDisconnect.indexOf(address);
     if (idx === -1) {
+      return false;
+    } else if (disidx >= -1) {
       return false;
     } else {
       self.arrParityDisconnect.push(address);
@@ -53,12 +56,15 @@ var config = function () {
   };
 
   this.changeToArrParity = function (address) {
-    var idx = self.arrParityDisconnect.indexOf(address);
-    if (idx === -1) {
+    var idx = self.arrParity.indexOf(address);
+    var disidx = self.arrParityDisconnect.indexOf(address);
+    if (disidx === -1) {
+      return false;
+    } else if (idx >= -1) {
       return false;
     } else {
       self.arrParity.splice(0, 0, address);
-      var removed = self.arrParityDisconnect.splice(idx, 1);
+      var removed = self.arrParityDisconnect.splice(disidx, 1);
       console.log("[NodeInfo][ReConnect]", address, "\t", removed, "\n", "[arrParity]", self.arrParity, "\n", "[Disconnect]", self.arrParityDisconnect);
       return removed == address;
     }

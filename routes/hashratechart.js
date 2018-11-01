@@ -21,6 +21,8 @@ router.get('/', function (req, res, next) {
   data.dbChartLastBlock = 0;
   data.blockCount = 1000;
 
+  data.totalTxCount = 0;
+
   data.xData = [];
   data.xBlocknumber = [];
   data.xNumberOfBlocks = [];
@@ -242,6 +244,7 @@ router.get('/', function (req, res, next) {
           'NetHashrate': data.datasets[2].data[j],
           'Transactions': data.datasets[3].data[j]
         });
+        data.totalTxCount += data.datasets[3].data[j];
       }
 
       //2) sort:
@@ -264,16 +267,10 @@ router.get('/', function (req, res, next) {
 
       res.render('hashratechart', {
         xDataLength: JSON.stringify(data.xData.length + 1),
-        xData: JSON.stringify(data.xData),
-        xBlocknumber: JSON.stringify(data.xBlocknumber),
-        xNumberOfBlocks: JSON.stringify(data.xNumberOfBlocks),
-        BlockTime: JSON.stringify(data.datasets[0].data[k]),
-        Difficulty: JSON.stringify(data.datasets[1].data[k]),
-        NetHashrate: JSON.stringify(data.datasets[2].data[k]),
-        Transactions: JSON.stringify(data.datasets[3].data[k]),
-        activity: JSON.stringify(data),
+        activity: data,
         jsload_defer: config.jsload_defer,
-        jsload_async: config.jsload_async
+        jsload_async: config.jsload_async,
+        totalTxCount: data.totalTxCount
       });
     }
   });

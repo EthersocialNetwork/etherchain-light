@@ -1,11 +1,34 @@
 var async = require('async');
 var Web3 = require('web3');
 var tokenDatastore = require('nedb-core');
+const redis = require("redis");
+var client = redis.createClient();
+client.on("error", function (err) {
+  console.log("Error ", err);
+});
 
-var exporter = function (provider, erc20ABI, tokenAddress, createBlock, timeout) {
+function getRedis() {
+  if (client && client.connected) {
+    return client;
+  }
+
+  if (client) {
+    client.end(); // End and open once more
+  }
+
+  client = redis.createClient();
+  client.on("error", function (err) {
+    console.log("Error ", err);
+  });
+  return client;
+}
+
+
+var exporter = function (provider, erc20ABI, tokenAddress, createBlock, startTime) {
   var self = this;
   //console.log("[ExportToken]", tokenAddress);
   self.tokenAddress = tokenAddress;
+
   //self.db = new tokenDatastore();
   self.db = new tokenDatastore({
     filename: './tokenDatastore/' + tokenAddress + '.nedb',
@@ -54,6 +77,7 @@ var exporter = function (provider, erc20ABI, tokenAddress, createBlock, timeout)
   self.token_totalSupply = 0;
   self.token_decimals = 0;
   self.token_symbol = 'n/a';
+  self.isLoaded = false;
 
   self.contractState = [];
   async.eachSeries(erc20ABI, function (item, eachCallback) {
@@ -83,10 +107,13 @@ var exporter = function (provider, erc20ABI, tokenAddress, createBlock, timeout)
       return eachCallback();
     }
   }, function (err) {
-    if (!err) {
-      console.log("[Token]", tokenAddress, "\t[wait]", timeout + "ms", "\t[symbol]", self.token_symbol, "\t[Name]", self.token_name);
-      //console.log(tokenAddress, "_end_", Date.now());
+    if (err) {
+      console.log("[ERROR]][TokenExporter]", err);
     }
+    self.isLoaded = true;
+    var now = new Date();
+    var diffms = now.getTime() - startTime;
+    console.log("[Token]", tokenAddress, "\t[LoadTime]", diffms + "ms", "\t[Symbol]", self.token_symbol, "\t[Name]", self.token_name);
   });
   self.newEvents = self.contract.allEvents();
 
@@ -167,6 +194,7 @@ var exporter = function (provider, erc20ABI, tokenAddress, createBlock, timeout)
 
       if (log.args && log.args._value) {
         log.args._value = log.args._value.toNumber();
+        getRedis().hset('ExportToken:createBlock:', tokenAddress, log.blockNumber);
       }
 
       self.db.insert(log, function (err, newLogs) {
