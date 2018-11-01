@@ -6,15 +6,15 @@ var config = function () {
 
   this.logFormat = "[:status][:date[clf]][:remote-addr] :url :referrer :user-agent";
 
-  this.dbPath = '/home/barahime/.local/share/io.parity.ethersocial/chains/ethersocial/db/dc73f323b4681272/archive';
+  this.dbPath = '/home/username/.local/share/io.parity.ethersocial/chains/ethersocial/db/dc73f323b4681272/archive';
 
-  this.ipcPath = "/home/barahime/.local/share/io.parity.ethersocial/jsonrpc.ipc";
+  this.ipcPath = "/home/username/.local/share/io.parity.ethersocial/jsonrpc.ipc";
   this.providerIpc = new web3.providers.IpcProvider(this.ipcPath, net); // localhost uses only ipc. However, the API uses localhost RPC. 'http://127.0.0.1:8545'
 
-  this.arrParity = ['http://112.187.62.204:17545' /*office*/ , 'http://218.149.67.46:17545' /*home*/ , 'http://1.214.152.195:50509'];
+  this.arrParity = ['http://127.0.0.1:8545'];
   this.arrParityDisconnect = [];
 
-  this.localRPCaddress = 'http://127.0.0.1:17545';
+  this.localRPCaddress = 'http://127.0.0.1:8545';
 
   this.networkPortString = "50505";
   this.networkPortNumber = parseInt(this.networkPortString, 10);
