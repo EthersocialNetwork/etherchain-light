@@ -4,6 +4,7 @@ var getJSON = require('get-json');
 var async = require('async');
 var Web3 = require('web3');
 var BigNumber = require('bignumber.js');
+var request = require('request');
 const redis = require("redis");
 const client = redis.createClient();
 const pre_fix = 'explorerBlocks:';
@@ -20,11 +21,77 @@ router.get('/', function (req, res, next) {
   data.ticker = {};
   data.coinrate = {};
 
+  data.bimax = {};
+  data.bimax.timeoutTicker = false;
+
   client.on("error", function (err) {
     console.log("Error ", err);
   });
 
   async.waterfall([
+    //bimax 시작
+    function (callback) {
+      client.hgetall(pre_fix.concat('bimax'), function (err, result) {
+        return callback(err, result);
+      });
+    },
+    function (ticker, callback) {
+      if (ticker) {
+        data.bimax = ticker;
+      }
+      var now = new Date();
+      if (!ticker || ticker.time < now.getTime() - (1000 * 60)) {
+        data.bimax.timeoutTicker = true;
+
+        var headers = {
+          'Origin': 'https://www.bimax.io',
+          //'Accept-Encoding': 'gzip, deflate, br',
+          //'Accept-Language': 'ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7',
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.77 Safari/537.36',
+          //'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+          //'Accept': 'application/json, text/javascript, */*; q=0.01',
+          'Referer': 'https://www.bimax.io/trade',
+        };
+
+        var formData = {
+          pairName: 'BTC/KRW'
+        };
+
+        var options = {
+          url: 'https://api2.bimax.io/ticker/publicSignV2',
+          method: 'POST',
+          headers: headers,
+          form: formData
+        };
+
+        request.post(options, function (error, response, body) {
+          return callback(error, body);
+        });
+      } else {
+        return callback(null, null);
+      }
+    },
+    function (bodyText, callback) {
+      if (data.bimax.timeoutTicker && bodyText != null) {
+        var ticker = JSON.parse(bodyText.trim());
+        var tickerall = ticker.data;
+        for (var key in tickerall) {
+          if (tickerall.hasOwnProperty(key)) {
+            if (key == "ESN/KRW") {
+              data.bimax.nowPrice = tickerall[key].nowPrice;
+              data.bimax.high = tickerall[key].high;
+              data.bimax.low = tickerall[key].low;
+              data.bimax.tradeAmount = tickerall[key].tradeAmount;
+            }
+          }
+        }
+        var now = new Date();
+        data.bimax.time = now.getTime();
+        client.hmset(pre_fix.concat('bimax'), data.bimax);
+      }
+      return callback(null);
+    },
+    //bimax 종료
     function (callback) {
       client.hgetall('bitz:'.concat('ticker'), function (err, result) {
         return callback(err, result);
@@ -232,6 +299,7 @@ router.get('/', function (req, res, next) {
       blockCount: data.blockCount,
       chartDataNumbers: data.chartDataNumbers,
       ticker: data.ticker,
+      bimax: data.bimax,
       coinrate: data.coinrate,
       jsload_defer: config.jsload_defer,
       jsload_async: config.jsload_async
