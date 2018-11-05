@@ -7,6 +7,40 @@ block content
   script(defer=jsload_defer async=jsload_async type='text/javascript', src="https://cdnjs.cloudflare.com/ajax/libs/highcharts/6.2.0/modules/heatmap.js")
   script(defer=jsload_defer async=jsload_async type='text/javascript', src="https://cdnjs.cloudflare.com/ajax/libs/highcharts/6.2.0/modules/treemap.js")
   script(defer=jsload_defer async=jsload_async type='text/javascript', src="https://cdnjs.cloudflare.com/ajax/libs/highcharts/6.2.0/modules/series-label.js")
+  h3 Exchange Summary (BIMAX / beta / CacheTime: 1 min.)
+  table.table
+      td(style="padding-right:20px") 
+        center
+          span(style="font-size:2em; color:#008cba")
+            i.fa.fa-krw
+          span(style="font-size:2em; color:#000000") &nbsp;&nbsp;#{numberformatter(bimax.nowPrice)}
+          span(style="font-size:1.5em; color:#008cba")
+            br/
+            strong ESN to KRW
+      td(style="padding-right:20px") 
+        center
+          span(style="font-size:2em; color:#008cba")
+            i.fa.fa-arrow-down
+          span(style="font-size:2em; color:#000000") &nbsp;&nbsp;#{numberformatter(bimax.low)} KRW
+          span(style="font-size:1.5em; color:#008cba")
+            br/
+            strong Lowest Price
+      td(style="padding-right:20px") 
+        center
+          span(style="font-size:2em; color:#008cba")
+            i.fa.fa-arrow-up
+          span(style="font-size:2em; color:#000000") &nbsp;&nbsp;#{numberformatter(bimax.high)} KRW
+          span(style="font-size:1.5em; color:#008cba")
+            br/
+            strong Highest Price
+      td(style="padding-right:20px") 
+        center
+          span(style="font-size:2em; color:#008cba")
+            i.fa.fa-globe
+          span(style="font-size:2em; color:#000000") &nbsp;&nbsp;#{numberformatter(bimax.tradeAmount)} ESN
+          span(style="font-size:1.5em; color:#008cba")
+            br/
+            strong Volume(24h)
   h3 Exchange Summary (Bit-z / CacheTime: 1 min.)
   table.table
     tr

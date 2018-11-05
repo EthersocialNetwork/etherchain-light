@@ -47,19 +47,20 @@ var checker = function (address, config) {
       tcpPortUsed.waitForStatus(self.port, self.ip, inUse, 400, 1200)
         .then(function () {
           var now = new Date();
-          var msnow = Date.parse(now);
-          var diffms = now - self.prevTime;
+          var msnow = now.getTime();
+          var diffms = now.getTime() - self.prevTime.getTime();
           getRedis().hset(rds_key, msnow, diffms);
-          getRedis().expireat(rds_key, parseInt((+new Date()) / 1000) + 86400);
+          getRedis().pexpireat(rds_key, msnow + (60 * 60 * 24 * 1000));
           config.changeToArrParity(self.address);
           setTimeout(function () {
             next();
           }, config.serverPortCheckDelay);
         }, function (err) {
           var now = new Date();
-          var msnow = Date.parse(now);
-          getRedis().hset(rds_key, msnow, 0);
-          getRedis().expireat(rds_key, parseInt((+new Date()) / 1000) + 86400);
+          var msnow = now.getTime();
+          var diffms = now.getTime() - self.prevTime.getTime();
+          getRedis().hset(rds_key, msnow, diffms);
+          getRedis().pexpireat(rds_key, msnow + (60 * 60 * 24 * 1000));
           config.changeToArrParityDisconnect(self.address);
           setTimeout(function () {
             next();

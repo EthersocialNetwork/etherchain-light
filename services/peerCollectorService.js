@@ -99,7 +99,7 @@ var peercollector = function (config) {
 									}
 								}
 							});
-							if (arrIps.indexOf(peer.ip)) {
+							if (arrIps.includes(peer.ip)) {
 								eachCallback();
 							} else {
 								const time_now = new Date();
