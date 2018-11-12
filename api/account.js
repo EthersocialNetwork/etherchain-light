@@ -48,7 +48,7 @@ router.get('/txlist/:address/:startblock?/:endblock?', function (req, res, next)
   };
 
   if (!web3.currentProvider)
-    web3.setProvider(new web3.providers.HttpProvider(req.app.get('config').localRPCaddress));
+    web3.setProvider(req.app.get('config').providerLocalRPC);
 
   async.waterfall([
       function (callback) {
@@ -333,7 +333,7 @@ router.get('/tokenbalance/:address/:contractaddress?', function (req, res, next)
 //http://explorer.ethersocial.info/api_account/eth_balancemulti/0x5811590907050746b897efe65fea7b65710e1a2c,0xe3ec5ebd3e822c972d802a0ee4e0ec080b8237ba/1522934
 router.get('/eth_balancemulti/:addresses/:tag?', function (req, res, next) {
   if (!web3.currentProvider)
-    web3.setProvider(new web3.providers.HttpProvider(req.app.get('config').localRPCaddress));
+    web3.setProvider(req.app.get('config').providerLocalRPC);
 
   async.waterfall([
     function (callback) {

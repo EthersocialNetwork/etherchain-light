@@ -5,7 +5,7 @@ var web3 = new Web3();
 
 function getWeb3(config) {
   if (!web3.currentProvider)
-    web3.setProvider(new web3.providers.HttpProvider(config.localRPCaddress));
+    web3.setProvider(config.providerLocalRPC);
   return web3;
 }
 

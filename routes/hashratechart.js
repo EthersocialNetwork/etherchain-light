@@ -5,7 +5,6 @@ var async = require('async');
 const redis = require("redis");
 const pre_fix = 'explorerBlocks:';
 const pre_fix_chart = 'explorerBlocksChart:';
-const divide = 10000;
 
 router.get('/', function (req, res, next) {
   var config = req.app.get('config');
@@ -131,103 +130,12 @@ router.get('/', function (req, res, next) {
     },
     function (datasets, callback) {
       for (let i = 0; i < datasets.length; i++) {
+        data.totalTxCount += Number(datasets[i]);
         data.datasets[3].data.push(Number(datasets[i]));
       }
-
-      data.blockCount = data.dbLastBlock - data.dbChartLastBlock;
-      data.lastBlockTimes = 0;
-
-      var cntDatasets = 0;
-      if (data.blockCount > 0) {
-        async.times(data.blockCount, function (n, next) {
-          var field = data.dbChartLastBlock + n;
-          if (field > 0) {
-            var fieldkey = pre_fix.concat((field - (field % divide)) + ":").concat(field);
-            client.hmget(fieldkey, 'timestamp', 'difficulty', 'number', 'transactions', function (err, block_info) {
-              if (err || !block_info) {
-                console.log(fieldkey + ": no block infomation");
-                return next(err);
-              } else {
-                var baseOneTime = (60 * 60 * 1 * 1000);
-                var baseTime = (60 * 60 * 2 * 1000);
-                var hmgettimestamp = Number(block_info[0]) * 1000;
-                var nowTime = new Date();
-                var accNowTime = (nowTime - (nowTime % baseOneTime)) % baseTime == 0 ? (nowTime - (nowTime % baseOneTime)) - baseOneTime : (nowTime - (nowTime % baseOneTime));
-                if (accNowTime > hmgettimestamp) {
-                  var hmgetdifficulty = Number(block_info[1]);
-                  var hmgettransactions = Number(block_info[3]);
-                  var hmgetnumber = Number(block_info[2]);
-                  if (data.lastBlockTimes > 0) {
-                    var currentBlockTime = (hmgettimestamp - data.lastBlockTimes) / 1000;
-                    var currentDifficulty = hmgetdifficulty;
-                    var currentTransactions = hmgettransactions;
-                    var perSixHour = (hmgettimestamp - (hmgettimestamp % baseOneTime)) % baseTime == 0 ? (hmgettimestamp - (hmgettimestamp % baseOneTime)) - baseOneTime : (hmgettimestamp - (hmgettimestamp % baseOneTime));
-                    var idx = data.xData.indexOf(perSixHour);
-                    //console.log("nowTime:", nowTime.toLocaleString(), "accNowTime:", (new Date(accNowTime)).toLocaleString(), "hmgettimestamp:", (new Date(hmgettimestamp)).toLocaleString(), "perSixHour:", (new Date(perSixHour)).toLocaleString());
-
-                    if (idx == -1) {
-                      cntDatasets = 1;
-                      data.xData.push(perSixHour);
-                      data.xBlocknumber.push(hmgetnumber);
-                      data.xNumberOfBlocks.push(cntDatasets);
-                      tmpData.BlockTime.push(currentBlockTime);
-                      tmpData.Difficulty.push(currentDifficulty / 1000000000000);
-                      tmpData.Transactions.push(currentTransactions);
-                      console.log("hmgetnumber:", hmgetnumber, "hmgettimestamp:", (new Date(hmgettimestamp)).toLocaleString(), "perSixHour:", (new Date(perSixHour)).toLocaleString());
-                      data.datasets[0].data.push(tmpData.BlockTime[data.xData.length - 1]);
-                      data.datasets[1].data.push(tmpData.Difficulty[data.xData.length - 1]);
-                      data.datasets[2].data.push((tmpData.Difficulty[data.xData.length - 1] / tmpData.BlockTime[data.xData.length - 1]) * 1000);
-                      data.datasets[3].data.push(tmpData.Transactions[data.xData.length - 1]);
-
-                      data.lastnumber = hmgetnumber;
-                    } else {
-                      cntDatasets++;
-                      data.xData[idx] = perSixHour;
-                      data.xBlocknumber[idx] = hmgetnumber;
-                      data.xNumberOfBlocks[idx] = cntDatasets;
-
-                      if (!tmpData.BlockTime[idx]) {
-                        tmpData.BlockTime[idx] = currentBlockTime;
-                      } else {
-                        tmpData.BlockTime[idx] += currentBlockTime;
-                      }
-                      if (!tmpData.Difficulty[idx]) {
-                        tmpData.Difficulty[idx] = currentDifficulty / 1000000000000;
-                      } else {
-                        tmpData.Difficulty[idx] += currentDifficulty / 1000000000000;
-                      }
-                      if (!tmpData.Transactions[idx]) {
-                        tmpData.Transactions[idx] = currentTransactions;
-                      } else {
-                        tmpData.Transactions[idx] += currentTransactions;
-                      }
-
-                      data.datasets[0].data[idx] = tmpData.BlockTime[data.xData.length - 1] / cntDatasets;
-                      data.datasets[1].data[idx] = tmpData.Difficulty[data.xData.length - 1] / cntDatasets;
-                      data.datasets[2].data[idx] = (data.datasets[1].data[idx] / data.datasets[0].data[idx]) * 1000;
-                      data.datasets[3].data[idx] = tmpData.Transactions[data.xData.length - 1];
-
-                      data.lastnumber = hmgetnumber;
-                    }
-                  }
-                }
-                if (hmgettimestamp > 0) {
-                  data.lastBlockTimes = hmgettimestamp;
-                }
-                next(err, block_info);
-              }
-            });
-          } else {
-            next(null, null);
-          }
-        }, function (err, blocks) {
-          callback(err, blocks);
-        });
-      } else {
-        callback("Not found block.", null);
-      }
+      callback(null);
     }
-  ], function (err, blocks) {
+  ], function (err) {
     if (err) {
       console.log("Error ", err);
       return next(err);
@@ -244,7 +152,6 @@ router.get('/', function (req, res, next) {
           'NetHashrate': data.datasets[2].data[j],
           'Transactions': data.datasets[3].data[j]
         });
-        data.totalTxCount += data.datasets[3].data[j];
       }
 
       //2) sort:
@@ -256,7 +163,7 @@ router.get('/', function (req, res, next) {
 
       //3) separate them back out:
       for (var k = 0; k < list.length; k++) {
-        data.xData[k] = list[k].xData + (60 * 60 * 9 * 1000);
+        data.xData[k] = list[k].xData;
         data.xBlocknumber[k] = list[k].xBlocknumber;
         data.xNumberOfBlocks[k] = list[k].xNumberOfBlocks;
         data.datasets[0].data[k] = list[k].BlockTime;

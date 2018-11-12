@@ -11,18 +11,13 @@ function getRedis() {
   if (client && client.connected) {
     return client;
   }
-
-  if (client) {
-    client.end(); // End and open once more
-  }
-
+  client.quit();
   client = redis.createClient();
   client.on("error", function (err) {
     console.log("Error ", err);
   });
   return client;
 }
-
 
 var exporter = function (provider, erc20ABI, tokenAddress, createBlock, startTime) {
   var self = this;

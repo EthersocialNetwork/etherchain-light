@@ -7,9 +7,17 @@ block content
   script(defer=jsload_defer async=jsload_async type='text/javascript', src="https://cdnjs.cloudflare.com/ajax/libs/highcharts/6.2.0/modules/heatmap.js")
   script(defer=jsload_defer async=jsload_async type='text/javascript', src="https://cdnjs.cloudflare.com/ajax/libs/highcharts/6.2.0/modules/treemap.js")
   script(defer=jsload_defer async=jsload_async type='text/javascript', src="https://cdnjs.cloudflare.com/ajax/libs/highcharts/6.2.0/modules/series-label.js")
+  script(defer=jsload_defer async=jsload_async type='text/javascript', src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.18.1/moment.min.js")
+  script(defer=jsload_defer async=jsload_async type='text/javascript', src="https://cdnjs.cloudflare.com/ajax/libs/moment-timezone/0.5.13/moment-timezone-with-data-2012-2022.min.js")
   h3 Block Chain Summary(Calculated in the All blocks) / Total number of TX: #{numberformatter(totalTxCount)}
   div#chart_BlockTime(style="min-width: 480px; max-width: 1200px; height: 1100px; margin: 0 auto")
   script.
+    Highcharts.setOptions({
+      time: {
+          timezone: 'Asia/Seoul'
+      }
+    });
+
     $('#chart_BlockTime').bind('mousemove touchmove touchstart', function (e) {
       var chart, point, i, event;
       for (i = 0; i < Highcharts.charts.length; i++) {
@@ -46,7 +54,6 @@ block content
     */
     function syncExtremes(e) {
       var thisChart = this.chart;
-
       if (e.trigger !== 'syncExtremes') { // Prevent feedback loop
         Highcharts.each(Highcharts.charts, function (chart) {
           if (chart !== thisChart) {
@@ -132,7 +139,7 @@ block content
             backgroundColor: 'none',
             pointFormat: '{point.y}',
             formatter: function() {
-              return 'BlockNumber: <b>' + (this.point.b-this.point.n+1).toLocaleString() + ' ~ ' + this.point.b.toLocaleString() + '</b> (' + Highcharts.dateFormat('%y/%m/%d %H:%M', new Date(this.x)) + ' ~ ' + Highcharts.dateFormat('%d %H:%M', new Date(this.x+(60*60*1*1000+60*59*1000+59*1000))) + ')<br/>NumberOfBlocks: <b>' + this.point.n.toLocaleString() + "   |   " + dataset.name + ": <b>" + this.y.toLocaleString(undefined, {maximumFractionDigits: dataset.valueDecimals}) + dataset.unit + '</b>';
+              return 'BlockNumber: <b>' + (this.point.b-this.point.n+1).toLocaleString() + ' ~ ' + this.point.b.toLocaleString() + '</b> (' + Highcharts.dateFormat('%y/%m/%d %H:%M', new Date(this.x)) + ' ~ ' + Highcharts.dateFormat('%y/%m/%d %H:%M', new Date(this.x+(60*60*1*1000+60*59*1000+59*1000))) + ')<br/>NumberOfBlocks: <b>' + this.point.n.toLocaleString() + "   |   " + dataset.name + ": <b>" + this.y.toLocaleString(undefined, {maximumFractionDigits: dataset.valueDecimals}) + dataset.unit + '</b>';
             },
             headerFormat: '',
             shadow: false,

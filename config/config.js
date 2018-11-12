@@ -15,6 +15,7 @@ var config = function () {
   this.arrParityDisconnect = [];
 
   this.localRPCaddress = 'http://127.0.0.1:8545';
+  this.providerLocalRPC = new web3.providers.HttpProvider(this.localRPCaddress);
 
   this.networkPortString = "50505";
   this.networkPortNumber = parseInt(this.networkPortString, 10);
@@ -23,9 +24,6 @@ var config = function () {
   this.blockStoreServiceInterval = 1 * 60 * 1000; // ms
   this.peerCollectorServiceInterval = 5 * 60 * 1000; // ms
   this.hashrateCollectorServiceInterval = 2 * 60 * 60 * 1000; // ms
-
-  this.serverPortCheck = true;
-  this.serverPortCheckDelay = 60 * 1000; // ms
 
   this.tokenLoadDelay = 10;
 
@@ -45,13 +43,13 @@ var config = function () {
     var disidx = self.arrParityDisconnect.indexOf(address);
     if (idx === -1) {
       return false;
-    } else if (disidx >= -1) {
+    } else if (disidx > -1) {
       return false;
     } else {
       self.arrParityDisconnect.push(address);
       var removed = self.arrParity.splice(idx, 1);
       console.log("[NodeInfo][DisConnect]", address, "\t", removed, "\n", "[arrParity]", self.arrParity, "\n", "[Disconnect]", self.arrParityDisconnect);
-      return removed == address;
+      return removed === address;
     }
   };
 
@@ -60,13 +58,13 @@ var config = function () {
     var disidx = self.arrParityDisconnect.indexOf(address);
     if (disidx === -1) {
       return false;
-    } else if (idx >= -1) {
+    } else if (idx > -1) {
       return false;
     } else {
       self.arrParity.splice(0, 0, address);
       var removed = self.arrParityDisconnect.splice(disidx, 1);
       console.log("[NodeInfo][ReConnect]", address, "\t", removed, "\n", "[arrParity]", self.arrParity, "\n", "[Disconnect]", self.arrParityDisconnect);
-      return removed == address;
+      return removed === address;
     }
   };
 

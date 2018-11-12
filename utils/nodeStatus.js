@@ -9,23 +9,34 @@ var nodeStatus = function (config) {
   this.idx = 0;
   this.port = '';
   this.ip = '';
-  var org_arrParity = self.conf.getArrParity();
-  var arrDisconnectParity = self.conf.getArrDisconnectParity();
-  this.arrParity = org_arrParity.slice(0, org_arrParity.length).concat(arrDisconnectParity);
-  if (this.arrParity.indexOf(self.conf.localRPCaddress) === -1) {
-    this.arrParity.splice(0, 0, self.conf.localRPCaddress);
-  }
+  this.arrParity = [];
+  this.arrParity.push(config.localRPCaddress);
   this.web3 = new Web3();
+
+  if (config.getArrParity() && config.getArrParity().length > 0) {
+    config.getArrParity().forEach(function (address) {
+      self.arrParity.push(address);
+    });
+  }
+  if (config.getArrDisconnectParity() && config.getArrDisconnectParity().length > 0) {
+    config.getArrDisconnectParity().forEach(function (address) {
+      self.arrParity.push(address);
+    });
+  }
+  if (self.arrParity.indexOf(config.localRPCaddress) === -1) {
+    self.arrParity.splice(0, 0, config.localRPCaddress);
+  }
 
   this.updateStatus = function () {
     if (self.idx > self.arrParity.length - 1) {
       self.idx = 0;
     }
 
-    if (!self.arrParity[self.idx]) {
+    var parity = self.arrParity[self.idx];
+    if (!parity) {
       console.log('!self.arrParity[self.idx] :', self.idx, '[self.arrParity]', self.arrParity);
     } else {
-      var sres = self.arrParity[self.idx].split("/");
+      var sres = parity.split("/");
       if (sres[2]) {
         var sreses = sres[2].split(":");
         if (sreses.length == 2) {
@@ -55,7 +66,7 @@ var nodeStatus = function (config) {
           if (diffms == 'Off') {
             callback(null, diffms, null);
           } else {
-            self.web3.setProvider(new self.web3.providers.HttpProvider(self.arrParity[self.idx]));
+            self.web3.setProvider(new self.web3.providers.HttpProvider(parity));
             self.web3.version.getNode(function (err, result) {
               callback(err, diffms, result);
             });
@@ -78,16 +89,16 @@ var nodeStatus = function (config) {
 
         if (err) {
           console.log("Error updating node status:", err);
-          if (self.arrParity[self.idx] != config.localRPCaddress) {
-            config.changeToArrParityDisconnect(self.arrParity[self.idx]);
+          if (parity != config.localRPCaddress) {
+            config.changeToArrParityDisconnect(parity);
           }
           if (self.VersionAndPeers[self.idx]) {
             self.VersionAndPeers[self.idx] = '['.concat(self.idx).concat('] [').concat(displayIP).concat('] [').concat('[[ Disconnected ]]]');
           }
         } else {
           if (diffms == 'Off' || diffms === undefined || version === undefined || nbrPeers === undefined) {
-            if (self.arrParity[self.idx] != config.localRPCaddress) {
-              config.changeToArrParityDisconnect(self.arrParity[self.idx]);
+            if (parity != config.localRPCaddress) {
+              config.changeToArrParityDisconnect(parity);
             }
             if (self.VersionAndPeers[self.idx]) {
               self.VersionAndPeers[self.idx] = '['.concat(self.idx).concat('] [').concat(displayIP).concat('] [').concat('[[ Disconnected ]]]');
@@ -99,8 +110,8 @@ var nodeStatus = function (config) {
             } else {
               self.VersionAndPeers.push(descriptionNode);
             }
-            if (self.arrParity[self.idx] != config.localRPCaddress) {
-              config.changeToArrParity(self.arrParity[self.idx]);
+            if (parity != config.localRPCaddress) {
+              config.changeToArrParity(parity);
             }
           }
         }
