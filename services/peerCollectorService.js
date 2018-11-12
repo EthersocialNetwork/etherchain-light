@@ -2,7 +2,6 @@ const async = require('async');
 const Web3 = require('web3');
 const redis = require("redis");
 const geoip = require('geoip-lite');
-const iso = require('iso-3166-1');
 const tcpPortUsed = require('tcp-port-used');
 const pre_fix = 'explorerPeers:';
 var client = redis.createClient();
@@ -14,11 +13,7 @@ function getRedis() {
 	if (client && client.connected) {
 		return client;
 	}
-
-	if (client) {
-		client.end(); // End and open once more
-	}
-
+	client.quit();
 	client = redis.createClient();
 	client.on("error", function (err) {
 		console.log("Error ", err);
@@ -31,7 +26,7 @@ var peercollector = function (config) {
 		function (next) {
 			console.log("[▷▷▷ Start ▷▷▷][peerCollectorService]", printDateTime());
 			var web3 = new Web3();
-			web3.setProvider(config.selectParity());
+			web3.setProvider(config.providerLocalRPC);
 			var data = {};
 			data.peers = [];
 			async.waterfall([
@@ -260,7 +255,7 @@ var peercollector = function (config) {
 				if (err) {
 					console.log("Error ", err);
 				}
-				console.log("[□□□□ End □□□□][peerCollectorService]", printDateTime());
+				console.log("[□□□□ End □□□□][peerCollectorService]", printDateTime(), data.peers.length, "peers");
 				setTimeout(function () {
 					next();
 				}, config.peerCollectorServiceInterval);

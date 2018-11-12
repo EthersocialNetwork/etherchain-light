@@ -1,5 +1,7 @@
 var configNames = function () {
   this.names = { //Circulating supply
+    "0x0000000000000000000000000000000020181106": "[BurnAddress] incinerated the ESN",
+    "0x000000000000000000000000000000000000dead": "[BurnAddress] incinerated the ESN",
     "0x12d1784e324156b707e3d02d07b86f587c3f7e78": "[Pool] miningpoolhub.com",
     "0xfb630243f8c9a141fd96b8ad9250bf999be76d4e": "[Mining] 8bit_mine",
     "0xd144e30a0571aaf0d0c050070ac435deba461fab": "[Pool] esn.clona.ru",
@@ -8,6 +10,7 @@ var configNames = function () {
     "0x02aa3e57361752742cfd683275ade72bc9ebae97": "[Pool] esn.dragonpool.top",
     "0x0b292a321fe5e20cc943648a782184f8ab44d2eb": "[Pool] moricpool.com",
     "0x2eb64b8ab13f0d7823158217d15ba310ed3d0e58": "[Pool] esn.topmining.co.kr",
+    "0xe45b202332dfec3b9bdbb30930f95b87c73da004": "[Pool] esn.topmining.co.kr",
     "0x2930822031420731f09dce572554a8b8c1eaa09b": "[Pool] esn.gonsmine.com",
     "0xa8c321024a3c015d881efca33bd1b2c1788b379e": "[Pool] esn.gonspool.com_3rd",
     "0x2dabf2142856acd7db362dd3d6845f49766b29e0": "[Pool] esn.gonspool.com_2nd",

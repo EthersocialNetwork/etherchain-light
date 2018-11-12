@@ -44,7 +44,7 @@ router.get('/summary/:count?', function (req, res, next) {
   });
 
   if (!web3.currentProvider)
-    web3.setProvider(new web3.providers.HttpProvider(req.app.get('config').localRPCaddress));
+    web3.setProvider(req.app.get('config').providerLocalRPC);
 
   async.waterfall([
     function (callback) {
