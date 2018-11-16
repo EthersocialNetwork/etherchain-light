@@ -246,15 +246,15 @@ var accountblanceschecker = function (config, configERC20, app) {
 											apieachCallback();
 										});
 									}, function (err) {
-										apicallback(err, allcnt, totalSupply.toNumber());
+										apicallback(err, allcnt, totalAccounts.toNumber(), totalSupply.toNumber());
 									});
 								}
 							],
-							function (err, activeAccounts, totalSupply) {
+							function (err, totalAccounts, activeAccounts, totalSupply) {
 								if (err) {
 									console.log('!!!! accountBalanceService Error !!!!', err);
 								} else {
-									getRedis().hset(finalRdsKey.concat(':apisupport'), 'totalAccounts', totalAccounts.toNumber());
+									getRedis().hset(finalRdsKey.concat(':apisupport'), 'totalAccounts', totalAccounts);
 									getRedis().hset(finalRdsKey.concat(':apisupport'), 'activeAccounts', activeAccounts);
 									getRedis().hset(finalRdsKey.concat(':apisupport'), 'totalSupply', totalSupply);
 								}

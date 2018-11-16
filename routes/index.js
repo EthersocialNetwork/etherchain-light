@@ -72,24 +72,29 @@ router.get('/', function (req, res, next) {
       }
     },
     function (bodyText, callback) {
-      if (data.bimax.timeoutTicker && bodyText != null) {
-        var ticker = JSON.parse(bodyText.trim());
-        var tickerall = ticker.data;
-        for (var key in tickerall) {
-          if (tickerall.hasOwnProperty(key)) {
-            if (key == "ESN/KRW") {
-              data.bimax.nowPrice = tickerall[key].nowPrice;
-              data.bimax.high = tickerall[key].high;
-              data.bimax.low = tickerall[key].low;
-              data.bimax.tradeAmount = tickerall[key].tradeAmount;
+      if (bodyText != null && bodyText.toString().includes('<html>')) {
+        console.log("[Warning] BIMAX is down");
+        return callback(null);
+      } else {
+        if (data.bimax.timeoutTicker && bodyText != null) {
+          var ticker = JSON.parse(bodyText.trim());
+          var tickerall = ticker.data;
+          for (var key in tickerall) {
+            if (tickerall.hasOwnProperty(key)) {
+              if (key == "ESN/KRW") {
+                data.bimax.nowPrice = tickerall[key].nowPrice;
+                data.bimax.high = tickerall[key].high;
+                data.bimax.low = tickerall[key].low;
+                data.bimax.tradeAmount = tickerall[key].tradeAmount;
+              }
             }
           }
+          var now = new Date();
+          data.bimax.time = now.getTime();
+          client.hmset(pre_fix.concat('bimax'), data.bimax);
         }
-        var now = new Date();
-        data.bimax.time = now.getTime();
-        client.hmset(pre_fix.concat('bimax'), data.bimax);
+        return callback(null);
       }
-      return callback(null);
     },
     //bimax 종료
     function (callback) {
@@ -174,7 +179,9 @@ router.get('/', function (req, res, next) {
         if (data.dbLastBlock > 0 && data.dbLastBlock > lastBlock.number - n) {
           var field = lastBlock.number - n;
           client.hgetall(pre_fix.concat((field - (field % divide)) + ":").concat(field), function (err, block_info) {
-            block_info.isDB = true;
+            if (block_info) {
+              block_info.isDB = true;
+            }
             next(err, block_info);
           });
         } else {
@@ -234,42 +241,44 @@ router.get('/', function (req, res, next) {
     data.chartDataNumbers = 100;
     var cntChartData = 0;
     blocks.forEach(function (block) {
-      if (lastBlockTimes > 0) {
-        totalBlockTimes += lastBlockTimes - block.timestamp;
-        var currentBlockTime = lastBlockTimes - block.timestamp;
-        //console.log(currentBlockTime, lastBlockTimes, block.timestamp);
-        var currentDifficulty = Number(block.difficulty);
-        var currentNetHashrate = currentDifficulty / currentBlockTime;
+      if (block) {
+        if (lastBlockTimes > 0) {
+          totalBlockTimes += lastBlockTimes - block.timestamp;
+          var currentBlockTime = lastBlockTimes - block.timestamp;
+          //console.log(currentBlockTime, lastBlockTimes, block.timestamp);
+          var currentDifficulty = Number(block.difficulty);
+          var currentNetHashrate = currentDifficulty / currentBlockTime;
 
-        if (cntChartData++ < data.chartDataNumbers) {
-          chartBlockNumber.push(block.number);
-          chartBlockTime.push(currentBlockTime);
-          chartDifficulty.push(currentDifficulty / 1000000000000);
-          chartNetHashrate.push(currentNetHashrate / 1000000000000);
+          if (cntChartData++ < data.chartDataNumbers) {
+            chartBlockNumber.push(block.number);
+            chartBlockTime.push(currentBlockTime);
+            chartDifficulty.push(currentDifficulty / 1000000000000);
+            chartNetHashrate.push(currentNetHashrate / 1000000000000);
+          }
+          totaDifficulty += Number(block.difficulty);
+          miners.push(block.miner);
+          if (data.minersTime[block.miner]) {
+            data.minersTime[block.miner] += currentBlockTime;
+          } else {
+            data.minersTime[block.miner] = currentBlockTime;
+          }
+          if (data.minersDiff[block.miner]) {
+            data.minersDiff[block.miner] += currentDifficulty;
+          } else {
+            data.minersDiff[block.miner] = currentDifficulty;
+          }
+          countBlockTimes++;
         }
-        totaDifficulty += Number(block.difficulty);
-        miners.push(block.miner);
-        if (data.minersTime[block.miner]) {
-          data.minersTime[block.miner] += currentBlockTime;
-        } else {
-          data.minersTime[block.miner] = currentBlockTime;
+        lastBlockTimes = block.timestamp;
+        //});
+        //tmpBlocks.forEach(function (block) {
+        //최근 블럭 5개씩 표시
+        if (rBlocks.length < 5) {
+          block.author = block.miner;
+          block.transactionsCount = block.isDB ? block.transactions : block.transactions.length;
+          block.unclesCount = block.isDB ? block.uncles : block.uncles.length;
+          rBlocks.push(block);
         }
-        if (data.minersDiff[block.miner]) {
-          data.minersDiff[block.miner] += currentDifficulty;
-        } else {
-          data.minersDiff[block.miner] = currentDifficulty;
-        }
-        countBlockTimes++;
-      }
-      lastBlockTimes = block.timestamp;
-      //});
-      //tmpBlocks.forEach(function (block) {
-      //최근 블럭 5개씩 표시
-      if (rBlocks.length < 5) {
-        block.author = block.miner;
-        block.transactionsCount = block.isDB ? block.transactions : block.transactions.length;
-        block.unclesCount = block.isDB ? block.uncles : block.uncles.length;
-        rBlocks.push(block);
       }
     });
     for (var keyminer in data.minersTime) {
