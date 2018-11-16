@@ -298,30 +298,30 @@ var blockstore = function (config, app) {
 																_to: trace.action._to ? trace.action._to : ""
 															};
 															getRedis().hmset(pre_fix_tx.concat(trace.transactionHash), rds_tx_value);
-															//console.log("[trace]", trace.action.to, trace.action.from, trace.transactionHash);
 
 															if (trace.action.to) {
-																getRedis().rpush(pre_fix_account_tx.concat(trace.action.to), trace.transactionHash);
+																getRedis().zadd(pre_fix_account_tx.concat(trace.action.to), parseInt(block.timestamp) + parseInt(trace.transactionPosition), trace.transactionHash);
 															}
 															if (trace.action._to) {
-																getRedis().rpush(pre_fix_account_tx.concat(trace.action._to), trace.transactionHash);
+																getRedis().zadd(pre_fix_account_tx.concat(trace.action._to), parseInt(block.timestamp) + parseInt(trace.transactionPosition), trace.transactionHash);
 															}
 															if (trace.action.from) {
-																getRedis().rpush(pre_fix_account_tx.concat(trace.action.from), trace.transactionHash);
+																getRedis().zadd(pre_fix_account_tx.concat(trace.action.from), parseInt(block.timestamp) + parseInt(trace.transactionPosition), trace.transactionHash);
 															}
-														} else if (trace.type === 'reward') {
+														} else if (trace.type === 'reward' && trace.blockHash) {
 															var rds_mining_value = {
 																blockHash: trace.blockHash,
 																blockNumber: trace.blockNumber,
 																date: block.timestamp ? block.timestamp.toString() : 0,
 																type: trace.type,
+																rewardType: trace.action.rewardType,
 																author: trace.action.author ? trace.action.author : "",
 																value: trace.action.value ? trace.action.value : 0,
 																isContract: trace.isContract,
 															};
 															getRedis().hmset(pre_fix_tx.concat(trace.blockHash), rds_mining_value);
-															if (trace.blockHash && trace.action.author && trace.value) {
-																getRedis().rpush(pre_fix_account_tx.concat(trace.action.author), trace.blockHash);
+															if (trace.blockHash && trace.action.author) {
+																getRedis().zadd(pre_fix_account_tx.concat(trace.action.author), parseInt(block.timestamp), trace.blockHash);
 															}
 														} else {
 															console.log("[!trace.transactionHash]", trace);

@@ -5,10 +5,29 @@ var async = require('async');
 var Web3 = require('web3');
 var redis = require("redis"),
     client = redis.createClient();
+client.on("error", function (err) {
+    console.log("Redis Error ", err);
+});
+
+function getRedis() {
+	if (client && client.connected) {
+		return client;
+	}
+	client.quit();
+	client = redis.createClient();
+	client.on("error", function (err) {
+		console.log("Error ", err);
+	});
+	return client;
+}
+
 var BigNumber = require('bignumber.js');
 BigNumber.config({
     DECIMAL_PLACES: 8
 });
+
+const pre_fix_tx = 'explorerTransactions:';
+const pre_fix_account_tx = 'explorerAccountTx:';
 
 Object.size = function (obj) {
     var size = 0,
@@ -18,6 +37,100 @@ Object.size = function (obj) {
     }
     return size;
 };
+
+router.all('/transactions/:account/:query', function (req, res, next) {
+    //console.log(req);
+    data = {};
+    data.count = parseInt(req.body.length);
+    data.start = parseInt(req.body.start);
+    data.draw = parseInt(req.body.draw);
+
+    //console.log("[req.body]", req.body);
+    //console.log("[req.body]", req.body);
+    async.waterfall([
+            function (callback) {
+                getRedis().zcard(pre_fix_account_tx.concat(req.params.account), function (err, result) {
+                    return callback(err, result);
+                });
+            },
+            function (llen, callback) {
+                var start = data.start;
+                var end = start + data.count - 1;
+                getRedis().zrevrange(pre_fix_account_tx.concat(req.params.account), start, end, function (err, result) {
+                    return callback(err, llen, result);
+                });
+            },
+            function (llen, txhashlist, callback) {
+                var txList = [];
+                async.eachSeries(txhashlist, function (tx, txEachCallback) {
+                    getRedis().hmget(pre_fix_tx.concat(tx), 'transactionHash', 'blockNumber', 'date', 'type', 'from', 'to', 'transactionPosition', 'value', 'isContract', 'token_symbol', 'token_decimals', '_value', '_to', 'blockHash', 'author', 'rewardType',
+                        function (err, txInfoArray) {
+                            //0'transactionHash', 1'blockNumber', 2'date', 3'type', 4'from', 5'to', 6'transactionPosition', 7'value', 8'isContract',
+                            //9'token_symbol', 10'token_decimals', 11'_value', 12'_to', 13'blockHash', 14'author', 15'rewardType'
+                            var type = txInfoArray[3];
+                            var txInfo = [];
+                            if (type == 'reward') {
+                                txInfo[0] = txInfoArray[13];
+                                txInfo[1] = txInfoArray[1];
+                                txInfo[2] = printDateTime(parseInt(txInfoArray[2], 16) * 1000);
+                                if (txInfoArray[15] == "uncle") {
+                                    txInfo[3] = "Uncle";
+                                } else {
+                                    txInfo[3] = "Mining";
+                                }
+                                txInfo[4] = "New Coins Mining Reward";
+                                txInfo[5] = txInfoArray[14];
+
+                                let Ether = new BigNumber(10e+17);
+                                let ret = new BigNumber(txInfoArray[7]);
+                                txInfo[6] = ret.dividedBy(Ether).toFormat(8).concat(' ESN');
+                                //txInfo[7] = txInfoArray[8];
+                            } else {
+                                txInfo[0] = txInfoArray[0];
+                                txInfo[1] = txInfoArray[1];
+                                txInfo[2] = printDateTime(parseInt(txInfoArray[2], 16) * 1000);
+                                txInfo[3] = txInfoArray[3];
+                                txInfo[4] = txInfoArray[4];
+                                if (txInfoArray[12] != '') {
+                                    txInfo[5] = txInfoArray[12];
+                                } else {
+                                    txInfo[5] = txInfoArray[5];
+                                }
+                                if (txInfoArray[11] != '') {
+                                    //console.log('[9]', txInfoArray[9], '[10]', txInfoArray[10], '[11]', txInfoArray[11]);
+                                    let Ether = new BigNumber(Math.pow(10, parseInt(txInfoArray[10] == '' ? '0' : txInfoArray[10])));
+                                    let ret = new BigNumber(txInfoArray[11]);
+                                    txInfo[6] = ret.dividedBy(Ether).toFormat(8).concat(' ').concat(txInfoArray[9]);
+                                } else {
+                                    let Ether = new BigNumber(10e+17);
+                                    let ret = new BigNumber(txInfoArray[7]);
+                                    txInfo[6] = ret.dividedBy(Ether).toFormat(8).concat(' ESN');
+                                }
+                                //txInfo[7] = txInfoArray[8];
+                            }
+                            txList.push(txInfo);
+                            txEachCallback(err);
+                        });
+                }, function (err) {
+                    callback(err, llen, txList);
+                });
+            }
+        ],
+        function (err, llen, txInfoList) {
+            if (err) {
+                console.log("Final Error ", err);
+                return next(err);
+            } else {
+                var jsonData = {
+                    "draw": data.draw,
+                    "recordsTotal": llen,
+                    "recordsFiltered": llen, //txInfoList.length,
+                    "data": txInfoList
+                };
+                res.json(jsonData);
+            }
+        });
+});
 
 router.get('/:account/:offset?/:count?/:json?', function (req, res, next) {
     var config = req.app.get('config');
@@ -37,12 +150,9 @@ router.get('/:account/:offset?/:count?/:json?', function (req, res, next) {
     var blocks = {};
     data.contractnum = 0;
     data.address = req.params.account;
-
-    client.on("error", function (err) {
-        console.log("Redis Error ", err);
-    });
-
-
+    if (data.address.length != 42) {
+        return next();
+    }
     var totalblocks = [];
     const devide = 10000;
     const cntDevide = 10;
@@ -103,7 +213,7 @@ router.get('/:account/:offset?/:count?/:json?', function (req, res, next) {
                 if (data.code !== "0x") {
                     data.isContract = true;
                 }
-                client.hgetall('esn_contracts:transfercount', function (err, replies) {
+                getRedis().hgetall('esn_contracts:transfercount', function (err, replies) {
                     callback(null, replies);
                 });
 
@@ -616,11 +726,11 @@ router.get('/:account/:offset?/:count?/:json?', function (req, res, next) {
                                 if (tmpBlock.action._to) {
                                     let decimals = 18;
                                     let symbol = 'NaN';
-                                    var Ether = new BigNumber(Math.pow(10, decimals));
                                     if (tokenExporter[tmpBlock.action.to]) {
                                         decimals = tokenExporter[tmpBlock.action.to].token_decimals;
                                         symbol = tokenExporter[tmpBlock.action.to].token_symbol;
                                     }
+                                    var Ether = new BigNumber(Math.pow(10, decimals));
                                     var ret = new BigNumber(tmpBlock.action._value);
                                     let _value = ret.dividedBy(Ether);
 
@@ -696,6 +806,7 @@ router.get('/:account/:offset?/:count?/:json?', function (req, res, next) {
                         data.previousBlockNumber = data.prevNum - 1;
                         data.fromBlock = data.prevNum;
                     }
+
                     if (req.params.json && (req.params.json == 'true' || req.params.json == 'json')) {
                         res.json(resultToJson(err, data));
                     } else {
@@ -712,6 +823,14 @@ router.get('/:account/:offset?/:count?/:json?', function (req, res, next) {
         });
 });
 
+function numberWithCommas(x) {
+    if (!x)
+        return x;
+    var parts = x.toString().split(".");
+    parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+    return parts.join(".");
+}
+
 function resultToJson(err, param) {
     var result = {};
     result.jsonrpc = 'esn';
@@ -726,6 +845,26 @@ function resultToJson(err, param) {
         result.result = NaN;
     }
     return result;
+}
+
+function addZeros(num, digit) {
+    var zero = '';
+    num = num.toString();
+    if (num.length < digit) {
+        for (i = 0; i < digit - num.length; i++) {
+            zero += '0';
+        }
+    }
+    return zero + num.toString();
+}
+
+function printDateTime(mstime) {
+    var currentDate = new Date(mstime);
+    var calendar = currentDate.getFullYear().toString().substr(-2) + "/" + addZeros((currentDate.getMonth() + 1).toString(), 2) + "/" + addZeros(currentDate.getDate().toString(), 2);
+    var currentHours = addZeros(currentDate.getHours(), 2);
+    var currentMinute = addZeros(currentDate.getMinutes(), 2);
+    var currentSeconds = addZeros(currentDate.getSeconds(), 2);
+    return calendar + " " + currentHours + ":" + currentMinute + ":" + currentSeconds;
 }
 
 module.exports = router;

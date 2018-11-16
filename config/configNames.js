@@ -23,7 +23,7 @@ var configNames = function () {
     "0xbe9052073198f4087cf8b2ab98ff46fdd3eee9a5": "[Pool] esnpool.ssadaegi.com",
     "0xf35074bbd0a9aee46f4ea137971feec024ab704e": "[Pool] esn.solopool.org",
     "0x1021286d2bffcdf1892bd9144d7a0349e336e087": "[Pool] esn.coabit.com",
-    "0xe3ec5ebd3e822c972d802a0ee4e0ec080b8237ba": "[Pool] pool.sejun.info / Block Explorer served by ::pool.sejun.info::",
+    "0xe3ec5ebd3e822c972d802a0ee4e0ec080b8237ba": "[Pool] pool.sejun.info",
     "0x98f7cc6bc449bfe333b66b66a69470ceea80da7e": "[Exchanges] Bit-Z",
     "0xf159038eed7606ae9d52e851129de2ca5d6f630a": "[Exchanges] Bit-Z",
     "0xfdbdaec57829f25ad48e18d94e0b8533f2801818": "ESN Alpha or Beta Testers",

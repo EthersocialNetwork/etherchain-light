@@ -41,7 +41,6 @@ var hashratecollector = function (config) {
 			data.xBlocknumber = [];
 			data.xNumberOfBlocks = [];
 
-			data.lastnumber = 0;
 			data.datasets = [];
 			data.datasets[0] = {
 				"name": "BlockTime",
@@ -158,9 +157,6 @@ var hashratecollector = function (config) {
 					if (data.blockCount > 300000) {
 						data.blockCount = 300000;
 					}
-					if (data.blockCount < 600) {
-						data.blockCount = 0;
-					}
 
 					if (data.blockCount > 0) {
 						async.times(data.blockCount, function (n, timeNext) {
@@ -189,25 +185,28 @@ var hashratecollector = function (config) {
 					}
 				},
 				function (blocks, callback) {
+					var baseOneTime = (60 * 60 * 1 * 1000);
+					var baseTime = (60 * 60 * 2 * 1000);
+					var nowTime = new Date();
+					var accNowTime = (nowTime - (nowTime % baseOneTime)) % baseTime == 0 ? (nowTime - (nowTime % baseOneTime)) - baseOneTime : (nowTime - (nowTime % baseOneTime));
 					async.eachSeries(blocks, function (block_info, eachCallback) {
 						if (!block_info || block_info.length < 1) {
+							console.log("[HashrateChart Notice] block_info: \n", block_info);
 							return eachCallback();
 						} else if (block_info[0] && (block_info[0] === 0) || block_info[0] == '0') {
+							console.log("[HashrateChart Notice] block_info[0]: \n", block_info[0]);
 							return eachCallback();
 						} else {
-							var baseOneTime = (60 * 60 * 1 * 1000);
-							var baseTime = (60 * 60 * 2 * 1000);
 							var hmgettimestamp = (Number(block_info[0]) * 1000);
-							var nowTime = new Date();
-							var accNowTime = (nowTime - (nowTime % baseOneTime)) % baseTime == 0 ? (nowTime - (nowTime % baseOneTime)) - baseOneTime : (nowTime - (nowTime % baseOneTime));
-							if (accNowTime - hmgettimestamp < baseTime) {
+							if (accNowTime + baseTime < hmgettimestamp) {
+								console.log("accNowTime:", accNowTime, "hmgettimestamp:", hmgettimestamp, "baseTime:", baseTime);
 								return eachCallback();
 							}
 							if (accNowTime > hmgettimestamp) {
 								var hmgetdifficulty = Number(block_info[1]);
 								var hmgettransactions = Number(block_info[3]);
 								var hmgetnumber = Number(block_info[2]);
-								if (data.lastBlockTimes > 0) {
+								if (data.lastBlockTimes > 0 && hmgetnumber > 0) {
 									var currentBlockTime = (hmgettimestamp - data.lastBlockTimes) / 1000;
 									var currentDifficulty = hmgetdifficulty;
 									var currentTransactions = hmgettransactions;
@@ -230,7 +229,6 @@ var hashratecollector = function (config) {
 										data.datasets[2].data.push((tmpData.Difficulty[data.xData.length - 1] / tmpData.BlockTime[data.xData.length - 1]) * 1000);
 										data.datasets[3].data.push(tmpData.Transactions[data.xData.length - 1]);
 
-										data.lastnumber = hmgetnumber;
 										dbSaveDatas.xData.push(perSixHour);
 										dbSaveDatas.xBlocknumber.push(hmgetnumber);
 										dbSaveDatas.xNumberOfBlocks.push(cntDatasets);
@@ -265,7 +263,6 @@ var hashratecollector = function (config) {
 										data.datasets[2].data[idx] = (data.datasets[1].data[idx] / data.datasets[0].data[idx]) * 1000;
 										data.datasets[3].data[idx] = tmpData.Transactions[data.xData.length - 1];
 
-										data.lastnumber = hmgetnumber;
 										var dbsaveIdx = dbSaveDatas.xData.indexOf(perSixHour);
 										dbSaveDatas.xData[dbsaveIdx] = perSixHour;
 										dbSaveDatas.xBlocknumber[dbsaveIdx] = hmgetnumber;
@@ -290,11 +287,10 @@ var hashratecollector = function (config) {
 				if (err) {
 					console.log("[HashrateChartError]", err);
 				} else {
-					if (data.lastnumber > 0) {
-						getRedis().hset(pre_fix_chart.concat("lastblock"), "lastblock", data.lastnumber - 1);
-					}
+					var lastnumber = 0;
 					for (let i = 0; i < dbSaveDatas.xData.length - 1; i++) {
 						if (dbSaveDatas.BlockTime[i] && dbSaveDatas.Difficulty[i]) {
+							lastnumber = dbSaveDatas.xBlocknumber[i];
 							getRedis().rpush(pre_fix_chart.concat('xData'), dbSaveDatas.xData[i]);
 							getRedis().rpush(pre_fix_chart.concat('xBlocknumber'), dbSaveDatas.xBlocknumber[i]);
 							getRedis().rpush(pre_fix_chart.concat('xNumberOfBlocks'), dbSaveDatas.xNumberOfBlocks[i]);
@@ -304,6 +300,10 @@ var hashratecollector = function (config) {
 							getRedis().rpush(pre_fix_chart.concat('Transactions'), dbSaveDatas.Transactions[i]);
 						}
 					}
+					if (lastnumber > 0) {
+						getRedis().hset(pre_fix_chart.concat("lastblock"), "lastblock", lastnumber);
+					}
+
 					console.log("[□□□□ End □□□□][hashrateCollectorService]", printDateTime(), "~".concat(numberWithCommas(dbSaveDatas.xBlocknumber[dbSaveDatas.xBlocknumber.length - 1])), "block");
 				}
 				setTimeout(function () {
@@ -320,6 +320,8 @@ var hashratecollector = function (config) {
 module.exports = hashratecollector;
 
 function numberWithCommas(x) {
+	if (!x)
+		return x;
 	var parts = x.toString().split(".");
 	parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ",");
 	return parts.join(".");
