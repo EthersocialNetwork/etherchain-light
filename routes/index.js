@@ -9,6 +9,7 @@ const redis = require("redis");
 const client = redis.createClient();
 const pre_fix = 'explorerBlocks:';
 const divide = 10000;
+const configConstant = require('../config/configConstant');
 
 router.get('/', function (req, res, next) {
   var config = req.app.get('config');
@@ -310,8 +311,8 @@ router.get('/', function (req, res, next) {
       ticker: data.ticker,
       bimax: data.bimax,
       coinrate: data.coinrate,
-      jsload_defer: config.jsload_defer,
-      jsload_async: config.jsload_async
+      jsload_defer: configConstant.jsload_defer,
+      jsload_async: configConstant.jsload_async
     });
     data = null;
   });

@@ -1,34 +1,16 @@
-var web3 = require('web3');
-var net = require('net');
+const web3 = require('web3');
+const net = require('net');
+const configConstant = require('./configConstant');
 
 var config = function () {
   var self = this;
 
-  this.logFormat = "[:status][:date[clf]][:remote-addr] :url :referrer :user-agent";
+  this.providerIpc = new web3.providers.IpcProvider(configConstant.ipcPath, net); // localhost uses only ipc. However, the API uses localhost RPC. 'http://127.0.0.1:8545'
 
-  this.dbPath = '/home/username/.local/share/io.parity.ethersocial/chains/ethersocial/db/dc73f323b4681272/archive';
-
-  this.ipcPath = "/home/username/.local/share/io.parity.ethersocial/jsonrpc.ipc";
-  this.providerIpc = new web3.providers.IpcProvider(this.ipcPath, net); // localhost uses only ipc. However, the API uses localhost RPC. 'http://127.0.0.1:8545'
-
-  this.arrParity = ['http://127.0.0.1:8545'];
+  this.arrParity = configConstant.arrParity;
   this.arrParityDisconnect = [];
 
-  this.localRPCaddress = 'http://127.0.0.1:8545';
-  this.providerLocalRPC = new web3.providers.HttpProvider(this.localRPCaddress);
-
-  this.networkPortString = "50505";
-  this.networkPortNumber = parseInt(this.networkPortString, 10);
-
-  this.accountBalanceServiceInterval = 2 * 60 * 1000; // ms
-  this.blockStoreServiceInterval = 1 * 60 * 1000; // ms
-  this.peerCollectorServiceInterval = 5 * 60 * 1000; // ms
-  this.hashrateCollectorServiceInterval = 2 * 60 * 60 * 1000; // ms
-
-  this.tokenLoadDelay = 10;
-
-  this.jsload_defer = false;
-  this.jsload_async = false;
+  this.networkPortNumber = parseInt(configConstant.gethNetworkPortString, 10);
 
   this.getArrParity = function () {
     return self.arrParity;

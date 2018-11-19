@@ -1,6 +1,7 @@
 const BigNumber = require('bignumber.js');
 const async = require('async');
 const Web3 = require('web3');
+const configConstant = require('../config/configConstant');
 const redis = require("redis");
 var client = redis.createClient();
 client.on("error", function (err) {
@@ -26,7 +27,7 @@ var accountblanceschecker = function (config, configERC20, app) {
 		function (next) {
 			console.log("[▷▷▷ Start ▷▷▷][accountBalanceService]", printDateTime());
 			var web3 = new Web3();
-			web3.setProvider(config.providerLocalRPC);
+			web3.setProvider(new web3.providers.HttpProvider(configConstant.localRPCaddress));
 			var Ether = new BigNumber(10e+17);
 			var data = "";
 			var cnt = 0;
@@ -264,7 +265,7 @@ var accountblanceschecker = function (config, configERC20, app) {
 				}
 				setTimeout(function () {
 					next();
-				}, config.accountBalanceServiceInterval);
+				}, configConstant.accountBalanceServiceInterval);
 			});
 		},
 		function (err) {

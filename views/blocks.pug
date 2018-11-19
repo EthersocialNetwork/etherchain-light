@@ -1,24 +1,56 @@
 extends layout
 
 block content
-  h3 Recent blocks
-  table.table
-    thead
-      tr
-        th Number
-        th Miner
-        th Timestamp
-        th # Tx
-        th # Uncles
-        th is in DB
-    tbody
-      for block in blocks
+  link(rel='stylesheet', href='https://cdnjs.cloudflare.com/ajax/libs/datatables/1.10.19/css/dataTables.bootstrap.min.css')
+  script(type='text/javascript', src='https://cdnjs.cloudflare.com/ajax/libs/datatables/1.10.19/js/jquery.dataTables.min.js')
+  script(type='text/javascript', src='https://cdnjs.cloudflare.com/ajax/libs/datatables/1.10.19/js/dataTables.bootstrap.min.js')
+  h3 All Blocks
+  div(style='width:95%')
+    table#blocklisttable.table.table-striped.table-bordered(style='width:100%')
+      thead
         tr
-          td
-            a(href="/block/" + block.number) #{block.number}
-          td 
-            a(href="/account/" + block.author) #{nameformatter.format(block.author)}
-          td #{moment.unix(block.timestamp).format()}
-          td #{block.transactionsCount}
-          td #{block.unclesCount}
-          td #{block.isDB}
+          th Number
+          th Date
+          th Hash
+          th Miner
+          th # Tx
+          th # Uncles
+  script.
+    $(document).ready(function() {
+      $('#blocklisttable').DataTable({
+        "dom": 'lifrtp',
+        "processing": true,
+        "serverSide": true,
+        "ajax": {
+          "url": "/blocks/query",
+          "type": "POST"
+        },
+        "searching": false,
+        "order": [[ 0, "desc" ]],
+        "columnDefs": [{
+          "targets": 0,
+          "orderable": false,
+          "render": function ( data, type, row, meta ) {
+            return '<a href="/block/'+data+'">'+data.replace(/\B(?=(\d{3})+(?!\d))/g, ",")+'</a>';
+          }
+        },{
+          "targets": 1,
+          "orderable": false
+        },{
+          "targets": 2,
+          "orderable": false,
+          "render": function ( data, type, row, meta ) {
+            return '<a href="/block/'+data+'">'+data+'</a>';
+          }
+        },{
+          "targets": 3,
+          "orderable": false
+        },{
+          "targets": 4,
+          "orderable": false
+        },{
+          "targets": 5,
+          "orderable": false
+        }]
+      });
+    });

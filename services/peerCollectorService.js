@@ -3,6 +3,7 @@ const Web3 = require('web3');
 const redis = require("redis");
 const geoip = require('geoip-lite');
 const tcpPortUsed = require('tcp-port-used');
+const configConstant = require('../config/configConstant');
 const pre_fix = 'explorerPeers:';
 var client = redis.createClient();
 client.on("error", function (err) {
@@ -26,7 +27,7 @@ var peercollector = function (config) {
 		function (next) {
 			console.log("[▷▷▷ Start ▷▷▷][peerCollectorService]", printDateTime());
 			var web3 = new Web3();
-			web3.setProvider(config.providerLocalRPC);
+			web3.setProvider(config.selectParity());
 			var data = {};
 			data.peers = [];
 			async.waterfall([
@@ -154,7 +155,7 @@ var peercollector = function (config) {
 											txt_geo = String(geo.city).concat(", ", geo.country);
 										}
 
-										if (tmp_data.port == config.networkPortString || existAddress.includes(tmp_data.ip)) {
+										if (tmp_data.port == configConstant.gethNetworkPortString || existAddress.includes(tmp_data.ip)) {
 											var enode = "enode://";
 											enode = enode.concat(tmp_data.id, "@", tmp_data.ip, ":", tmp_data.port);
 
@@ -185,7 +186,7 @@ var peercollector = function (config) {
 											tcpPortUsed.waitForStatus(config.networkPortNumber, tmp_data.ip, inUse, 400, 1200)
 												.then(function () {
 													tmp_data.orgPort = tmp_data.port;
-													tmp_data.port = config.networkPortString;
+													tmp_data.port = configConstant.gethNetworkPortString;
 													var enode = "enode://";
 													enode = enode.concat(tmp_data.id, "@", tmp_data.ip, ":", tmp_data.port);
 													var rds_value = {
@@ -213,7 +214,6 @@ var peercollector = function (config) {
 													eachCallback();
 												}, function (err) {
 													if (err) {
-														//console.log("tcpPortUsed.waitForStatus Error:", config.networkPortString, tmp_data.ip, "\n", err);
 														var enode = "enode://";
 														enode = enode.concat(tmp_data.id, "@", tmp_data.ip, ":", tmp_data.port);
 														var rds_value = {
@@ -258,7 +258,7 @@ var peercollector = function (config) {
 				console.log("[□□□□ End □□□□][peerCollectorService]", printDateTime(), data.peers.length, "peers");
 				setTimeout(function () {
 					next();
-				}, config.peerCollectorServiceInterval);
+				}, configConstant.peerCollectorServiceInterval);
 			});
 		},
 		function (err) {

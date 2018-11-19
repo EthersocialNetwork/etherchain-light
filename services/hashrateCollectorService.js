@@ -1,5 +1,6 @@
-var async = require('async');
+const async = require('async');
 const redis = require("redis");
+const configConstant = require('../config/configConstant');
 const pre_fix = 'explorerBlocks:';
 const pre_fix_chart = 'explorerBlocksChart:';
 const divide = 10000;
@@ -308,7 +309,7 @@ var hashratecollector = function (config) {
 				}
 				setTimeout(function () {
 					next();
-				}, config.hashrateCollectorServiceInterval);
+				}, configConstant.hashrateCollectorServiceInterval);
 			});
 		},
 		function (err) {

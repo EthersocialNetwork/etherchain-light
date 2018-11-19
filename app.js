@@ -1,47 +1,47 @@
-var serverStartTime = new Date().toLocaleString();
-var express = require('express');
-var compression = require('compression');
-var path = require('path');
-var favicon = require('serve-favicon');
-var logger = require('morgan');
-var cookieParser = require('cookie-parser');
-var bodyParser = require('body-parser');
-var waitUntil = require('wait-until');
+let serverStartTime = new Date().toLocaleString();
+let express = require('express');
+let compression = require('compression');
+let path = require('path');
+let favicon = require('serve-favicon');
+let logger = require('morgan');
+let cookieParser = require('cookie-parser');
+let bodyParser = require('body-parser');
+let waitUntil = require('wait-until');
 
-var index = require('./routes/index');
-var blocks = require('./routes/blocks');
-var tx_recent = require('./routes/tx_recent');
-var block = require('./routes/block');
-var tx = require('./routes/tx');
-var account = require('./routes/account');
-var accounts = require('./routes/accounts');
-var contract = require('./routes/contract');
-var signature = require('./routes/signature');
-var search = require('./routes/search');
-var top100 = require('./routes/top100');
-var peers = require('./routes/peers');
-var redisblock = require('./routes/redisblock');
-var hashratechart = require('./routes/hashratechart');
-var servercheckchart = require('./routes/servercheckchart');
-var bitzcharts = require('./routes/bitzcharts');
-var api = require('./routes/api');
-var prices = require('./routes/prices');
+let index = require('./routes/index');
+let blocks = require('./routes/blocks');
+let tx_recent = require('./routes/tx_recent');
+let block = require('./routes/block');
+let tx = require('./routes/tx');
+let account = require('./routes/account');
+let accounts = require('./routes/accounts');
+let contract = require('./routes/contract');
+let signature = require('./routes/signature');
+let search = require('./routes/search');
+let top100 = require('./routes/top100');
+let peers = require('./routes/peers');
+let redisblock = require('./routes/redisblock');
+let hashratechart = require('./routes/hashratechart');
+let bitzcharts = require('./routes/bitzcharts');
+let api = require('./routes/api');
+let prices = require('./routes/prices');
 
-var api_proxy = require('./api/proxy');
-var api_parity = require('./api/parity');
-var api_account = require('./api/account');
-var api_info = require('./api/info');
+let api_proxy = require('./api/proxy');
+let api_parity = require('./api/parity');
+let api_account = require('./api/account');
+let api_info = require('./api/info');
 
-var test_batch = require('./routes/test_batch');
+let test_batch = require('./routes/test_batch');
 
-var config = new(require('./config/config.js'))();
-var configERC20 = new(require('./config/configERC20.js'))();
-var configNames = new(require('./config/configNames.js'))();
+let config = new(require('./config/config.js'))();
+let configERC20 = new(require('./config/configERC20.js'))();
+let configNames = new(require('./config/configNames.js'))();
+let configConstant = require('./config/configConstant');
 
-var level = require('level-rocksdb');
-var db = level(config.dbPath);
+let level = require('level-rocksdb');
+let db = level(configConstant.dbPath);
 
-var redis = require("redis"),
+let redis = require("redis"),
   client = redis.createClient();
 client.on("error", function (err) {
   console.log("Error ", err);
@@ -51,11 +51,7 @@ function getRedis() {
   if (client && client.connected) {
     return client;
   }
-
-  if (client) {
-    client.end(); // End and open once more
-  }
-
+  client.quit();
   client = redis.createClient();
   client.on("error", function (err) {
     console.log("Error ", err);
@@ -63,24 +59,22 @@ function getRedis() {
   return client;
 }
 
-var app = express();
+let app = express();
 app.use(compression({
   filter: shouldCompress
 }));
 
-var async = require('async');
-var tokenExporterService = require('./services/tokenExporter.js');
-var serverPortCheckService = require('./services/serverPortCheck.js');
-var accountBalanceService = require('./services/accountBalanceService');
-var blockStoreService = require('./services/blockStoreService');
-var peerCollectorService = require('./services/peerCollectorService');
-var hashrateCollectorService = require('./services/hashrateCollectorService');
+let async = require('async');
+let tokenExporterService = require('./services/tokenExporter.js');
+let accountBalanceService = require('./services/accountBalanceService');
+let blockStoreService = require('./services/blockStoreService');
+let peerCollectorService = require('./services/peerCollectorService');
+let hashrateCollectorService = require('./services/hashrateCollectorService');
 
-var contractAccountList = [];
-var tokenExporter = {};
-var serverPortCheck = {};
+let contractAccountList = [];
+let tokenExporter = {};
 
-var cronServices = {};
+let cronServices = {};
 async.waterfall([
   function (callback) {
     getRedis().hgetall('esn_contracts:eventslength', function (err, replies) {
@@ -89,8 +83,8 @@ async.waterfall([
   },
   function (result, callback) {
     //console.dir(result);
-    var sortable = [];
-    for (var adr in result) {
+    let sortable = [];
+    for (let adr in result) {
       sortable.push([adr, result[adr]]);
     }
     sortable.sort(function (a, b) {
@@ -174,7 +168,7 @@ async.waterfall([
 
   // uncomment after placing your favicon in /public
   app.use(favicon(path.join(__dirname, 'public', 'favicon.ico')));
-  app.use(logger(config.logFormat, {
+  app.use(logger(configConstant.logFormat, {
     skip: function (req, res) {
       return res.statusCode == 304;
     }
@@ -210,7 +204,6 @@ async.waterfall([
   app.use('/peers', peers);
   app.use('/redisblock', redisblock);
   app.use('/hashratechart', hashratechart);
-  app.use('/servercheckchart', servercheckchart);
   app.use('/bitzcharts', bitzcharts);
   app.use('/api', api);
   app.use('/prices', prices);
@@ -260,28 +253,9 @@ async.waterfall([
   //console.dir(accountList);
 
   cronServices.accountBalanceService = new accountBalanceService(config, configERC20, app);
-  cronServices.blockStoreService = new blockStoreService(config);
+  cronServices.blockStoreService = new blockStoreService(app);
   cronServices.peerCollectorService = new peerCollectorService(config);
   cronServices.hashrateCollectorService = new hashrateCollectorService(config);
-
-  if (config.serverPortCheck) {
-    var serverPortCheckList = config.getArrParity();
-
-    async.eachSeries(serverPortCheckList, function (server, forEachOfCallback) {
-      serverPortCheck[server] = new serverPortCheckService(server, config);
-      console.log('[serverPortCheckService]', server);
-      sleep(100).then(() => {
-        forEachOfCallback();
-      });
-    }, function (err) {
-      if (err) {
-        console.log("[ERROR] serverPortCheck listing: ", err);
-      } else {
-        app.set('serverPortCheck', serverPortCheck);
-        app.set('serverPortCheckList', serverPortCheckList);
-      }
-    });
-  }
 });
 
 function shouldCompress(req, res) {

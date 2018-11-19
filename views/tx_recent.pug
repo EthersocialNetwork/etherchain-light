@@ -1,30 +1,65 @@
 extends layout
 
 block content
-  h3 Recent Transactions
-  if txs.length === 0
-    p No transactions during the last 100 blocks<br/>마지막 100블록에 트랜젝션(거래정보)가 없습니다.
-  else
-    table.table
+  link(rel='stylesheet', href='https://cdnjs.cloudflare.com/ajax/libs/datatables/1.10.19/css/dataTables.bootstrap.min.css')
+  script(type='text/javascript', src='https://cdnjs.cloudflare.com/ajax/libs/datatables/1.10.19/js/jquery.dataTables.min.js')
+  script(type='text/javascript', src='https://cdnjs.cloudflare.com/ajax/libs/datatables/1.10.19/js/dataTables.bootstrap.min.js')
+  h3 All Transactions
+  div(style='width:95%')
+    table#txlisttable.table.table-striped.table-bordered(style='width:100%')
       thead
         tr
+          th Hash
           th Block
-          th TxHash
+          th Date
+          th Type
           th From
           th To
           th Amount
-      tbody
-        for tx in txs
-          tr
-            td
-              a(href="/block/" + tx.blockNumber) #{tx.blockNumber}
-            td
-              a(href="/tx/" + tx.hash) #{tx.hash.substr(0,10)}...
-            td
-              a(href="/account/" + tx.from) #{nameformatter.format(tx.from)}
-            td
-              if tx.to
-                a(href="/account/" + tx.to) #{nameformatter.format(tx.to)}
-              else
-                | New Contract
-            td(style="text-align: right;") #{ethformatter(tx.value)}
+          //th isContract
+  script.
+    $(document).ready(function() {
+      $('#txlisttable').DataTable({
+        "dom": 'lifrtp',
+        "processing": true,
+        "serverSide": true,
+        "ajax": {
+          "url": "/tx_recent/transactions/query",
+          "type": "POST"
+        },
+        "searching": false,
+        "order": [[ 2, "desc" ]],
+        "columnDefs": [{
+          "targets": 0,
+          "orderable": false,
+          "render": function ( data, type, row, meta ) {
+            if(row[3]=='call')
+              return '<a href="/tx/'+data+'">'+data.substr(0, 10)+'...</a>';
+            else
+              return '<a href="/block/'+data+'">'+data.substr(0, 10)+'...</a>';
+          }
+        },{
+          "targets": 1,
+          "orderable": false,
+          "render": function ( data, type, row, meta ) {
+            return '<a href="/block/'+data+'">'+data.replace(/\B(?=(\d{3})+(?!\d))/g, ",")+'</a>';
+          }
+        },{
+          "targets": 2,
+          "orderable": false
+        },{
+          "targets": 3,
+          "orderable": false
+        },{
+          "targets": 4,
+          "orderable": false
+        },{
+          "targets": 5,
+          "orderable": false
+        },{
+          "targets": 6,
+          "orderable": false,
+          "className": "text-right",
+        }]
+      });
+    });

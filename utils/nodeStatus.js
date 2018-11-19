@@ -1,16 +1,16 @@
 const async = require('async');
 const Web3 = require('web3');
 const tcpPortUsed = require('tcp-port-used');
+const configConstant = require('../config/configConstant');
 
 var nodeStatus = function (config) {
   var self = this;
-  this.conf = config;
   this.VersionAndPeers = [];
   this.idx = 0;
   this.port = '';
   this.ip = '';
   this.arrParity = [];
-  this.arrParity.push(config.localRPCaddress);
+  this.arrParity.push(configConstant.localRPCaddress);
   this.web3 = new Web3();
 
   if (config.getArrParity() && config.getArrParity().length > 0) {
@@ -23,8 +23,8 @@ var nodeStatus = function (config) {
       self.arrParity.push(address);
     });
   }
-  if (self.arrParity.indexOf(config.localRPCaddress) === -1) {
-    self.arrParity.splice(0, 0, config.localRPCaddress);
+  if (self.arrParity.indexOf(configConstant.localRPCaddress) === -1) {
+    self.arrParity.splice(0, 0, configConstant.localRPCaddress);
   }
 
   this.updateStatus = function () {
@@ -89,7 +89,7 @@ var nodeStatus = function (config) {
 
         if (err) {
           console.log("Error updating node status:", err);
-          if (parity != config.localRPCaddress) {
+          if (parity != configConstant.localRPCaddress) {
             config.changeToArrParityDisconnect(parity);
           }
           if (self.VersionAndPeers[self.idx]) {
@@ -97,7 +97,7 @@ var nodeStatus = function (config) {
           }
         } else {
           if (diffms == 'Off' || diffms === undefined || version === undefined || nbrPeers === undefined) {
-            if (parity != config.localRPCaddress) {
+            if (parity != configConstant.localRPCaddress) {
               config.changeToArrParityDisconnect(parity);
             }
             if (self.VersionAndPeers[self.idx]) {
@@ -110,7 +110,7 @@ var nodeStatus = function (config) {
             } else {
               self.VersionAndPeers.push(descriptionNode);
             }
-            if (parity != config.localRPCaddress) {
+            if (parity != configConstant.localRPCaddress) {
               config.changeToArrParity(parity);
             }
           }
