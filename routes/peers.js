@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+const configConstant = require('../config/configConstant');
 
 const async = require('async');
 const Web3 = require('web3');
@@ -167,8 +168,8 @@ router.get('/:json?', function (req, res, next) {
 					goversions: data.goversions,
 					geo: data.geo,
 					geoCategories: data.geoCategories,
-					jsload_defer: config.jsload_defer,
-					jsload_async: config.jsload_async
+					jsload_defer: configConstant.jsload_defer,
+					jsload_async: configConstant.jsload_async
 				});
 			}
 		}

@@ -1,80 +1,113 @@
 var express = require('express');
 var router = express.Router();
-
 var async = require('async');
-var Web3 = require('web3');
-const redis = require("redis");
-const client = redis.createClient();
-const pre_fix = 'explorerBlocks:';
-const divide = 10000;
+var redis = require("redis"),
+  client = redis.createClient();
+client.on("error", function (err) {
+  console.log("Redis Error ", err);
+});
+var _ = require('underscore');
 
-router.get('/', function (req, res, next) {
-  var config = req.app.get('config');
-  var web3 = new Web3();
-  web3.setProvider(config.selectParity());
-  var data = {};
-
+function getRedis() {
+  if (client && client.connected) {
+    return client;
+  }
+  client.quit();
+  client = redis.createClient();
   client.on("error", function (err) {
     console.log("Error ", err);
   });
+  return client;
+}
+
+const pre_fix = 'explorerBlocks:';
+const divide = 10000;
+
+router.all('/:query', function (req, res, next) {
+  data = {};
+  data.count = parseInt(req.body.length);
+  data.start = parseInt(req.body.start);
+  data.draw = parseInt(req.body.draw);
 
   async.waterfall([
-    function (callback) {
-      var rds_key3 = pre_fix.concat("lastblock");
-      client.hget(rds_key3, "lastblock", function (err, result) {
-        return callback(err, result);
-      });
-    },
-    function (dbLastBlock, callback) {
-      data.dbLastBlock = Number(dbLastBlock);
-      web3.eth.getBlock("latest", false, function (err, result) {
-        return callback(err, result);
-      });
-    },
-    function (lastBlock, callback) {
-      var blockCount = 50;
+      function (callback) {
+        var start = data.start;
+        var end = start + data.count - 1;
+        getRedis().zrevrange(pre_fix.concat("list"), start, end, 'withscores', function (err, result) {
+          var lists = _.groupBy(result, function (a, b) {
+            return Math.floor(b / 2);
+          });
+          return callback(err, _.toArray(lists));
+        });
+      },
+      function (blocklist, callback) {
+        var blockList = []; //[ [ 'blockhash', 'blocknumber' ], [ 'blockhash', 'blocknumber' ], [ 'blockhash', 'blocknumber' ] ]
+        async.eachSeries(blocklist, function (block, blockEachCallback) {
+          var blockhash = block[0];
+          var blocknumber = block[1];
 
-      if (lastBlock.number - blockCount < 0) {
-        blockCount = lastBlock.number + 1;
+          var rds_key = pre_fix.concat((blocknumber - (blocknumber % divide)) + ":").concat(blocknumber);
+          getRedis().hmget(rds_key, 'number', 'timestamp', 'hash', 'miner', 'transactions', 'uncles',
+            function (err, blockInfoArray) {
+              //0'number', 1'timestamp', 2'hash', 3'miner', 4'transactions', 5'uncles'
+              blockInfoArray[1] = printDateTime(parseInt(blockInfoArray[1], 16) * 1000);
+
+              var configNames = req.app.get('configNames');
+              var address3 = blockInfoArray[3];
+              var name3 = configNames.names[address3] ? ((configNames.names[address3]).split("/"))[0] : configNames.holdnames[address3] ? (('Long-term holding: '.concat(configNames.holdnames[address3])).split("/"))[0] : address3;
+              blockInfoArray[3] = '<a href="/account/'.concat(address3).concat('">').concat(name3).concat('</a>');
+
+              blockList.push(blockInfoArray);
+              blockEachCallback(err);
+            });
+        }, function (err) {
+          callback(err, blockList);
+        });
+      },
+      function (blockList, callback) {
+        getRedis().zcard(pre_fix.concat("list"), function (err, result) {
+          return callback(err, result, blockList);
+        });
       }
-
-      async.times(blockCount, function (n, next) {
-        if (data.dbLastBlock > 0 && data.dbLastBlock > lastBlock.number - n) {
-          var field = lastBlock.number - n;
-          client.hgetall(pre_fix.concat((field - (field % divide)) + ":").concat(field), function (err, block_info) {
-            block_info.isDB = true;
-            block_info.author = block_info.miner;
-            block_info.transactionsCount = block_info.transactions;
-            block_info.unclesCount = block_info.uncles;
-            next(err, block_info);
-          });
-        } else {
-          web3.eth.getBlock(lastBlock.number - n, false, function (err, block) {
-            if (!err && block) {
-              block.isDB = false;
-              block.author = block.miner;
-              block.transactionsCount = block.transactions.length;
-              block.unclesCount = block.uncles.length;
-            }
-            next(err, block);
-          });
-        }
-      }, function (err, blocks) {
-        callback(err, blocks);
-      });
-    }
-  ], function (err, blocks) {
-    if (err) {
-      console.log("Error", err);
-      return next(err);
-    }
-
-    res.render('blocks', {
-      blocks: blocks
+    ],
+    function (err, zcard, blockInfoList) {
+      if (err) {
+        console.log("Final Error ", err);
+        return next(err);
+      } else {
+        var jsonData = {
+          "draw": data.draw,
+          "recordsTotal": zcard,
+          "recordsFiltered": zcard, //blockInfoList.length,
+          "data": blockInfoList
+        };
+        res.json(jsonData);
+      }
     });
-    blocks = null;
-  });
-
 });
+
+router.get('/', function (req, res, next) {
+  res.render('blocks');
+});
+
+function addZeros(num, digit) {
+  var zero = '';
+  num = num.toString();
+  if (num.length < digit) {
+    for (i = 0; i < digit - num.length; i++) {
+      zero += '0';
+    }
+  }
+  return zero + num.toString();
+}
+
+function printDateTime(mstime) {
+  var currentDate = new Date(mstime);
+  var calendar = currentDate.getFullYear().toString().substr(-2) + "/" + addZeros((currentDate.getMonth() + 1).toString(), 2) + "/" + addZeros(currentDate.getDate().toString(), 2);
+  var currentHours = addZeros(currentDate.getHours(), 2);
+  var currentMinute = addZeros(currentDate.getMinutes(), 2);
+  var currentSeconds = addZeros(currentDate.getSeconds(), 2);
+  return calendar + " " + currentHours + ":" + currentMinute + ":" + currentSeconds;
+}
 
 module.exports = router;

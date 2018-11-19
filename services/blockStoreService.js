@@ -1,5 +1,7 @@
 var async = require('async');
 var Web3 = require('web3');
+const configConstant = require('../config/configConstant');
+
 const divide = 10000;
 var BigNumber = require('bignumber.js');
 BigNumber.config({
@@ -27,14 +29,14 @@ function getRedis() {
 	return client;
 }
 
-var blockstore = function (config, app) {
+var blockstore = function (app) {
 	var tokenExporter = app.get('tokenExporter');
 
 	async.forever(
 		function (next) {
-			console.log("[▷▷▷ Start ▷▷▷][blockStoreService]", printDateTime());
+			//console.log("[▷▷▷ Start ▷▷▷][blockStoreService]", printDateTime());
 			var web3 = new Web3();
-			web3.setProvider(config.providerLocalRPC);
+			web3.setProvider(new web3.providers.HttpProvider(configConstant.localRPCaddress));
 			var data = {};
 			data.dbLastBlock = 0;
 			data.blockCount = 2000;
@@ -141,9 +143,8 @@ var blockstore = function (config, app) {
 									};
 
 									var rds_key = pre_fix.concat("list");
-									getRedis().hset(rds_key, block.number, block.miner);
+									getRedis().zadd(rds_key, block.number, block.hash);
 									var rds_key2 = pre_fix.concat((block.number - (block.number % divide)) + ":").concat(block.number);
-									//console.log("[rds_tx_value]", rds_value);
 									getRedis().hmset(rds_key2, rds_value);
 									maxBlockNumber = maxBlockNumber < block.number ? block.number : maxBlockNumber;
 									var rds_key3 = pre_fix.concat("lastblock");
@@ -299,11 +300,13 @@ var blockstore = function (config, app) {
 															};
 															getRedis().hmset(pre_fix_tx.concat(trace.transactionHash), rds_tx_value);
 
-															if (trace.action.to) {
-																getRedis().zadd(pre_fix_account_tx.concat(trace.action.to), parseInt(block.timestamp) + parseInt(trace.transactionPosition), trace.transactionHash);
-															}
+															getRedis().zadd(pre_fix_tx.concat("list"), parseInt(block.timestamp) + parseInt(trace.transactionPosition), trace.transactionHash);
 															if (trace.action._to) {
 																getRedis().zadd(pre_fix_account_tx.concat(trace.action._to), parseInt(block.timestamp) + parseInt(trace.transactionPosition), trace.transactionHash);
+															} else {
+																if (trace.action.to) {
+																	getRedis().zadd(pre_fix_account_tx.concat(trace.action.to), parseInt(block.timestamp) + parseInt(trace.transactionPosition), trace.transactionHash);
+																}
 															}
 															if (trace.action.from) {
 																getRedis().zadd(pre_fix_account_tx.concat(trace.action.from), parseInt(block.timestamp) + parseInt(trace.transactionPosition), trace.transactionHash);
@@ -356,10 +359,12 @@ var blockstore = function (config, app) {
 				if (err) {
 					console.log("Error ", err);
 				}
-				console.log("[□□□□ End □□□□][blockStoreService]", printDateTime(), "~".concat(numberWithCommas(maxBlockNumber)), "block");
+				if (maxBlockNumber > 0) {
+					console.log("[□□□□ End □□□□][blockStoreService]", printDateTime(), "~".concat(numberWithCommas(maxBlockNumber)), "block");
+				}
 				setTimeout(function () {
 					next();
-				}, config.blockStoreServiceInterval);
+				}, configConstant.blockStoreServiceInterval);
 			});
 		},
 		function (err) {

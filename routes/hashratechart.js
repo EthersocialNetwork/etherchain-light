@@ -1,5 +1,6 @@
 var express = require('express');
 var router = express.Router();
+const configConstant = require('../config/configConstant');
 
 var async = require('async');
 const redis = require("redis");
@@ -175,8 +176,8 @@ router.get('/', function (req, res, next) {
       res.render('hashratechart', {
         xDataLength: JSON.stringify(data.xData.length + 1),
         activity: data,
-        jsload_defer: config.jsload_defer,
-        jsload_async: config.jsload_async,
+        jsload_defer: configConstant.jsload_defer,
+        jsload_async: configConstant.jsload_async,
         totalTxCount: data.totalTxCount
       });
     }

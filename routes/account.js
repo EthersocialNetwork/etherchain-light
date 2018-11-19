@@ -1,8 +1,8 @@
 var express = require('express');
 var router = express.Router();
-
 var async = require('async');
 var Web3 = require('web3');
+
 var redis = require("redis"),
     client = redis.createClient();
 client.on("error", function (err) {
@@ -10,15 +10,15 @@ client.on("error", function (err) {
 });
 
 function getRedis() {
-	if (client && client.connected) {
-		return client;
-	}
-	client.quit();
-	client = redis.createClient();
-	client.on("error", function (err) {
-		console.log("Error ", err);
-	});
-	return client;
+    if (client && client.connected) {
+        return client;
+    }
+    client.quit();
+    client = redis.createClient();
+    client.on("error", function (err) {
+        console.log("Error ", err);
+    });
+    return client;
 }
 
 var BigNumber = require('bignumber.js');
@@ -44,6 +44,7 @@ router.all('/transactions/:account/:query', function (req, res, next) {
     data.count = parseInt(req.body.length);
     data.start = parseInt(req.body.start);
     data.draw = parseInt(req.body.draw);
+    var configNames = req.app.get('configNames');
 
     //console.log("[req.body]", req.body);
     //console.log("[req.body]", req.body);
@@ -53,14 +54,14 @@ router.all('/transactions/:account/:query', function (req, res, next) {
                     return callback(err, result);
                 });
             },
-            function (llen, callback) {
+            function (zcard, callback) {
                 var start = data.start;
                 var end = start + data.count - 1;
                 getRedis().zrevrange(pre_fix_account_tx.concat(req.params.account), start, end, function (err, result) {
-                    return callback(err, llen, result);
+                    return callback(err, zcard, result);
                 });
             },
-            function (llen, txhashlist, callback) {
+            function (zcard, txhashlist, callback) {
                 var txList = [];
                 async.eachSeries(txhashlist, function (tx, txEachCallback) {
                     getRedis().hmget(pre_fix_tx.concat(tx), 'transactionHash', 'blockNumber', 'date', 'type', 'from', 'to', 'transactionPosition', 'value', 'isContract', 'token_symbol', 'token_decimals', '_value', '_to', 'blockHash', 'author', 'rewardType',
@@ -79,7 +80,10 @@ router.all('/transactions/:account/:query', function (req, res, next) {
                                     txInfo[3] = "Mining";
                                 }
                                 txInfo[4] = "New Coins Mining Reward";
-                                txInfo[5] = txInfoArray[14];
+
+                                var address = txInfoArray[14];
+                                var name = configNames.names[address] ? ((configNames.names[address]).split("/"))[0] : configNames.holdnames[address] ? (('Long-term holding: '.concat(configNames.holdnames[address])).split("/"))[0] : address;
+                                txInfo[5] = '<a href="/account/'.concat(address).concat('">').concat(name).concat('</a>');
 
                                 let Ether = new BigNumber(10e+17);
                                 let ret = new BigNumber(txInfoArray[7]);
@@ -90,12 +94,18 @@ router.all('/transactions/:account/:query', function (req, res, next) {
                                 txInfo[1] = txInfoArray[1];
                                 txInfo[2] = printDateTime(parseInt(txInfoArray[2], 16) * 1000);
                                 txInfo[3] = txInfoArray[3];
-                                txInfo[4] = txInfoArray[4];
+
+                                var address4 = txInfoArray[4];
+                                var name4 = configNames.names[address4] ? ((configNames.names[address4]).split("/"))[0] : configNames.holdnames[address4] ? (('Long-term holding: '.concat(configNames.holdnames[address4])).split("/"))[0] : address4;
+                                txInfo[4] = '<a href="/account/'.concat(address4).concat('">').concat(name4).concat('</a>');
+
+                                var address5 = txInfoArray[5];
                                 if (txInfoArray[12] != '') {
-                                    txInfo[5] = txInfoArray[12];
-                                } else {
-                                    txInfo[5] = txInfoArray[5];
+                                    address5 = txInfoArray[12];
                                 }
+                                var name5 = configNames.names[address5] ? ((configNames.names[address5]).split("/"))[0] : configNames.holdnames[address5] ? (('Long-term holding: '.concat(configNames.holdnames[address5])).split("/"))[0] : address5;
+                                txInfo[5] = '<a href="/account/'.concat(address5).concat('">').concat(name5).concat('</a>');
+
                                 if (txInfoArray[11] != '') {
                                     //console.log('[9]', txInfoArray[9], '[10]', txInfoArray[10], '[11]', txInfoArray[11]);
                                     let Ether = new BigNumber(Math.pow(10, parseInt(txInfoArray[10] == '' ? '0' : txInfoArray[10])));
@@ -112,19 +122,19 @@ router.all('/transactions/:account/:query', function (req, res, next) {
                             txEachCallback(err);
                         });
                 }, function (err) {
-                    callback(err, llen, txList);
+                    callback(err, zcard, txList);
                 });
             }
         ],
-        function (err, llen, txInfoList) {
+        function (err, zcard, txInfoList) {
             if (err) {
                 console.log("Final Error ", err);
                 return next(err);
             } else {
                 var jsonData = {
                     "draw": data.draw,
-                    "recordsTotal": llen,
-                    "recordsFiltered": llen, //txInfoList.length,
+                    "recordsTotal": zcard,
+                    "recordsFiltered": zcard, //txInfoList.length,
                     "data": txInfoList
                 };
                 res.json(jsonData);

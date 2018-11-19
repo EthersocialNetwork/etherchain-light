@@ -153,9 +153,9 @@ router.get('/:block', function (req, res, next) {
                         trace._from = event.args._from;
                         trace._to = event.args._to;
                         trace._event = event.event;
-                        trace._decimals = tokenExporter[trace.action.to].token_decimals;
-                        trace._symbol = tokenExporter[trace.action.to].token_symbol;
-                        trace._name = tokenExporter[trace.action.to].token_name;
+                        trace._decimals = tokenExporter[trace.action.to] ? (tokenExporter[trace.action.to].token_decimals ? tokenExporter[trace.action.to].token_decimals : 0) : 0;
+                        trace._symbol = tokenExporter[trace.action.to] ? (tokenExporter[trace.action.to].token_symbol ? tokenExporter[trace.action.to].token_symbol : 'n/a') : 'n/a';
+                        trace._name = tokenExporter[trace.action.to] ? (tokenExporter[trace.action.to].token_name ? tokenExporter[trace.action.to].token_name : '') : '';
                         trace.isinTransfer = true;
                       }
                     }

@@ -3,7 +3,7 @@ var router = express.Router();
 var async = require('async');
 var Web3 = require('web3');
 var web3 = new Web3();
-var BigNumber = require('bignumber.js');
+const configConstant = require('../config/configConstant');
 const redis = require("redis");
 const client = redis.createClient();
 const pre_fix = 'explorerBlocks:';
@@ -44,7 +44,7 @@ router.get('/summary/:count?', function (req, res, next) {
   });
 
   if (!web3.currentProvider)
-    web3.setProvider(req.app.get('config').providerLocalRPC);
+    web3.setProvider(new web3.providers.HttpProvider(configConstant.localRPCaddress));
 
   async.waterfall([
     function (callback) {
