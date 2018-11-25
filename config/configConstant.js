@@ -12,7 +12,7 @@ const configConstant = {
   gethNetworkPortString: "50505",
 
   //database
-  redisClientMode: false, //true: all services are on (redis read only), false: all services are off (redis store)
+  redisClientMode: false, //true: all services are off (redis read only), false: all services are on (redis store)
   redisConnectString: {
     port: 6379, // Redis port
     host: '127.0.0.1', // Redis host
