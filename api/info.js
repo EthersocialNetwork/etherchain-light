@@ -4,8 +4,8 @@ var async = require('async');
 var Web3 = require('web3');
 var web3 = new Web3();
 const configConstant = require('../config/configConstant');
-const redis = require("redis");
-const client = redis.createClient();
+var Redis = require('ioredis');
+var redis = new Redis(configConstant.redisConnectString);
 const pre_fix = 'explorerBlocks:';
 const divide = 10000;
 
@@ -38,18 +38,13 @@ Object.size = function (obj) {
 router.get('/summary/:count?', function (req, res, next) {
   var configNames = req.app.get('configNames');
   var data = {};
-
-  client.on("error", function (err) {
-    console.log("Error ", err);
-  });
-
   if (!web3.currentProvider)
     web3.setProvider(new web3.providers.HttpProvider(configConstant.localRPCaddress));
 
   async.waterfall([
     function (callback) {
       var rds_key3 = pre_fix.concat("lastblock");
-      client.hget(rds_key3, "lastblock", function (err, result) {
+      redis.hget(rds_key3, "lastblock", function (err, result) {
         return callback(err, result);
       });
     },
@@ -71,7 +66,7 @@ router.get('/summary/:count?', function (req, res, next) {
       async.times(data.blockCount, function (n, next) {
         if (data.dbLastBlock > 0 && data.dbLastBlock > lastBlock.number - n) {
           var field = lastBlock.number - n;
-          client.hgetall(pre_fix.concat((field - (field % divide)) + ":").concat(field), function (err, block_info) {
+          redis.hgetall(pre_fix.concat((field - (field % divide)) + ":").concat(field), function (err, block_info) {
             block_info.isDB = true;
             next(err, block_info);
           });

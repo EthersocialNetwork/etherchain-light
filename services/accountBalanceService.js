@@ -1,26 +1,13 @@
 const BigNumber = require('bignumber.js');
 const async = require('async');
 const Web3 = require('web3');
+
 const configConstant = require('../config/configConstant');
-const redis = require("redis");
-var client = redis.createClient();
-client.on("error", function (err) {
-	console.log("Error ", err);
-});
+var Redis = require('ioredis');
+var redis = new Redis(configConstant.redisConnectString);
+
 const finalRdsKey = 'esn_top100';
 const readyRdsKey = 'ready_esn_top100';
-
-function getRedis() {
-	if (client && client.connected) {
-		return client;
-	}
-	client.quit();
-	client = redis.createClient();
-	client.on("error", function (err) {
-		console.log("Error ", err);
-	});
-	return client;
-}
 
 var accountblanceschecker = function (config, configERC20, app) {
 	async.forever(
@@ -38,7 +25,7 @@ var accountblanceschecker = function (config, configERC20, app) {
 
 			async.waterfall([
 				function (callback) {
-					getRedis().hget(finalRdsKey.concat(':lastaccount'), 'nowcount', function (err, result) {
+					redis.hget(finalRdsKey.concat(':lastaccount'), 'nowcount', function (err, result) {
 						return callback(err, result);
 					});
 				},
@@ -46,7 +33,7 @@ var accountblanceschecker = function (config, configERC20, app) {
 					if (pnowcnt != null && pnowcnt != "Nan") {
 						nowcnt = parseInt(pnowcnt);
 					}
-					getRedis().hget(finalRdsKey.concat(':lastaccount'), 'count', function (err, result) {
+					redis.hget(finalRdsKey.concat(':lastaccount'), 'count', function (err, result) {
 						return callback(err, result);
 					});
 				},
@@ -54,7 +41,7 @@ var accountblanceschecker = function (config, configERC20, app) {
 					if (pallcnt != null && pallcnt != "Nan") {
 						allcnt = parseInt(pallcnt);
 					}
-					getRedis().hget(finalRdsKey.concat(':lastaccount'), 'address', function (err, result) {
+					redis.hget(finalRdsKey.concat(':lastaccount'), 'address', function (err, result) {
 						return callback(err, result);
 					});
 				},
@@ -168,13 +155,13 @@ var accountblanceschecker = function (config, configERC20, app) {
 										console.log("Error receiving historical events:", err);
 										eachCallback(err);
 									} else {
-										getRedis().hset('esn_contracts:eventslength', accountCode.account, events.length);
+										redis.hset('esn_contracts:eventslength', accountCode.account, events.length);
 										var transfercount = 0;
 										async.eachSeries(events, function (event, contracteachCallback) {
 											if (event.blockNumber && (event.event === "Transfer" || event.event === "Approval")) {
 												transfercount++;
 											}
-											getRedis().hset('esn_contracts:transfercount', accountCode.account, transfercount);
+											redis.hset('esn_contracts:transfercount', accountCode.account, transfercount);
 											contracteachCallback();
 										}, function (err) {
 											eachCallback();
@@ -190,9 +177,9 @@ var accountblanceschecker = function (config, configERC20, app) {
 							nowcnt++;
 							if (numBalance >= 0.00000001) {
 								cnt++;
-								getRedis().zadd(finalRdsKey, numBalance.toString(), accountCode.account);
+								redis.zadd(finalRdsKey, numBalance.toString(), accountCode.account);
 							} else {
-								getRedis().zrem(finalRdsKey, accountCode.account);
+								redis.zrem(finalRdsKey, accountCode.account);
 							}
 							eachCallback();
 						}
@@ -204,13 +191,13 @@ var accountblanceschecker = function (config, configERC20, app) {
 				if (err) {
 					console.log("[□□□ Error □□□][accountBalanceService] ", err);
 				} else {
-					getRedis().hset(finalRdsKey.concat(':createtime'), 'datetime', printDateTime());
+					redis.hset(finalRdsKey.concat(':createtime'), 'datetime', printDateTime());
 					if (resallcount < nowcount) {
-						getRedis().hset(finalRdsKey.concat(':lastaccount'), 'count', nowcount);
+						redis.hset(finalRdsKey.concat(':lastaccount'), 'count', nowcount);
 					}
-					getRedis().hset(finalRdsKey.concat(':lastaccount'), 'nowcount', nowcount);
+					redis.hset(finalRdsKey.concat(':lastaccount'), 'nowcount', nowcount);
 					if (resaccount != "") {
-						getRedis().hset(finalRdsKey.concat(':lastaccount'), 'address', resaccount);
+						redis.hset(finalRdsKey.concat(':lastaccount'), 'address', resaccount);
 					}
 
 					let totalAccounts = new BigNumber(0);
@@ -222,12 +209,12 @@ var accountblanceschecker = function (config, configERC20, app) {
 
 						async.waterfall([
 								function (apicallback) {
-									getRedis().hget(finalRdsKey.concat(':lastaccount'), 'count', function (err, result) {
+									redis.hget(finalRdsKey.concat(':lastaccount'), 'count', function (err, result) {
 										return apicallback(err, result);
 									});
 								},
 								function (allcnt, apicallback) {
-									getRedis().zrevrange(redis_args, function (err, result) {
+									redis.zrevrange(redis_args, function (err, result) {
 										return apicallback(err, allcnt, result);
 									});
 								},
@@ -255,9 +242,9 @@ var accountblanceschecker = function (config, configERC20, app) {
 								if (err) {
 									console.log('!!!! accountBalanceService Error !!!!', err);
 								} else {
-									getRedis().hset(finalRdsKey.concat(':apisupport'), 'totalAccounts', totalAccounts);
-									getRedis().hset(finalRdsKey.concat(':apisupport'), 'activeAccounts', activeAccounts);
-									getRedis().hset(finalRdsKey.concat(':apisupport'), 'totalSupply', totalSupply);
+									redis.hset(finalRdsKey.concat(':apisupport'), 'totalAccounts', totalAccounts);
+									redis.hset(finalRdsKey.concat(':apisupport'), 'activeAccounts', activeAccounts);
+									redis.hset(finalRdsKey.concat(':apisupport'), 'totalSupply', totalSupply);
 								}
 							});
 					}

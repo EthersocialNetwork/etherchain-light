@@ -6,8 +6,11 @@ var BigNumber = require('bignumber.js');
 var request = require('request');
 
 var async = require('async');
-const redis = require("redis");
-const client = redis.createClient();
+
+const configConstant = require('../config/configConstant');
+var Redis = require('ioredis');
+var redis = new Redis(configConstant.redisConnectString);
+
 const pre_fix = 'exchage_prices:';
 
 /*
@@ -18,10 +21,6 @@ https://www.korbit.co.kr/
 https://www.bimax.io/
 */
 router.get('/', function (req, res, next) {
-  client.on("error", function (err) {
-    console.log("Error ", err);
-  });
-
   var data = {};
   data.bitz = {};
   data.bitz.timeoutTicker = false;
@@ -35,7 +34,7 @@ router.get('/', function (req, res, next) {
   async.waterfall([
       //bimax 시작
       function (callback) {
-        client.hgetall(pre_fix.concat('bimax'), function (err, result) {
+        redis.hgetall(pre_fix.concat('bimax'), function (err, result) {
           return callback(err, result);
         });
       },
@@ -97,14 +96,14 @@ router.get('/', function (req, res, next) {
           }
           var now = new Date();
           data.bimax.time = now.getTime();
-          client.hmset(pre_fix.concat('bimax'), data.bimax);
+          redis.hmset(pre_fix.concat('bimax'), data.bimax);
         }
         return callback(null);
       },
       //bimax 종료
       //coinone 시작
       function (callback) {
-        client.hgetall(pre_fix.concat('coinone'), function (err, result) {
+        redis.hgetall(pre_fix.concat('coinone'), function (err, result) {
           return callback(err, result);
         });
       },
@@ -148,14 +147,14 @@ router.get('/', function (req, res, next) {
           }
           var now = new Date();
           data.coinone.time = now.getTime();
-          client.hmset(pre_fix.concat('coinone'), data.coinone);
+          redis.hmset(pre_fix.concat('coinone'), data.coinone);
         }
         return callback(null);
       },
       //coinone 종료
       //cashierest 시작
       function (callback) {
-        client.hgetall(pre_fix.concat('cashierest'), function (err, result) {
+        redis.hgetall(pre_fix.concat('cashierest'), function (err, result) {
           return callback(err, result);
         });
       },
@@ -205,14 +204,14 @@ router.get('/', function (req, res, next) {
           }
           var now = new Date();
           data.cashierest.time = now.getTime();
-          client.hmset(pre_fix.concat('cashierest'), data.cashierest);
+          redis.hmset(pre_fix.concat('cashierest'), data.cashierest);
         }
         return callback(null);
       },
       //cashierest 종료
       //bit-z 시작
       function (callback) {
-        client.hgetall(pre_fix.concat('bit-z'), function (err, result) {
+        redis.hgetall(pre_fix.concat('bit-z'), function (err, result) {
           return callback(err, result);
         });
       },
@@ -267,7 +266,7 @@ router.get('/', function (req, res, next) {
             }
           }
           data.bitz.time = ticker.time;
-          client.hmset(pre_fix.concat('bit-z'), data.bitz);
+          redis.hmset(pre_fix.concat('bit-z'), data.bitz);
         }
         return callback(null);
       }

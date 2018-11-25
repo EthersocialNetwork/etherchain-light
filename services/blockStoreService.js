@@ -1,6 +1,5 @@
 var async = require('async');
 var Web3 = require('web3');
-const configConstant = require('../config/configConstant');
 
 const divide = 10000;
 var BigNumber = require('bignumber.js');
@@ -11,23 +10,9 @@ BigNumber.config({
 const pre_fix = 'explorerBlocks:';
 const pre_fix_tx = 'explorerTransactions:';
 const pre_fix_account_tx = 'explorerAccountTx:';
-const redis = require("redis");
-var client = redis.createClient();
-client.on("error", function (err) {
-	console.log("Error ", err);
-});
-
-function getRedis() {
-	if (client && client.connected) {
-		return client;
-	}
-	client.quit();
-	client = redis.createClient();
-	client.on("error", function (err) {
-		console.log("Error ", err);
-	});
-	return client;
-}
+const configConstant = require('../config/configConstant');
+var Redis = require('ioredis');
+var redis = new Redis(configConstant.redisConnectString);
 
 var blockstore = function (app) {
 	var tokenExporter = app.get('tokenExporter');
@@ -45,7 +30,7 @@ var blockstore = function (app) {
 			async.waterfall([
 				function (callback) {
 					var rds_key3 = pre_fix.concat("lastblock");
-					getRedis().hget(rds_key3, "lastblock", function (err, result) {
+					redis.hget(rds_key3, "lastblock", function (err, result) {
 						callback(err, result);
 					});
 				},
@@ -143,12 +128,12 @@ var blockstore = function (app) {
 									};
 
 									var rds_key = pre_fix.concat("list");
-									getRedis().zadd(rds_key, block.number, block.hash);
+									redis.zadd(rds_key, block.number, block.hash);
 									var rds_key2 = pre_fix.concat((block.number - (block.number % divide)) + ":").concat(block.number);
-									getRedis().hmset(rds_key2, rds_value);
+									redis.hmset(rds_key2, rds_value);
 									maxBlockNumber = maxBlockNumber < block.number ? block.number : maxBlockNumber;
 									var rds_key3 = pre_fix.concat("lastblock");
-									getRedis().hset(rds_key3, "lastblock", maxBlockNumber);
+									redis.hset(rds_key3, "lastblock", maxBlockNumber);
 
 									if (block.transactions && block.transactions.length > 0) {
 										async.waterfall([
@@ -298,18 +283,18 @@ var blockstore = function (app) {
 																_value: trace.action._value ? trace.action._value : "",
 																_to: trace.action._to ? trace.action._to : ""
 															};
-															getRedis().hmset(pre_fix_tx.concat(trace.transactionHash), rds_tx_value);
+															redis.hmset(pre_fix_tx.concat(trace.transactionHash), rds_tx_value);
 
-															getRedis().zadd(pre_fix_tx.concat("list"), parseInt(block.timestamp) + parseInt(trace.transactionPosition), trace.transactionHash);
+															redis.zadd(pre_fix_tx.concat("list"), parseInt(block.timestamp) + parseInt(trace.transactionPosition), trace.transactionHash);
 															if (trace.action._to) {
-																getRedis().zadd(pre_fix_account_tx.concat(trace.action._to), parseInt(block.timestamp) + parseInt(trace.transactionPosition), trace.transactionHash);
+																redis.zadd(pre_fix_account_tx.concat(trace.action._to), parseInt(block.timestamp) + parseInt(trace.transactionPosition), trace.transactionHash);
 															} else {
 																if (trace.action.to) {
-																	getRedis().zadd(pre_fix_account_tx.concat(trace.action.to), parseInt(block.timestamp) + parseInt(trace.transactionPosition), trace.transactionHash);
+																	redis.zadd(pre_fix_account_tx.concat(trace.action.to), parseInt(block.timestamp) + parseInt(trace.transactionPosition), trace.transactionHash);
 																}
 															}
 															if (trace.action.from) {
-																getRedis().zadd(pre_fix_account_tx.concat(trace.action.from), parseInt(block.timestamp) + parseInt(trace.transactionPosition), trace.transactionHash);
+																redis.zadd(pre_fix_account_tx.concat(trace.action.from), parseInt(block.timestamp) + parseInt(trace.transactionPosition), trace.transactionHash);
 															}
 														} else if (trace.type === 'reward' && trace.blockHash) {
 															var rds_mining_value = {
@@ -322,9 +307,9 @@ var blockstore = function (app) {
 																value: trace.action.value ? trace.action.value : 0,
 																isContract: trace.isContract,
 															};
-															getRedis().hmset(pre_fix_tx.concat(trace.blockHash), rds_mining_value);
+															redis.hmset(pre_fix_tx.concat(trace.blockHash), rds_mining_value);
 															if (trace.blockHash && trace.action.author) {
-																getRedis().zadd(pre_fix_account_tx.concat(trace.action.author), parseInt(block.timestamp), trace.blockHash);
+																redis.zadd(pre_fix_account_tx.concat(trace.action.author), parseInt(block.timestamp), trace.blockHash);
 															}
 														} else {
 															console.log("[!trace.transactionHash]", trace);

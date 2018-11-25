@@ -41,23 +41,8 @@ let configConstant = require('./config/configConstant');
 let level = require('level-rocksdb');
 let db = level(configConstant.dbPath);
 
-let redis = require("redis"),
-  client = redis.createClient();
-client.on("error", function (err) {
-  console.log("Error ", err);
-});
-
-function getRedis() {
-  if (client && client.connected) {
-    return client;
-  }
-  client.quit();
-  client = redis.createClient();
-  client.on("error", function (err) {
-    console.log("Error ", err);
-  });
-  return client;
-}
+var Redis = require('ioredis');
+var redis = new Redis(configConstant.redisConnectString);
 
 let app = express();
 app.use(compression({
@@ -77,7 +62,7 @@ let tokenExporter = {};
 let cronServices = {};
 async.waterfall([
   function (callback) {
-    getRedis().hgetall('esn_contracts:eventslength', function (err, replies) {
+    redis.hgetall('esn_contracts:eventslength', function (err, replies) {
       callback(null, replies);
     });
   },
@@ -97,7 +82,7 @@ async.waterfall([
       contractAccountList.push(account);
       //console.log(account,"start", Date.now());
 
-      getRedis().hget('ExportToken:createBlock:', account, function (err, result) {
+      redis.hget('ExportToken:createBlock:', account, function (err, result) {
         if (!result) {
           result = 1;
         }
@@ -252,10 +237,12 @@ async.waterfall([
   console.log("[Loading  End]\t", new Date().toLocaleString());
   //console.dir(accountList);
 
-  cronServices.accountBalanceService = new accountBalanceService(config, configERC20, app);
-  cronServices.blockStoreService = new blockStoreService(app);
-  cronServices.peerCollectorService = new peerCollectorService(config);
-  cronServices.hashrateCollectorService = new hashrateCollectorService(config);
+  if (!configConstant.redisClientMode) {
+    cronServices.accountBalanceService = new accountBalanceService(config, configERC20, app);
+    cronServices.blockStoreService = new blockStoreService(app);
+    cronServices.peerCollectorService = new peerCollectorService(config);
+    cronServices.hashrateCollectorService = new hashrateCollectorService(config);
+  }
 });
 
 function shouldCompress(req, res) {

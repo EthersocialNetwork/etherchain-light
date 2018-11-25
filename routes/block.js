@@ -3,8 +3,11 @@ var router = express.Router();
 
 var async = require('async');
 var Web3 = require('web3');
-var redis = require("redis"),
-  client = redis.createClient();
+
+const configConstant = require('../config/configConstant');
+var Redis = require('ioredis');
+var redis = new Redis(configConstant.redisConnectString);
+
 var RLP = require('rlp');
 
 /* modified baToJSON() routine from rlp */
@@ -47,9 +50,6 @@ router.get('/:block', function (req, res, next) {
   web3.setProvider(config.selectParity());
 
   var tokenExporter = req.app.get('tokenExporter');
-  client.on("error", function (err) {
-    console.log("Redis Error ", err);
-  });
 
   async.waterfall([
     function (callback) {
@@ -69,7 +69,7 @@ router.get('/:block', function (req, res, next) {
       });
     },
     function (block, traces, callback) {
-      client.hgetall('esn_contracts:transfercount', function (err, replies) {
+      redis.hgetall('esn_contracts:transfercount', function (err, replies) {
         callback(null, block, traces, replies);
       });
 

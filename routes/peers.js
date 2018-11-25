@@ -1,12 +1,14 @@
 const express = require('express');
 const router = express.Router();
-const configConstant = require('../config/configConstant');
 
 const async = require('async');
 const Web3 = require('web3');
-const redis = require("redis");
-const iso = require('iso-3166-1');
 
+const configConstant = require('../config/configConstant');
+var Redis = require('ioredis');
+var redis = new Redis(configConstant.redisConnectString);
+
+const iso = require('iso-3166-1');
 const pre_fix = 'explorerPeers:';
 
 router.get('/:json?', function (req, res, next) {
@@ -16,15 +18,10 @@ router.get('/:json?', function (req, res, next) {
 	var data = {};
 	data.peers = [];
 
-	const client = redis.createClient();
-	client.on("error", function (err) {
-		console.log("Error ", err);
-	});
-
 	async.waterfall([
 		function (callback) {
 			var rds_key = pre_fix.concat("list");
-			client.hgetall(rds_key, function (err, replies) {
+			redis.hgetall(rds_key, function (err, replies) {
 				var pre_fields = [];
 				for (var hkey in replies) {
 					pre_fields.push(hkey);
@@ -34,7 +31,7 @@ router.get('/:json?', function (req, res, next) {
 		},
 		function (pre_fields, callback) {
 			async.eachSeries(pre_fields, function (field, eachCallback) {
-				client.hgetall(pre_fix.concat(field), function (err, peer_info) {
+				redis.hgetall(pre_fix.concat(field), function (err, peer_info) {
 					if (err) {
 						eachCallback(err);
 					} else {

@@ -1,26 +1,13 @@
 const async = require('async');
 const Web3 = require('web3');
-const redis = require("redis");
 const geoip = require('geoip-lite');
 const tcpPortUsed = require('tcp-port-used');
-const configConstant = require('../config/configConstant');
-const pre_fix = 'explorerPeers:';
-var client = redis.createClient();
-client.on("error", function (err) {
-	console.log("Error ", err);
-});
 
-function getRedis() {
-	if (client && client.connected) {
-		return client;
-	}
-	client.quit();
-	client = redis.createClient();
-	client.on("error", function (err) {
-		console.log("Error ", err);
-	});
-	return client;
-}
+const configConstant = require('../config/configConstant');
+var Redis = require('ioredis');
+var redis = new Redis(configConstant.redisConnectString);
+
+const pre_fix = 'explorerPeers:';
 
 var peercollector = function (config) {
 	async.forever(
@@ -174,9 +161,9 @@ var peercollector = function (config) {
 												geo: txt_geo
 											};
 											var rds_key = pre_fix.concat(h);
-											getRedis().hmset(rds_key, rds_value);
+											redis.hmset(rds_key, rds_value);
 											var rds_key2 = pre_fix.concat("list");
-											getRedis().hset(rds_key2, h, tmp_data.id);
+											redis.hset(rds_key2, h, tmp_data.id);
 											if (!existAddress.includes(tmp_data.ip)) {
 												existAddress.push(tmp_data.ip);
 											}
@@ -205,9 +192,9 @@ var peercollector = function (config) {
 														geo: txt_geo
 													};
 													var rds_key = pre_fix.concat(h);
-													getRedis().hmset(rds_key, rds_value);
+													redis.hmset(rds_key, rds_value);
 													var rds_key2 = pre_fix.concat("list");
-													getRedis().hset(rds_key2, h, tmp_data.id);
+													redis.hset(rds_key2, h, tmp_data.id);
 													if (!existAddress.includes(tmp_data.ip)) {
 														existAddress.push(tmp_data.ip);
 													}
@@ -231,9 +218,9 @@ var peercollector = function (config) {
 															geo: txt_geo
 														};
 														var rds_key = pre_fix.concat(h);
-														getRedis().hmset(rds_key, rds_value);
+														redis.hmset(rds_key, rds_value);
 														var rds_key2 = pre_fix.concat("list");
-														getRedis().hset(rds_key2, h, tmp_data.id);
+														redis.hset(rds_key2, h, tmp_data.id);
 														if (!existAddress.includes(tmp_data.ip)) {
 															existAddress.push(tmp_data.ip);
 														}

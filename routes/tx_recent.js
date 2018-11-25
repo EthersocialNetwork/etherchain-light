@@ -1,23 +1,10 @@
 var express = require('express');
 var router = express.Router();
 var async = require('async');
-var redis = require("redis"),
-  client = redis.createClient();
-client.on("error", function (err) {
-  console.log("Redis Error ", err);
-});
 
-function getRedis() {
-  if (client && client.connected) {
-    return client;
-  }
-  client.quit();
-  client = redis.createClient();
-  client.on("error", function (err) {
-    console.log("Error ", err);
-  });
-  return client;
-}
+const configConstant = require('../config/configConstant');
+var Redis = require('ioredis');
+var redis = new Redis(configConstant.redisConnectString);
 
 var BigNumber = require('bignumber.js');
 BigNumber.config({
@@ -35,21 +22,21 @@ router.all('/transactions/:query', function (req, res, next) {
 
   async.waterfall([
       function (callback) {
-        getRedis().zcard(pre_fix_tx.concat("list"), function (err, result) {
+        redis.zcard(pre_fix_tx.concat("list"), function (err, result) {
           return callback(err, result);
         });
       },
       function (zcard, callback) {
         var start = data.start;
         var end = start + data.count - 1;
-        getRedis().zrevrange(pre_fix_tx.concat("list"), start, end, function (err, result) {
+        redis.zrevrange(pre_fix_tx.concat("list"), start, end, function (err, result) {
           return callback(err, zcard, result);
         });
       },
       function (zcard, txhashlist, callback) {
         var txList = [];
         async.eachSeries(txhashlist, function (tx, txEachCallback) {
-          getRedis().hmget(pre_fix_tx.concat(tx), 'transactionHash', 'blockNumber', 'date', 'type', 'from', 'to', 'transactionPosition', 'value', 'isContract', 'token_symbol', 'token_decimals', '_value', '_to', 'blockHash', 'author', 'rewardType',
+          redis.hmget(pre_fix_tx.concat(tx), 'transactionHash', 'blockNumber', 'date', 'type', 'from', 'to', 'transactionPosition', 'value', 'isContract', 'token_symbol', 'token_decimals', '_value', '_to', 'blockHash', 'author', 'rewardType',
             function (err, txInfoArray) {
               //0'transactionHash', 1'blockNumber', 2'date', 3'type', 4'from', 5'to', 6'transactionPosition', 7'value', 8'isContract',
               //9'token_symbol', 10'token_decimals', 11'_value', 12'_to', 13'blockHash', 14'author', 15'rewardType'
@@ -67,7 +54,7 @@ router.all('/transactions/:query', function (req, res, next) {
                 txInfo[4] = "New Coins Mining Reward";
 
                 var address = txInfoArray[14];
-                var name = configNames.names[address] ? ((configNames.names[address]).split("/"))[0] : configNames.holdnames[address] ? (('Long-term holding: '.concat(configNames.holdnames[address])).split("/"))[0] : address;
+                var name = configNames.names[address] ? ((configNames.names[address]).split("/"))[0] : configNames.holdnames[address] ? (('Long-term holding: '.concat(configNames.holdnames[address])).split("/"))[0] : address.substr(0, 20).concat('...');
                 txInfo[5] = '<a href="/account/'.concat(address).concat('">').concat(name).concat('</a>');
 
                 let Ether = new BigNumber(10e+17);
@@ -80,14 +67,14 @@ router.all('/transactions/:query', function (req, res, next) {
                 txInfo[2] = printDateTime(parseInt(txInfoArray[2], 16) * 1000);
                 txInfo[3] = txInfoArray[3];
                 var address4 = txInfoArray[4];
-                var name4 = configNames.names[address4] ? ((configNames.names[address4]).split("/"))[0] : configNames.holdnames[address4] ? (('Long-term holding: '.concat(configNames.holdnames[address4])).split("/"))[0] : address4;
+                var name4 = configNames.names[address4] ? ((configNames.names[address4]).split("/"))[0] : configNames.holdnames[address4] ? (('Long-term holding: '.concat(configNames.holdnames[address4])).split("/"))[0] : address4.substr(0, 20).concat('...');
                 txInfo[4] = '<a href="/account/'.concat(address4).concat('">').concat(name4).concat('</a>');
 
                 var address5 = txInfoArray[5];
                 if (txInfoArray[12] != '') {
                   address5 = txInfoArray[12];
                 }
-                var name5 = configNames.names[address5] ? ((configNames.names[address5]).split("/"))[0] : configNames.holdnames[address5] ? (('Long-term holding: '.concat(configNames.holdnames[address5])).split("/"))[0] : address5;
+                var name5 = configNames.names[address5] ? ((configNames.names[address5]).split("/"))[0] : configNames.holdnames[address5] ? (('Long-term holding: '.concat(configNames.holdnames[address5])).split("/"))[0] : address5.substr(0, 20).concat('...');
                 txInfo[5] = '<a href="/account/'.concat(address5).concat('">').concat(name5).concat('</a>');
 
                 if (txInfoArray[11] != '') {

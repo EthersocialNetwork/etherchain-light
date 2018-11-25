@@ -1,34 +1,21 @@
 var async = require('async');
 var Web3 = require('web3');
 var tokenDatastore = require('nedb-core');
-const redis = require("redis");
-var client = redis.createClient();
-client.on("error", function (err) {
-  console.log("Error ", err);
-});
 
-function getRedis() {
-  if (client && client.connected) {
-    return client;
-  }
-  client.quit();
-  client = redis.createClient();
-  client.on("error", function (err) {
-    console.log("Error ", err);
-  });
-  return client;
-}
+const configConstant = require('../config/configConstant');
+var Redis = require('ioredis');
+var redis = new Redis(configConstant.redisConnectString);
 
 var exporter = function (provider, erc20ABI, tokenAddress, createBlock, startTime) {
   var self = this;
   //console.log("[ExportToken]", tokenAddress);
   self.tokenAddress = tokenAddress;
 
-  //self.db = new tokenDatastore();
   self.db = new tokenDatastore({
     filename: './tokenDatastore/' + tokenAddress + '.nedb',
     autoload: true
   });
+
   self.db.ensureIndex({
     fieldName: 'balance'
   }, function (err) {
@@ -189,7 +176,7 @@ var exporter = function (provider, erc20ABI, tokenAddress, createBlock, startTim
 
       if (log.args && log.args._value) {
         log.args._value = log.args._value.toNumber();
-        getRedis().hset('ExportToken:createBlock:', tokenAddress, log.blockNumber);
+        redis.hset('ExportToken:createBlock:', tokenAddress, log.blockNumber);
       }
 
       self.db.insert(log, function (err, newLogs) {
