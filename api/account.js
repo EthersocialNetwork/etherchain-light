@@ -6,11 +6,8 @@ const configConstant = require('../config/configConstant');
 var Web3 = require('web3');
 var web3 = new Web3();
 var BigNumber = require('bignumber.js');
-var redis = require("redis"),
-  client = redis.createClient();
-client.on("error", function (err) {
-  console.log("Redis Error ", err);
-});
+var Redis = require('ioredis');
+var redis = new Redis(configConstant.redisConnectString);
 
 function resultToJson(err, param) {
   var result = {};
@@ -95,24 +92,19 @@ router.get('/txlist/:address/:startblock?/:endblock?', function (req, res, next)
 
 //http://explorer.ethersocial.info/api_account/esnsupply
 router.get('/esnsupply', function (req, res, next) {
-  /*
-  client.hset('esn_top100:apisupport', 'totalAccounts', totalAccounts);
-  client.hset('esn_top100:apisupport', 'activeAccounts', activeAccounts);
-  client.hset('esn_top100:apisupport', 'totalSupply', totalSupply);
-  */
   async.waterfall([
       function (callback) {
-        client.hget('esn_top100:apisupport', 'totalAccounts', function (err, result) {
+        redis.hget('esn_top100:apisupport', 'totalAccounts', function (err, result) {
           return callback(err, result);
         });
       },
       function (totalAccounts, callback) {
-        client.hget('esn_top100:apisupport', 'activeAccounts', function (err, result) {
+        redis.hget('esn_top100:apisupport', 'activeAccounts', function (err, result) {
           return callback(err, totalAccounts, result);
         });
       },
       function (totalAccounts, activeAccounts, callback) {
-        client.hget('esn_top100:apisupport', 'totalSupply', function (err, result) {
+        redis.hget('esn_top100:apisupport', 'totalSupply', function (err, result) {
           return callback(err, totalAccounts, activeAccounts, result);
         });
       }
@@ -263,7 +255,7 @@ router.get('/tokenbalance/:address/:contractaddress?', function (req, res, next)
     var contractAddressList = [];
     async.waterfall([
       function (tokencallback) {
-        client.hgetall('esn_contracts:transfercount', function (err, replies) {
+        redis.hgetall('esn_contracts:transfercount', function (err, replies) {
           tokencallback(err, replies);
         });
       },

@@ -1,24 +1,12 @@
 var express = require('express');
 var router = express.Router();
 var async = require('async');
-var redis = require("redis"),
-  client = redis.createClient();
-client.on("error", function (err) {
-  console.log("Redis Error ", err);
-});
-var _ = require('underscore');
 
-function getRedis() {
-  if (client && client.connected) {
-    return client;
-  }
-  client.quit();
-  client = redis.createClient();
-  client.on("error", function (err) {
-    console.log("Error ", err);
-  });
-  return client;
-}
+const configConstant = require('../config/configConstant');
+var Redis = require('ioredis');
+var redis = new Redis(configConstant.redisConnectString);
+
+var _ = require('underscore');
 
 const pre_fix = 'explorerBlocks:';
 const divide = 10000;
@@ -33,7 +21,7 @@ router.all('/:query', function (req, res, next) {
       function (callback) {
         var start = data.start;
         var end = start + data.count - 1;
-        getRedis().zrevrange(pre_fix.concat("list"), start, end, 'withscores', function (err, result) {
+        redis.zrevrange(pre_fix.concat("list"), start, end, 'WITHSCORES', function (err, result) {
           var lists = _.groupBy(result, function (a, b) {
             return Math.floor(b / 2);
           });
@@ -47,14 +35,14 @@ router.all('/:query', function (req, res, next) {
           var blocknumber = block[1];
 
           var rds_key = pre_fix.concat((blocknumber - (blocknumber % divide)) + ":").concat(blocknumber);
-          getRedis().hmget(rds_key, 'number', 'timestamp', 'hash', 'miner', 'transactions', 'uncles',
+          redis.hmget(rds_key, 'number', 'timestamp', 'hash', 'miner', 'transactions', 'uncles',
             function (err, blockInfoArray) {
               //0'number', 1'timestamp', 2'hash', 3'miner', 4'transactions', 5'uncles'
               blockInfoArray[1] = printDateTime(parseInt(blockInfoArray[1], 16) * 1000);
 
               var configNames = req.app.get('configNames');
               var address3 = blockInfoArray[3];
-              var name3 = configNames.names[address3] ? ((configNames.names[address3]).split("/"))[0] : configNames.holdnames[address3] ? (('Long-term holding: '.concat(configNames.holdnames[address3])).split("/"))[0] : address3;
+              var name3 = configNames.names[address3] ? ((configNames.names[address3]).split("/"))[0] : configNames.holdnames[address3] ? (('Long-term holding: '.concat(configNames.holdnames[address3])).split("/"))[0] : address3.substr(0, 20).concat('...');
               blockInfoArray[3] = '<a href="/account/'.concat(address3).concat('">').concat(name3).concat('</a>');
 
               blockList.push(blockInfoArray);
@@ -65,7 +53,7 @@ router.all('/:query', function (req, res, next) {
         });
       },
       function (blockList, callback) {
-        getRedis().zcard(pre_fix.concat("list"), function (err, result) {
+        redis.zcard(pre_fix.concat("list"), function (err, result) {
           return callback(err, result, blockList);
         });
       }

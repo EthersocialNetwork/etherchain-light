@@ -3,7 +3,11 @@ var router = express.Router();
 
 var async = require('async');
 var Web3 = require('web3');
-const redis = require("redis");
+
+const configConstant = require('../config/configConstant');
+var Redis = require('ioredis');
+var redis = new Redis(configConstant.redisConnectString);
+
 const pre_fix = 'explorerBlocks:';
 const divide = 10000;
 
@@ -26,15 +30,10 @@ router.get('/:end?', function (req, res, next) {
   data.dbLastBlock = 0;
   data.blockCount = 1000;
 
-  const client = redis.createClient();
-  client.on("error", function (err) {
-    console.log("Error ", err);
-  });
-
   async.waterfall([
     function (callback) {
       var rds_key3 = pre_fix.concat("lastblock");
-      client.hget(rds_key3, "lastblock", function (err, result) {
+      redis.hget(rds_key3, "lastblock", function (err, result) {
         callback(err, result);
       });
     },
@@ -66,7 +65,7 @@ router.get('/:end?', function (req, res, next) {
           next();
         }
         if (data.dbLastBlock > 0 && data.dbLastBlock > lastBlock.number - n) {
-          client.hgetall(pre_fix.concat((field - (field % divide)) + ":").concat(field), function (err, block_info) {
+          redis.hgetall(pre_fix.concat((field - (field % divide)) + ":").concat(field), function (err, block_info) {
             next(err, block_info);
           });
         } else {

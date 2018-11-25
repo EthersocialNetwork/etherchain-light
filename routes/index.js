@@ -5,11 +5,13 @@ var async = require('async');
 var Web3 = require('web3');
 var BigNumber = require('bignumber.js');
 var request = require('request');
-const redis = require("redis");
-const client = redis.createClient();
+
+const configConstant = require('../config/configConstant');
+var Redis = require('ioredis');
+var redis = new Redis(configConstant.redisConnectString);
+
 const pre_fix = 'explorerBlocks:';
 const divide = 10000;
-const configConstant = require('../config/configConstant');
 
 router.get('/', function (req, res, next) {
   var config = req.app.get('config');
@@ -25,297 +27,307 @@ router.get('/', function (req, res, next) {
   data.bimax = {};
   data.bimax.timeoutTicker = false;
 
-  client.on("error", function (err) {
-    console.log("Error ", err);
-  });
+  Object.size = function (obj) {
+    var size = 0,
+      key;
+    for (key in obj) {
+      if (obj.hasOwnProperty(key)) size++;
+    }
+    return size;
+  };
 
   async.waterfall([
-    //bimax 시작
-    function (callback) {
-      client.hgetall(pre_fix.concat('bimax'), function (err, result) {
-        return callback(err, result);
-      });
-    },
-    function (ticker, callback) {
-      if (ticker) {
-        data.bimax = ticker;
-      }
-      var now = new Date();
-      if (!ticker || ticker.time < now.getTime() - (1000 * 60)) {
-        data.bimax.timeoutTicker = true;
-
-        var headers = {
-          'Origin': 'https://www.bimax.io',
-          //'Accept-Encoding': 'gzip, deflate, br',
-          //'Accept-Language': 'ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7',
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.77 Safari/537.36',
-          //'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
-          //'Accept': 'application/json, text/javascript, */*; q=0.01',
-          'Referer': 'https://www.bimax.io/trade',
-        };
-
-        var formData = {
-          pairName: 'BTC/KRW'
-        };
-
-        var options = {
-          url: 'https://api2.bimax.io/ticker/publicSignV2',
-          method: 'POST',
-          headers: headers,
-          form: formData
-        };
-
-        request.post(options, function (error, response, body) {
-          return callback(error, body);
+      //bimax 시작
+      function (callback) {
+        redis.hgetall('bimax:'.concat('price'), function (err, result) {
+          return callback(err, result);
         });
-      } else {
-        return callback(null, null);
-      }
-    },
-    function (bodyText, callback) {
-      if (bodyText != null && bodyText.toString().includes('<html>')) {
-        console.log("[Warning] BIMAX is down");
-        return callback(null);
-      } else {
-        if (data.bimax.timeoutTicker && bodyText != null) {
-          var ticker = JSON.parse(bodyText.trim());
-          var tickerall = ticker.data;
-          for (var key in tickerall) {
-            if (tickerall.hasOwnProperty(key)) {
-              if (key == "ESN/KRW") {
-                data.bimax.nowPrice = tickerall[key].nowPrice;
-                data.bimax.high = tickerall[key].high;
-                data.bimax.low = tickerall[key].low;
-                data.bimax.tradeAmount = tickerall[key].tradeAmount;
-              }
-            }
-          }
-          var now = new Date();
-          data.bimax.time = now.getTime();
-          client.hmset(pre_fix.concat('bimax'), data.bimax);
+      },
+      function (ticker, callback) {
+        if (ticker && Object.size(ticker) > 0) {
+          data.bimax = ticker;
         }
-        return callback(null);
-      }
-    },
-    //bimax 종료
-    function (callback) {
-      client.hgetall('bitz:'.concat('ticker'), function (err, result) {
-        return callback(err, result);
-      });
-    },
-    function (ticker, callback) {
-      if (ticker) {
-        data.ticker = ticker;
-      }
-      var now = new Date();
-      if (!ticker || ticker.time * 1000 < now - (1000 * 60)) {
-        data.bitzTimeoutTicker = true;
-        getJSON('https://apiv2.bitz.com/Market/ticker?symbol=esn_btc', function (error, response) {
-          return callback(error, response);
-        });
-      } else {
-        return callback(null, null);
-      }
-    },
-    function (ticker, callback) {
-      if (data.bitzTimeoutTicker && ticker != null && ticker.status == 200) {
-        data.ticker = ticker.data;
-        data.ticker.time = ticker.time;
-      }
-      client.hgetall('bitz:'.concat('coinrate'), function (err, result) {
-        return callback(err, result);
-      });
-    },
-    function (coinrate, callback) {
-      if (coinrate) {
-        data.coinrate = coinrate;
-      }
-      var now = new Date();
-      if (!coinrate || coinrate.time * 1000 < now - (1000 * 60)) {
-        data.bitzTimeoutCoinrate = true;
-        getJSON('https://apiv2.bitz.com/Market/coinRate?coins=esn', function (error, response) {
-          return callback(error, response);
-        });
-      } else {
-        return callback(null, null);
-      }
-    },
-    function (coinrate, callback) {
-      if (data.bitzTimeoutCoinrate && coinrate != null && coinrate.status == 200) {
-        data.coinrate = coinrate.data.esn;
-        data.coinrate.time = coinrate.time;
-      }
+        var now = new Date();
+        if (!ticker || Object.size(ticker) < 1 || (ticker && ticker.time * 1000 < now - (1000 * 60))) {
+          data.bimax.timeoutTicker = true;
 
-      var ret = new BigNumber(data.coinrate.btc);
-      data.coinrate.btc = ret.toFormat(8);
-      ret = new BigNumber(data.coinrate.usd);
-      data.coinrate.usd = ret.toFormat(6);
-      ret = new BigNumber(data.coinrate.krw);
-      data.coinrate.krw = ret.toFormat(2);
+          var headers = {
+            'authority': 'api2.bimax.io',
+            'Origin': 'https://www.bimax.io',
+            //'Accept-Encoding': 'gzip, deflate, br',
+            //'Accept-Language': 'ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7',
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.77 Safari/537.36',
+            //'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+            //'Accept': 'application/json, text/javascript, */*; q=0.01',
+            'Referer': 'https://www.bimax.io/trade?pairName=ESN/KRW',
+          };
 
-      client.hmset('bitz:'.concat('ticker'), data.ticker);
-      client.hmset('bitz:'.concat('coinrate'), data.coinrate);
+          var formData = {
+            pairName: 'BTC/KRW'
+          };
 
-      var rds_key3 = pre_fix.concat("lastblock");
-      client.hget(rds_key3, "lastblock", function (err, result) {
-        return callback(err, result);
-      });
-    },
-    function (dbLastBlock, callback) {
-      data.dbLastBlock = Number(dbLastBlock);
-      web3.eth.getBlock("latest", false, function (err, result) {
-        return callback(err, result);
-      });
-    },
-    function (lastBlock, callback) {
-      data.blockCount = 200;
-      data.lastBlock = new Intl.NumberFormat().format(lastBlock.number);
-      data.lastBlockNumber = lastBlock.number;
-      data.difficulty = hashFormat(lastBlock.difficulty) + "H";
-      if (lastBlock.number - data.blockCount < 0) {
-        data.blockCount = lastBlock.number + 1;
-      }
+          var options = {
+            url: 'https://api2.bimax.io/ticker/publicSignV2',
+            method: 'POST',
+            headers: headers,
+            form: formData
+          };
 
-      async.times(data.blockCount, function (n, next) {
-        if (data.dbLastBlock > 0 && data.dbLastBlock > lastBlock.number - n) {
-          var field = lastBlock.number - n;
-          client.hgetall(pre_fix.concat((field - (field % divide)) + ":").concat(field), function (err, block_info) {
-            if (block_info) {
-              block_info.isDB = true;
-            }
-            next(err, block_info);
+          request.post(options, function (error, response, body) {
+            return callback(error, body);
           });
         } else {
-          web3.eth.getBlock(lastBlock.number - n, false, function (err, block) {
-            block.isDB = false;
-            next(err, block);
-          });
+          return callback(null, null);
         }
-      }, function (err, blocks) {
-        return callback(err, blocks);
-      });
-    },
-    function (blocks, callback) {
-      data.txs = [];
-
-      async.times(10, function (n, next) {
-        web3.eth.getBlock(data.lastBlockNumber - n, true, function (err, txBlock) {
-          for (let i = 0; i < txBlock.transactions.length; i++) {
-            if (data.txs.length < 5) {
-              data.txs.push(txBlock.transactions[i]);
+      },
+      function (bodyText, callback) {
+        if (bodyText) {
+          if (bodyText.toString().includes('<html>')) {
+            console.log("[Warning] BIMAX sent an incorrect response.");
+            return callback(null);
+          } else if (data.bimax.timeoutTicker) {
+            var ticker = JSON.parse(bodyText.trim());
+            var tickerall = ticker.data;
+            for (var key in tickerall) {
+              if (tickerall.hasOwnProperty(key)) {
+                if (key == "ESN/KRW") {
+                  data.bimax.nowPrice = tickerall[key].nowPrice;
+                  data.bimax.high = tickerall[key].high;
+                  data.bimax.low = tickerall[key].low;
+                  data.bimax.tradeAmount = tickerall[key].tradeAmount;
+                }
+              }
             }
+            var now = new Date();
+            data.bimax.time = now.getTime() / 1000;
+            redis.hmset('bimax:'.concat('price'), data.bimax);
+          } else {
+            //console.log("[Notice] BIMAX cache time left.");
           }
-          next(err, txBlock);
+        } else {
+          console.log("[Warning] 'bodyText' returned by BIMAX was null.");
+        }
+        return callback(null);
+      },
+      //bimax 종료
+      function (callback) {
+        redis.hgetall('bitz:'.concat('ticker'), function (err, result) {
+          return callback(err, result);
         });
-      }, function (err, tmpBlocks) {
-        return callback(err, tmpBlocks, blocks);
-      });
-    }
-  ], function (err, tmpBlocks, blocks) {
-    if (err) {
-      console.log("Error ", err);
-      return next(err);
-    }
-
-    var rBlocks = [];
-    var totalBlockTimes = 0;
-    var lastBlockTimes = -1;
-    var countBlockTimes = 0;
-    var totaDifficulty = 0;
-    var chartBlockNumber = [];
-    var chartBlockTime = [];
-    var chartNetHashrate = [];
-    var chartDifficulty = [];
-    var miners = [];
-
-    Array.prototype.max = function () {
-      return Math.max.apply(null, this);
-    };
-
-    Array.prototype.min = function () {
-      return Math.min.apply(null, this);
-    };
-    data.minersDiff = [];
-    data.minersTime = [];
-    data.minersHash = [];
-
-    data.chartDataNumbers = 100;
-    var cntChartData = 0;
-    blocks.forEach(function (block) {
-      if (block) {
-        if (lastBlockTimes > 0) {
-          totalBlockTimes += lastBlockTimes - block.timestamp;
-          var currentBlockTime = lastBlockTimes - block.timestamp;
-          //console.log(currentBlockTime, lastBlockTimes, block.timestamp);
-          var currentDifficulty = Number(block.difficulty);
-          var currentNetHashrate = currentDifficulty / currentBlockTime;
-
-          if (cntChartData++ < data.chartDataNumbers) {
-            chartBlockNumber.push(block.number);
-            chartBlockTime.push(currentBlockTime);
-            chartDifficulty.push(currentDifficulty / 1000000000000);
-            chartNetHashrate.push(currentNetHashrate / 1000000000000);
-          }
-          totaDifficulty += Number(block.difficulty);
-          miners.push(block.miner);
-          if (data.minersTime[block.miner]) {
-            data.minersTime[block.miner] += currentBlockTime;
-          } else {
-            data.minersTime[block.miner] = currentBlockTime;
-          }
-          if (data.minersDiff[block.miner]) {
-            data.minersDiff[block.miner] += currentDifficulty;
-          } else {
-            data.minersDiff[block.miner] = currentDifficulty;
-          }
-          countBlockTimes++;
+      },
+      function (ticker, callback) {
+        if (ticker && Object.size(ticker) > 0) {
+          data.ticker = ticker;
         }
-        lastBlockTimes = block.timestamp;
-        //});
-        //tmpBlocks.forEach(function (block) {
-        //최근 블럭 5개씩 표시
-        if (rBlocks.length < 5) {
-          block.author = block.miner;
-          block.transactionsCount = block.isDB ? block.transactions : block.transactions.length;
-          block.unclesCount = block.isDB ? block.uncles : block.uncles.length;
-          rBlocks.push(block);
+        var now = new Date();
+        if (!ticker || Object.size(ticker) < 1 || (ticker && ticker.time * 1000 < now - (1000 * 60))) {
+          data.bitzTimeoutTicker = true;
+          getJSON('https://apiv2.bitz.com/Market/ticker?symbol=esn_btc', function (error, response) {
+            return callback(error, response);
+          });
+        } else {
+          return callback(null, null);
         }
+      },
+      function (ticker, callback) {
+        if (data.bitzTimeoutTicker && ticker != null && ticker.status == 200) {
+          data.ticker = ticker.data;
+          data.ticker.time = ticker.time;
+        }
+        redis.hgetall('bitz:'.concat('coinrate'), function (err, result) {
+          return callback(err, result);
+        });
+      },
+      function (coinrate, callback) {
+        if (coinrate && Object.size(coinrate) > 0) {
+          data.coinrate = coinrate;
+        }
+        var now = new Date();
+        if (!coinrate || Object.size(coinrate) < 1 || (coinrate && coinrate.time * 1000 < now - (1000 * 60))) {
+          data.bitzTimeoutCoinrate = true;
+          getJSON('https://apiv2.bitz.com/Market/coinRate?coins=esn', function (error, response) {
+            return callback(error, response);
+          });
+        } else {
+          return callback(null, null);
+        }
+      },
+      function (coinrate, callback) {
+        if (data.bitzTimeoutCoinrate && coinrate != null && coinrate.status == 200) {
+          data.coinrate = coinrate.data.esn;
+          data.coinrate.time = coinrate.time;
+        }
+
+        var ret = new BigNumber(data.coinrate.btc);
+        data.coinrate.btc = ret.toFormat(8);
+        ret = new BigNumber(data.coinrate.usd);
+        data.coinrate.usd = ret.toFormat(6);
+        ret = new BigNumber(data.coinrate.krw);
+        data.coinrate.krw = ret.toFormat(2);
+
+        redis.hmset('bitz:'.concat('ticker'), data.ticker);
+        redis.hmset('bitz:'.concat('coinrate'), data.coinrate);
+
+        var rds_key3 = pre_fix.concat("lastblock");
+        redis.hget(rds_key3, "lastblock", function (err, result) {
+          return callback(err, result);
+        });
+      },
+      function (dbLastBlock, callback) {
+        data.dbLastBlock = Number(dbLastBlock);
+        web3.eth.getBlock("latest", false, function (err, result) {
+          return callback(err, result);
+        });
+      },
+      function (lastBlock, callback) {
+        data.blockCount = 200;
+        data.lastBlock = new Intl.NumberFormat().format(lastBlock.number);
+        data.lastBlockNumber = lastBlock.number;
+        data.difficulty = hashFormat(lastBlock.difficulty) + "H";
+        if (lastBlock.number - data.blockCount < 0) {
+          data.blockCount = lastBlock.number + 1;
+        }
+
+        async.times(data.blockCount, function (n, next) {
+          if (data.dbLastBlock > 0 && data.dbLastBlock > lastBlock.number - n) {
+            var field = lastBlock.number - n;
+            redis.hgetall(pre_fix.concat((field - (field % divide)) + ":").concat(field), function (err, block_info) {
+              if (block_info) {
+                block_info.isDB = true;
+              }
+              next(err, block_info);
+            });
+          } else {
+            web3.eth.getBlock(lastBlock.number - n, false, function (err, block) {
+              block.isDB = false;
+              next(err, block);
+            });
+          }
+        }, function (err, blocks) {
+          return callback(err, blocks);
+        });
+      },
+      function (blocks, callback) {
+        data.txs = [];
+
+        async.times(10, function (n, next) {
+          web3.eth.getBlock(data.lastBlockNumber - n, true, function (err, txBlock) {
+            for (let i = 0; i < txBlock.transactions.length; i++) {
+              if (data.txs.length < 5) {
+                data.txs.push(txBlock.transactions[i]);
+              }
+            }
+            next(err, txBlock);
+          });
+        }, function (err, tmpBlocks) {
+          return callback(err, tmpBlocks, blocks);
+        });
       }
-    });
-    for (var keyminer in data.minersTime) {
-      data.minersHash[keyminer] = hashFormat((data.minersDiff[keyminer] / totaDifficulty) * data.minersDiff[keyminer] / data.minersTime[keyminer]) + "H/s";
-    }
+    ],
+    function (err, tmpBlocks, blocks) {
+      if (err) {
+        console.log("Error ", err);
+        return next(err);
+      }
 
-    data.miners = makeReturnSeries(miners, data.minersHash, configNames);
-    data.blockTime = new Intl.NumberFormat().format((totalBlockTimes / countBlockTimes).toFixed(4)) + "s";
-    data.hashrate = hashFormat(totaDifficulty / totalBlockTimes) + "H/s";
+      var rBlocks = [];
+      var totalBlockTimes = 0;
+      var lastBlockTimes = -1;
+      var countBlockTimes = 0;
+      var totaDifficulty = 0;
+      var chartBlockNumber = [];
+      var chartBlockTime = [];
+      var chartNetHashrate = [];
+      var chartDifficulty = [];
+      var miners = [];
 
-    res.render('index', {
-      blocks: rBlocks,
-      txs: data.txs,
-      lastblock: data.lastBlock,
-      difficulty: data.difficulty,
-      blocktime: data.blockTime,
-      hashrate: data.hashrate,
-      chartMiners: data.miners,
-      chartBlockNumber: JSON.stringify(chartBlockNumber.reverse()),
-      chartBlockTime: JSON.stringify(chartBlockTime.reverse()),
-      chartNetHashrate: JSON.stringify(chartNetHashrate.reverse()),
-      chartDifficulty: JSON.stringify(chartDifficulty.reverse()),
-      chartNetHashrateMin: JSON.stringify(chartNetHashrate.min()),
-      chartNetHashrateMax: JSON.stringify(chartNetHashrate.max()),
-      chartDifficultyMin: JSON.stringify(chartDifficulty.min()),
-      chartBlockTimeMin: JSON.stringify(chartBlockTime.min()),
-      blockCount: data.blockCount,
-      chartDataNumbers: data.chartDataNumbers,
-      ticker: data.ticker,
-      bimax: data.bimax,
-      coinrate: data.coinrate,
-      jsload_defer: configConstant.jsload_defer,
-      jsload_async: configConstant.jsload_async
+      Array.prototype.max = function () {
+        return Math.max.apply(null, this);
+      };
+
+      Array.prototype.min = function () {
+        return Math.min.apply(null, this);
+      };
+      data.minersDiff = [];
+      data.minersTime = [];
+      data.minersHash = [];
+
+      data.chartDataNumbers = 100;
+      var cntChartData = 0;
+      blocks.forEach(function (block) {
+        if (block) {
+          if (lastBlockTimes > 0) {
+            totalBlockTimes += lastBlockTimes - block.timestamp;
+            var currentBlockTime = lastBlockTimes - block.timestamp;
+            var currentDifficulty = Number(block.difficulty);
+            var currentNetHashrate = currentDifficulty / currentBlockTime;
+
+            if (cntChartData++ < data.chartDataNumbers) {
+              chartBlockNumber.push(block.number);
+              chartBlockTime.push(currentBlockTime);
+              chartDifficulty.push(currentDifficulty / 1000000000000);
+              chartNetHashrate.push(currentNetHashrate / 1000000000000);
+            }
+            totaDifficulty += Number(block.difficulty);
+            miners.push(block.miner);
+            if (data.minersTime[block.miner]) {
+              data.minersTime[block.miner] += currentBlockTime;
+            } else {
+              data.minersTime[block.miner] = currentBlockTime;
+            }
+            if (data.minersDiff[block.miner]) {
+              data.minersDiff[block.miner] += currentDifficulty;
+            } else {
+              data.minersDiff[block.miner] = currentDifficulty;
+            }
+            countBlockTimes++;
+          }
+          lastBlockTimes = block.timestamp;
+          //});
+          //tmpBlocks.forEach(function (block) {
+          //최근 블럭 5개씩 표시
+          if (rBlocks.length < 5) {
+            block.author = block.miner;
+            block.transactionsCount = block.isDB ? block.transactions : block.transactions.length;
+            block.unclesCount = block.isDB ? block.uncles : block.uncles.length;
+            rBlocks.push(block);
+          }
+        }
+      });
+      for (var keyminer in data.minersTime) {
+        data.minersHash[keyminer] = hashFormat((data.minersDiff[keyminer] / totaDifficulty) * data.minersDiff[keyminer] / data.minersTime[keyminer]) + "H/s";
+      }
+
+      data.miners = makeReturnSeries(miners, data.minersHash, configNames);
+      data.blockTime = new Intl.NumberFormat().format((totalBlockTimes / countBlockTimes).toFixed(4)) + "s";
+      data.hashrate = hashFormat(totaDifficulty / totalBlockTimes) + "H/s";
+
+      res.render('index', {
+        blocks: rBlocks,
+        txs: data.txs,
+        lastblock: data.lastBlock,
+        difficulty: data.difficulty,
+        blocktime: data.blockTime,
+        hashrate: data.hashrate,
+        chartMiners: data.miners,
+        chartBlockNumber: JSON.stringify(chartBlockNumber.reverse()),
+        chartBlockTime: JSON.stringify(chartBlockTime.reverse()),
+        chartNetHashrate: JSON.stringify(chartNetHashrate.reverse()),
+        chartDifficulty: JSON.stringify(chartDifficulty.reverse()),
+        chartNetHashrateMin: JSON.stringify(chartNetHashrate.min()),
+        chartNetHashrateMax: JSON.stringify(chartNetHashrate.max()),
+        chartDifficultyMin: JSON.stringify(chartDifficulty.min()),
+        chartBlockTimeMin: JSON.stringify(chartBlockTime.min()),
+        blockCount: data.blockCount,
+        chartDataNumbers: data.chartDataNumbers,
+        ticker: data.ticker,
+        bimax: data.bimax,
+        coinrate: data.coinrate,
+        jsload_defer: configConstant.jsload_defer,
+        jsload_async: configConstant.jsload_async
+      });
+      data = null;
     });
-    data = null;
-  });
 
 });
 

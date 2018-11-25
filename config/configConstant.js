@@ -11,11 +11,21 @@ const configConstant = {
   localRPCaddress: 'http://127.0.0.1:8545',
   gethNetworkPortString: "50505",
 
+  //database
+  redisClientMode: false, //true: all services are off (redis read only), false: all services are on (redis store)
+  redisConnectString: {
+    port: 6379, // Redis port
+    host: '127.0.0.1', // Redis host
+    family: 4, // 4 (IPv4) or 6 (IPv6)
+    password: '', //auth
+    db: 0
+  },
+
   //service
   accountBalanceServiceInterval: 1 * 30 * 1000, // ms
   blockStoreServiceInterval: 1 * 5 * 1000, // ms
   peerCollectorServiceInterval: 5 * 60 * 1000, // ms
-  hashrateCollectorServiceInterval: 2 * 60 * 60 * 1000, // ms
+  hashrateCollectorServiceInterval: 1 * 60 * 60 * 1000, // ms
 
   //view
   jsload_defer: false,

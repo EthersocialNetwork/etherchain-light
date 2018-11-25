@@ -1,9 +1,11 @@
 var express = require('express');
 var router = express.Router();
+
 const configConstant = require('../config/configConstant');
+var Redis = require('ioredis');
+var redis = new Redis(configConstant.redisConnectString);
 
 var async = require('async');
-const redis = require("redis");
 const pre_fix = 'explorerBlocks:';
 const pre_fix_chart = 'explorerBlocksChart:';
 
@@ -58,26 +60,21 @@ router.get('/', function (req, res, next) {
     "valueDecimals": 0
   };
 
-  var client = redis.createClient();
-  client.on("error", function (err) {
-    console.log("Error ", err);
-  });
-
   async.waterfall([
     function (callback) {
-      client.hget(pre_fix.concat("lastblock"), "lastblock", function (err, result) {
+      redis.hget(pre_fix.concat("lastblock"), "lastblock", function (err, result) {
         return callback(err, result);
       });
     },
     function (dbLastBlock, callback) {
       data.dbLastBlock = Number(dbLastBlock);
-      client.hget(pre_fix_chart.concat("lastblock"), "lastblock", function (err, result) {
+      redis.hget(pre_fix_chart.concat("lastblock"), "lastblock", function (err, result) {
         return callback(err, result);
       });
     },
     function (dbChartLastBlock, callback) {
       data.dbChartLastBlock = Number(dbChartLastBlock);
-      client.lrange(pre_fix_chart.concat("xData"), 0, -1, function (err, result) {
+      redis.lrange(pre_fix_chart.concat("xData"), 0, -1, function (err, result) {
         return callback(err, result);
       });
     },
@@ -85,7 +82,7 @@ router.get('/', function (req, res, next) {
       for (let i = 0; i < xData.length; i++) {
         data.xData.push(Number(xData[i]));
       }
-      client.lrange(pre_fix_chart.concat("xBlocknumber"), 0, -1, function (err, result) {
+      redis.lrange(pre_fix_chart.concat("xBlocknumber"), 0, -1, function (err, result) {
         return callback(err, result);
       });
     },
@@ -93,7 +90,7 @@ router.get('/', function (req, res, next) {
       for (let i = 0; i < xBlocknumber.length; i++) {
         data.xBlocknumber.push(Number(xBlocknumber[i]));
       }
-      client.lrange(pre_fix_chart.concat("xNumberOfBlocks"), 0, -1, function (err, result) {
+      redis.lrange(pre_fix_chart.concat("xNumberOfBlocks"), 0, -1, function (err, result) {
         return callback(err, result);
       });
     },
@@ -101,7 +98,7 @@ router.get('/', function (req, res, next) {
       for (let i = 0; i < xNumberOfBlocks.length; i++) {
         data.xNumberOfBlocks.push(Number(xNumberOfBlocks[i]));
       }
-      client.lrange(pre_fix_chart.concat("BlockTime"), 0, -1, function (err, result) {
+      redis.lrange(pre_fix_chart.concat("BlockTime"), 0, -1, function (err, result) {
         return callback(err, result);
       });
     },
@@ -109,7 +106,7 @@ router.get('/', function (req, res, next) {
       for (let i = 0; i < datasets.length; i++) {
         data.datasets[0].data.push(Number(datasets[i]));
       }
-      client.lrange(pre_fix_chart.concat("Difficulty"), 0, -1, function (err, result) {
+      redis.lrange(pre_fix_chart.concat("Difficulty"), 0, -1, function (err, result) {
         return callback(err, result);
       });
     },
@@ -117,7 +114,7 @@ router.get('/', function (req, res, next) {
       for (let i = 0; i < datasets.length; i++) {
         data.datasets[1].data.push(Number(datasets[i]));
       }
-      client.lrange(pre_fix_chart.concat("NetHashrate"), 0, -1, function (err, result) {
+      redis.lrange(pre_fix_chart.concat("NetHashrate"), 0, -1, function (err, result) {
         return callback(err, result);
       });
     },
@@ -125,7 +122,7 @@ router.get('/', function (req, res, next) {
       for (let i = 0; i < datasets.length; i++) {
         data.datasets[2].data.push(Number(datasets[i]));
       }
-      client.lrange(pre_fix_chart.concat("Transactions"), 0, -1, function (err, result) {
+      redis.lrange(pre_fix_chart.concat("Transactions"), 0, -1, function (err, result) {
         return callback(err, result);
       });
     },
