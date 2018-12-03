@@ -246,7 +246,7 @@ block content
                 | #[strong gasPrice]: Hex, 
                 br
                 | #[strong gas]: Hex}
-              td http://!{hostname}/eth_estimateGas/0x5811590907050746b897efe65fea7b65710e1a2c/100/0x051da038cc/0xffffff
+              td http://!{hostname}/api_parity/eth_estimateGas/0x5811590907050746b897efe65fea7b65710e1a2c/100/0x051da038cc/0xffffff
       #realtime.tab-pane(role='tabpanel')
         h3 Real-time response APIs 실시간 응답 API 목록
         | ex) #[strong http://!{hostname}/api_account/eth_balancemulti/0x5811590907050746b897efe65fea7b65710e1a2c,0xe3ec5ebd3e822c972d802a0ee4e0ec080b8237ba/1522934]
@@ -303,6 +303,16 @@ block content
                 br
                 | #[strong page]: Number(default:1)
               td /tokenevents/0x3e2c6a622c29cf30c04c9ed8ed1e985da8c95662/0x0146b9dcd9fb2abc1b5b136c28d20d0037526961/10/1
+            tr
+              td Get Account Transactions
+                br
+                | by Address
+              td #[strong address]: Hex
+                br
+                | #[strong page]: Number(min:1/max:65,000)
+                br
+                | #[strong count]: Number(min:1/max:1,000)
+              td https://!{hostname}/account/transactions/0xe3ec5ebd3e822c972d802a0ee4e0ec080b8237ba/json/1/10
       #webtojson.tab-pane(role='tabpanel')
         h3 Web to Json 웹을 데이터로 제공하는 API 목록
         table.table
@@ -322,6 +332,28 @@ block content
                 | #[strong normal accounts]: address, type, balance, rank
                 br
                 | #[strong special accounts]: address, type, balance, rank
+            tr
+              td http://!{hostname}/top100/summary
+              td #[strong TotalNumberOfAccounts]: Number
+                br
+                | #[strong ActiveNumberOfAccounts]: String
+                br
+                | #[strong TotalSupply]: String
+                br
+                | #[strong LongTermHoldingAmount]: String
+                br
+                | #[strong CirculatingSupply]: String
+            tr
+              td http://!{hostname}/api_info/summary/100(blockCount)
+              td #[strong miners]: Miners Information
+                br
+                | #[strong name]: String
+                br
+                | #[strong value]: String
+                br
+                | #[strong address]: String
+                br
+                | #[strong hashrate]: String
             tr
               td http://!{hostname}/account/0x3e2c6a622c29cf30c04c9ed8ed1e985da8c95662/1657927/10(Count)/json
                 br

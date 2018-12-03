@@ -3,6 +3,8 @@ var router = express.Router();
 var async = require('async');
 
 const configConstant = require('../config/configConstant');
+const configNames = require('../config/configNames.js');
+
 var Redis = require('ioredis');
 var redis = new Redis(configConstant.redisConnectString);
 
@@ -39,11 +41,7 @@ router.all('/:query', function (req, res, next) {
             function (err, blockInfoArray) {
               //0'number', 1'timestamp', 2'hash', 3'miner', 4'transactions', 5'uncles'
               blockInfoArray[1] = printDateTime(parseInt(blockInfoArray[1], 16) * 1000);
-
-              var configNames = req.app.get('configNames');
-              var address3 = blockInfoArray[3];
-              var name3 = configNames.names[address3] ? ((configNames.names[address3]).split("/"))[0] : configNames.holdnames[address3] ? (('Long-term holding: '.concat(configNames.holdnames[address3])).split("/"))[0] : address3.substr(0, 20).concat('...');
-              blockInfoArray[3] = '<a href="/account/'.concat(address3).concat('">').concat(name3).concat('</a>');
+              blockInfoArray[3] = address2href(blockInfoArray[3]);
 
               blockList.push(blockInfoArray);
               blockEachCallback(err);
@@ -77,6 +75,11 @@ router.all('/:query', function (req, res, next) {
 router.get('/', function (req, res, next) {
   res.render('blocks');
 });
+
+function address2href(address) {
+  var name = configNames.names[address] ? ((configNames.names[address]).split("/"))[0] : configNames.holdnames[address] ? (('Long-term holding: '.concat(configNames.holdnames[address])).split("/"))[0] : address.substr(0, 20).concat('...');
+  return '<a href="/account/'.concat(address).concat('">').concat(name).concat('</a>');
+}
 
 function addZeros(num, digit) {
   var zero = '';

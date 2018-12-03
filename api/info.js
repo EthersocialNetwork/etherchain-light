@@ -3,7 +3,10 @@ var router = express.Router();
 var async = require('async');
 var Web3 = require('web3');
 var web3 = new Web3();
+
 const configConstant = require('../config/configConstant');
+const configNames = require('../config/configNames.js');
+
 var Redis = require('ioredis');
 var redis = new Redis(configConstant.redisConnectString);
 const pre_fix = 'explorerBlocks:';
@@ -36,7 +39,6 @@ Object.size = function (obj) {
 
 //http://explorer.ethersocial.info/api_info/summary/200
 router.get('/summary/:count?', function (req, res, next) {
-  var configNames = req.app.get('configNames');
   var data = {};
   if (!web3.currentProvider)
     web3.setProvider(new web3.providers.HttpProvider(configConstant.localRPCaddress));
@@ -129,7 +131,7 @@ router.get('/summary/:count?', function (req, res, next) {
       minersHash[keyminer] = hashFormat((minersDiff[keyminer] / totaDifficulty) * minersDiff[keyminer] / minersTime[keyminer]) + "H/s";
     }
 
-    data.miners = makeReturnSeries(miners, minersHash, configNames);
+    data.miners = makeReturnSeries(miners, minersHash);
     data.blockTime = new Intl.NumberFormat().format((totalBlockTimes / countBlockTimes).toFixed(4)) + "s";
     data.hashrate = hashFormat(totaDifficulty / totalBlockTimes) + "H/s";
 
@@ -154,7 +156,7 @@ function hashFormat(number) {
   }
 }
 
-function makeReturnSeries(arr, hasharr, configNames) {
+function makeReturnSeries(arr, hasharr) {
   prcArray = [];
   prcArray = arr.reduce(function (acc, curr) {
     if (acc[curr]) {
