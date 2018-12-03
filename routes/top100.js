@@ -5,6 +5,8 @@ var BigNumber = require('bignumber.js');
 var async = require('async');
 
 const configConstant = require('../config/configConstant');
+const configNames = require('../config/configNames.js');
+
 var Redis = require('ioredis');
 var redis = new Redis(configConstant.redisConnectString);
 
@@ -15,7 +17,6 @@ const finalRdsKey = 'esn_top100';
 const readyRdsKey = 'ready_esn_top100';
 
 router.get('/:json?', function (req, res, next) {
-	var configNames = req.app.get('configNames');
 	var allcnt = 0;
 	var nowcnt = 0;
 	var lastaccount = "";
@@ -184,30 +185,31 @@ router.get('/:json?', function (req, res, next) {
 				jsonData.accounts_normal = accounts_normal;
 				jsonData.accounts_special = accounts_special;
 				res.json(resultToJson(err, jsonData));
-			}
-			if (req.params.json && req.params.json == 'summary') {
-				var jsonSummary = {};
-				jsonSummary.TotalNumberOfAccounts = totalAccounts;
-				jsonSummary.ActiveNumberOfAccounts = activeAccounts;
-				jsonSummary.TotalSupply = totalSupply;
-				jsonSummary.LongTermHoldingAmount = specialSupply;
-				jsonSummary.CirculatingSupply = normalSupply;
-				res.json(resultToJson(err, jsonSummary));
 			} else {
-				res.render("top100", {
-					"contracts": contracts,
-					"lastAccount": lastaccount,
-					"totalAccounts": totalAccounts.toLocaleString(),
-					"nowAccounts": nowAccounts.toLocaleString(),
-					"activeAccounts": activeAccounts,
-					"perProgress": perProgress,
-					"totalSupply": totalSupply,
-					"accounts_create_time": accounts_create_time,
-					"accounts_special": accounts_special,
-					"accounts_normal": accounts_normal,
-					"specialSupply": specialSupply,
-					"normalSupply": normalSupply
-				});
+				if (req.params.json && req.params.json == 'summary') {
+					var jsonSummary = {};
+					jsonSummary.TotalNumberOfAccounts = totalAccounts;
+					jsonSummary.ActiveNumberOfAccounts = activeAccounts;
+					jsonSummary.TotalSupply = totalSupply;
+					jsonSummary.LongTermHoldingAmount = specialSupply;
+					jsonSummary.CirculatingSupply = normalSupply;
+					res.json(resultToJson(err, jsonSummary));
+				} else {
+					res.render("top100", {
+						"contracts": contracts,
+						"lastAccount": lastaccount,
+						"totalAccounts": totalAccounts.toLocaleString(),
+						"nowAccounts": nowAccounts.toLocaleString(),
+						"activeAccounts": activeAccounts,
+						"perProgress": perProgress,
+						"totalSupply": totalSupply,
+						"accounts_create_time": accounts_create_time,
+						"accounts_special": accounts_special,
+						"accounts_normal": accounts_normal,
+						"specialSupply": specialSupply,
+						"normalSupply": normalSupply
+					});
+				}
 			}
 		});
 });

@@ -1,6 +1,7 @@
 
-function nameFormatter(config) {
-  this.conf = config;
+function nameFormatter() {
+  let configNames = require('../config/configNames.js');
+  this.conf = configNames;
   
   this.format = function(address) {
     if (this.conf.names[address]) {

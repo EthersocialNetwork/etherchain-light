@@ -3,7 +3,7 @@ html(lang="en")
   head
     meta(charset='utf-8')
     meta(http-equiv='X-UA-Compatible', content='IE=edge')
-    meta(name='viewport', content='width=device-width, initial-scale=1')
+    meta(name='viewport', content='width=device-width, initial-scale=1.0')
     // The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags
     
     meta(name='description', content='The explorer for the EtherSocialNetwork blockchain')
@@ -26,13 +26,13 @@ html(lang="en")
             span.icon-bar
           |  
           a.navbar-brand(href='/') EtherSocialNetwork<br/><b><font color="black">Block</font></b> Explorer
-          form.navbar-form.navbar-right(action="/search", method="POST")
-              .form-group
-                .input-group
-                  span.input-group-btn
-                    input.form-control.mr-sm-2#search(type='text', placeholder='Block | Tx | Account', name='search')
-                    button.btn.btn-secondary.my-2.my-sm-0(type='submit') Search
         #navbar.collapse.navbar-collapse
+          form.navbar-form.navbar-right(action="/search", method="POST")
+            .form-group
+              .input-group
+                input.form-control.mr-sm-2#search(type='text', placeholder='Block | Tx | Account', name='search')
+                span.input-group-btn
+                  button.btn.btn-secondary.my-2.my-sm-0(type='submit') Search
           ul.nav.navbar-nav.hover-effect
             li
               a(href='/') MainPage<br/>메인페이지
@@ -52,7 +52,6 @@ html(lang="en")
               a(href='/tx/pending') Pending Tx<br/>대기거래목록
     script(type='text/javascript', src='https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js')
     script(type='text/javascript', src='https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js', crossorigin='anonymous')
-
     script.
       $('#monitor').html($(window).width());
       $(window).resize(function() {
@@ -67,20 +66,27 @@ html(lang="en")
       div.table-responsive
         block content
     div.container
-      hr
       footer
-        span
-          a(href="https://github.com/ComBba/etherchain-light") Etherchain Light for EtherSocialNetwork
-          |&nbsp;&nbsp;&nbsp;&nbsp;
-        span
-          a(href='/api') APIs service 
-          |&nbsp;&nbsp;&nbsp;&nbsp;
-        span
-          a(href='/redisblock') 1,000 Blocks Average info
-        p This site is optimized for Chrome on your PC. 이 사이트는 PC의 Chrome에 최적화되어 있습니다.
-          br/ This site is operated for transparent development of "EtherSocialNetwork". 이 사이트는 "EtherSocialNetwork"의 투명한 개발을 위해 운영됩니다.
-          br/ This site is currently being implemented.(status: beta test) 이 사이트는 현재 구현 중입니다.(상태: 베타 테스트).
-        p
+        hr
+        span(style="margin-right:20px")
+          a(href='/api') [APIs service]
+        span(style="margin-right:20px")
+          a(href='/redisblock') [1k Blocks info]
+        hr
+        ul.list-group
           for VersionAndPeer in nodeStatus.VersionAndPeers
-            br/
-            | #{VersionAndPeer}
+            li.list-group-item #{VersionAndPeer}
+        hr
+        ul.list-group
+          li.list-group-item
+            |This site is optimized for Chrome on your PC. 
+            br/ 이 사이트는 PC의 Chrome에 최적화되어 있습니다.
+            br/ 
+            br/ This site is operated for transparent development of "EtherSocialNetwork". 
+            br/ 이 사이트는 "EtherSocialNetwork"의 투명한 개발을 위해 운영됩니다.
+            br/ 
+            br/ This site is currently being implemented.(status: beta test)
+            br/ 이 사이트는 현재 구현 중입니다.(상태: 베타 테스트).
+        hr
+        span
+          a(href="https://github.com/ComBba/etherchain-light") Etherchain-Light for EtherSocialNetwork

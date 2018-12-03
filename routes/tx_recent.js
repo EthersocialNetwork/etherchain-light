@@ -3,6 +3,8 @@ var router = express.Router();
 var async = require('async');
 
 const configConstant = require('../config/configConstant');
+const configNames = require('../config/configNames.js');
+
 var Redis = require('ioredis');
 var redis = new Redis(configConstant.redisConnectString);
 
@@ -18,7 +20,6 @@ router.all('/transactions/:query', function (req, res, next) {
   data.count = parseInt(req.body.length);
   data.start = parseInt(req.body.start);
   data.draw = parseInt(req.body.draw);
-  var configNames = req.app.get('configNames');
 
   async.waterfall([
       function (callback) {
@@ -52,10 +53,7 @@ router.all('/transactions/:query', function (req, res, next) {
                   txInfo[3] = "Mining";
                 }
                 txInfo[4] = "New Coins Mining Reward";
-
-                var address = txInfoArray[14];
-                var name = configNames.names[address] ? ((configNames.names[address]).split("/"))[0] : configNames.holdnames[address] ? (('Long-term holding: '.concat(configNames.holdnames[address])).split("/"))[0] : address.substr(0, 20).concat('...');
-                txInfo[5] = '<a href="/account/'.concat(address).concat('">').concat(name).concat('</a>');
+                txInfo[5] = address2href(txInfoArray[14]);
 
                 let Ether = new BigNumber(10e+17);
                 let ret = new BigNumber(txInfoArray[7]);
@@ -66,16 +64,13 @@ router.all('/transactions/:query', function (req, res, next) {
                 txInfo[1] = txInfoArray[1];
                 txInfo[2] = printDateTime(parseInt(txInfoArray[2], 16) * 1000);
                 txInfo[3] = txInfoArray[3];
-                var address4 = txInfoArray[4];
-                var name4 = configNames.names[address4] ? ((configNames.names[address4]).split("/"))[0] : configNames.holdnames[address4] ? (('Long-term holding: '.concat(configNames.holdnames[address4])).split("/"))[0] : address4.substr(0, 20).concat('...');
-                txInfo[4] = '<a href="/account/'.concat(address4).concat('">').concat(name4).concat('</a>');
+                txInfo[4] = address2href(txInfoArray[4]);
 
                 var address5 = txInfoArray[5];
                 if (txInfoArray[12] != '') {
                   address5 = txInfoArray[12];
                 }
-                var name5 = configNames.names[address5] ? ((configNames.names[address5]).split("/"))[0] : configNames.holdnames[address5] ? (('Long-term holding: '.concat(configNames.holdnames[address5])).split("/"))[0] : address5.substr(0, 20).concat('...');
-                txInfo[5] = '<a href="/account/'.concat(address5).concat('">').concat(name5).concat('</a>');
+                txInfo[5] = address2href(address5);
 
                 if (txInfoArray[11] != '') {
                   //console.log('[9]', txInfoArray[9], '[10]', txInfoArray[10], '[11]', txInfoArray[11]);
@@ -116,6 +111,11 @@ router.all('/transactions/:query', function (req, res, next) {
 router.get('/', function (req, res, next) {
   res.render('tx_recent');
 });
+
+function address2href(address) {
+  var name = configNames.names[address] ? ((configNames.names[address]).split("/"))[0] : configNames.holdnames[address] ? (('Long-term holding: '.concat(configNames.holdnames[address])).split("/"))[0] : address.substr(0, 20).concat('...');
+  return '<a href="/account/'.concat(address).concat('">').concat(name).concat('</a>');
+}
 
 function addZeros(num, digit) {
   var zero = '';

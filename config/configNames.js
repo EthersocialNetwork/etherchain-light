@@ -1,5 +1,5 @@
-var configNames = function () {
-  this.names = { //Circulating supply
+const configNames = {
+  names: { //Circulating supply
     "0x0000000000000000000000000000000020181106": "[BurnAddress] incinerated the ESN",
     "0x000000000000000000000000000000000000dead": "[BurnAddress] incinerated the ESN",
     "0x12d1784e324156b707e3d02d07b86f587c3f7e78": "[Pool] miningpoolhub.com",
@@ -143,8 +143,8 @@ var configNames = function () {
     "0xbfb00182321502e0729d9a0862ec1df1b3e2208e": "Marketing, Airdrop, Bounty, Private",
     "0x92808a38ffc5a339b1ab6b0b472f9975718d4a07": "Marketing, Airdrop, Bounty, Private",
     "0xfc9183ed137be071ad183d025395a0ebe2674654": "Marketing, Airdrop, Bounty, Private"
-  };
-  this.holdnames = { //Long-term holding
+  },
+  holdnames: { //Long-term holding
     "0x60037df7e4092466656a6b9571437fc4600c66e3": "Development",
     "0x7d39324f5ff62e849b0f0f46ab8ee396fbd85581": "Development",
     "0x8f36ffd921e12083e374335d3cc43fcfeeadfa46": "Development",
@@ -501,7 +501,7 @@ var configNames = function () {
     "0xb3d1a2c0ab2d8987446d74f49e357adf5bf15986": "Reserves",
     "0x16987ad8e10dda7f9e5d95c0f0ee36f46b10e168": "Reserves",
     "0x81d4c3bf72837b21203b2a4f90bf42fda10acf48": "Reserves"
-  };
+  }
 };
 
 module.exports = configNames;

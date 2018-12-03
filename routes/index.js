@@ -7,6 +7,8 @@ var BigNumber = require('bignumber.js');
 var request = require('request');
 
 const configConstant = require('../config/configConstant');
+const configNames = require('../config/configNames.js');
+
 var Redis = require('ioredis');
 var redis = new Redis(configConstant.redisConnectString);
 
@@ -15,7 +17,6 @@ const divide = 10000;
 
 router.get('/', function (req, res, next) {
   var config = req.app.get('config');
-  var configNames = req.app.get('configNames');
   var web3 = new Web3();
   web3.setProvider(config.selectParity());
   var data = {};
@@ -74,6 +75,9 @@ router.get('/', function (req, res, next) {
           };
 
           request.post(options, function (error, response, body) {
+            //console.log("error:", error);
+            //console.log("body:", body);
+            //console.log("response:", response);
             return callback(error, body);
           });
         } else {
@@ -298,7 +302,7 @@ router.get('/', function (req, res, next) {
         data.minersHash[keyminer] = hashFormat((data.minersDiff[keyminer] / totaDifficulty) * data.minersDiff[keyminer] / data.minersTime[keyminer]) + "H/s";
       }
 
-      data.miners = makeReturnSeries(miners, data.minersHash, configNames);
+      data.miners = makeReturnSeries(miners, data.minersHash);
       data.blockTime = new Intl.NumberFormat().format((totalBlockTimes / countBlockTimes).toFixed(4)) + "s";
       data.hashrate = hashFormat(totaDifficulty / totalBlockTimes) + "H/s";
 
@@ -347,7 +351,7 @@ function hashFormat(number) {
   }
 }
 
-function makeReturnSeries(arr, hasharr, configNames) {
+function makeReturnSeries(arr, hasharr) {
   prcArray = [];
   prcArray = arr.reduce(function (acc, curr) {
     if (acc[curr]) {

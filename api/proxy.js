@@ -4,7 +4,7 @@ var Web3 = require('web3');
 var web3 = new Web3();
 const configConstant = require('../config/configConstant');
 
-function getWeb3(config) {
+function getWeb3() {
   if (!web3.currentProvider)
     web3.setProvider(new web3.providers.HttpProvider(configConstant.localRPCaddress));
   return web3;

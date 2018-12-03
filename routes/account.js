@@ -4,6 +4,8 @@ var async = require('async');
 var Web3 = require('web3');
 
 const configConstant = require('../config/configConstant');
+const configNames = require('../config/configNames.js');
+
 var Redis = require('ioredis');
 var redis = new Redis(configConstant.redisConnectString);
 
@@ -24,13 +26,40 @@ Object.size = function (obj) {
     return size;
 };
 
-router.all('/transactions/:account/:query', function (req, res, next) {
+router.all('/transactions/:account/:query/:page?/:length?', function (req, res, next) {
     //console.log(req);
     data = {};
-    data.count = parseInt(req.body.length);
-    data.start = parseInt(req.body.start);
-    data.draw = parseInt(req.body.draw);
-    var configNames = req.app.get('configNames');
+    data.count = 0;
+    data.start = -1;
+    if (req.params.query != 'json') {
+        data.count = parseInt(req.body.length);
+        data.start = parseInt(req.body.start);
+        data.draw = parseInt(req.body.draw);
+    } else if (req.params.query == 'json' && req.params.length && req.params.page) {
+        data.count = parseInt(req.params.length);
+        data.start = (parseInt(req.params.page) - 1) * data.count;
+
+        if (data.count < 1) data.count = 1;
+        if (data.count > 1000) data.count = 1000;
+        if (data.start < 0) data.start = 0;
+        if (data.start > 650000) data.start = 650000;
+    }
+
+    if (isNaN(data.count) || isNaN(data.start)) {
+        var err = new Error("value is not an integer");
+        return next(err);
+    }
+
+    if (data.count < 1) {
+        return res.json({
+            err: "'length' value is not an integer or out of range"
+        });
+    }
+    if (data.start < 0) {
+        return res.json({
+            err: "'start' value is not an integer or out of range"
+        });
+    }
 
     //console.log("[req.body]", req.body);
     //console.log("[req.body]", req.body);
@@ -66,10 +95,7 @@ router.all('/transactions/:account/:query', function (req, res, next) {
                                     txInfo[3] = "Mining";
                                 }
                                 txInfo[4] = "New Coins Mining Reward";
-
-                                var address = txInfoArray[14];
-                                var name = configNames.names[address] ? ((configNames.names[address]).split("/"))[0] : configNames.holdnames[address] ? (('Long-term holding: '.concat(configNames.holdnames[address])).split("/"))[0] : address.substr(0, 20).concat('...');
-                                txInfo[5] = '<a href="/account/'.concat(address).concat('">').concat(name).concat('</a>');
+                                txInfo[5] = req.params.query == 'json' ? txInfoArray[14] : address2href(txInfoArray[14]);
 
                                 let Ether = new BigNumber(10e+17);
                                 let ret = new BigNumber(txInfoArray[7]);
@@ -80,17 +106,13 @@ router.all('/transactions/:account/:query', function (req, res, next) {
                                 txInfo[1] = txInfoArray[1];
                                 txInfo[2] = printDateTime(parseInt(txInfoArray[2], 16) * 1000);
                                 txInfo[3] = txInfoArray[3];
-
-                                var address4 = txInfoArray[4];
-                                var name4 = configNames.names[address4] ? ((configNames.names[address4]).split("/"))[0] : configNames.holdnames[address4] ? (('Long-term holding: '.concat(configNames.holdnames[address4])).split("/"))[0] : address4.substr(0, 20).concat('...');
-                                txInfo[4] = '<a href="/account/'.concat(address4).concat('">').concat(name4).concat('</a>');
+                                txInfo[4] = req.params.query == 'json' ? txInfoArray[4] : address2href(txInfoArray[4]);
 
                                 var address5 = txInfoArray[5];
                                 if (txInfoArray[12] != '') {
                                     address5 = txInfoArray[12];
                                 }
-                                var name5 = configNames.names[address5] ? ((configNames.names[address5]).split("/"))[0] : configNames.holdnames[address5] ? (('Long-term holding: '.concat(configNames.holdnames[address5])).split("/"))[0] : address5.substr(0, 20).concat('...');
-                                txInfo[5] = '<a href="/account/'.concat(address5).concat('">').concat(name5).concat('</a>');
+                                txInfo[5] = req.params.query == 'json' ? address5 : address2href(address5);
 
                                 if (txInfoArray[11] != '') {
                                     //console.log('[9]', txInfoArray[9], '[10]', txInfoArray[10], '[11]', txInfoArray[11]);
@@ -117,12 +139,16 @@ router.all('/transactions/:account/:query', function (req, res, next) {
                 console.log("Final Error ", err);
                 return next(err);
             } else {
-                var jsonData = {
-                    "draw": data.draw,
-                    "recordsTotal": zcard,
-                    "recordsFiltered": zcard, //txInfoList.length,
-                    "data": txInfoList
-                };
+                var jsonData = {};
+                if (req.params.query == 'json') {
+                    jsonData.total = zcard;
+                    jsonData.txs = txInfoList;
+                } else {
+                    jsonData.draw = data.draw;
+                    jsonData.recordsTotal = zcard;
+                    jsonData.recordsFiltered = zcard; //txInfoList.length,
+                    jsonData.data = txInfoList;
+                }
                 res.json(jsonData);
             }
         });
@@ -130,7 +156,6 @@ router.all('/transactions/:account/:query', function (req, res, next) {
 
 router.get('/:account/:offset?/:count?/:json?', function (req, res, next) {
     var config = req.app.get('config');
-    var configNames = req.app.get('configNames');
     var web3 = new Web3();
     web3.setProvider(config.selectParity());
     var db = req.app.get('db');
@@ -819,12 +844,9 @@ router.get('/:account/:offset?/:count?/:json?', function (req, res, next) {
         });
 });
 
-function numberWithCommas(x) {
-    if (!x)
-        return x;
-    var parts = x.toString().split(".");
-    parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-    return parts.join(".");
+function address2href(address) {
+    var name = configNames.names[address] ? ((configNames.names[address]).split("/"))[0] : configNames.holdnames[address] ? (('Long-term holding: '.concat(configNames.holdnames[address])).split("/"))[0] : address.substr(0, 20).concat('...');
+    return '<a href="/account/'.concat(address).concat('">').concat(name).concat('</a>');
 }
 
 function resultToJson(err, param) {
