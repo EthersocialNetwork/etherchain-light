@@ -26,6 +26,7 @@ const configConstant = {
   blockStoreServiceInterval: 1 * 5 * 1000, // ms
   peerCollectorServiceInterval: 5 * 60 * 1000, // ms
   hashrateCollectorServiceInterval: 1 * 60 * 60 * 1000, // ms
+  PriceServiceInterval: 1 * 60 * 1000, // ms
 
   //view
   jsload_defer: false,

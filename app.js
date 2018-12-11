@@ -35,7 +35,6 @@ let test_batch = require('./routes/test_batch');
 
 let config = new(require('./config/config.js'))();
 let configERC20 = new(require('./config/configERC20.js'))();
-let configNames = new(require('./config/configNames.js'))();
 let configConstant = require('./config/configConstant');
 
 let level = require('level-rocksdb');
@@ -54,6 +53,7 @@ let tokenExporterService = require('./services/tokenExporter.js');
 let accountBalanceService = require('./services/accountBalanceService');
 let blockStoreService = require('./services/blockStoreService');
 let peerCollectorService = require('./services/peerCollectorService');
+let priceService = require('./services/priceService');
 let hashrateCollectorService = require('./services/hashrateCollectorService');
 
 let contractAccountList = [];
@@ -118,7 +118,6 @@ async.waterfall([
   app.set('view engine', 'pug');
   app.set('config', config);
   app.set('configERC20', configERC20);
-  app.set('configNames', configNames);
   app.set('db', db);
   app.set('trust proxy', true);
 
@@ -170,11 +169,10 @@ async.waterfall([
   app.locals.numeral = require('numeral');
   app.locals.ethformatter = require('./utils/ethformatter.js');
   app.locals.numberformatter = require('./utils/numberformatter.js');
-  app.locals.nameformatter = new(require('./utils/nameformatter.js'))(configNames);
+  app.locals.nameformatter = new(require('./utils/nameformatter.js'))();
   app.locals.nodeStatus = new(require('./utils/nodeStatus.js'))(config);
   app.locals.config = config;
   app.locals.configERC20 = configERC20;
-  app.locals.configNames = configNames;
   app.use('/', index);
   app.use('/block', block);
   app.use('/tx', tx);
@@ -241,6 +239,7 @@ async.waterfall([
     cronServices.accountBalanceService = new accountBalanceService(config, configERC20, app);
     cronServices.blockStoreService = new blockStoreService(app);
     cronServices.peerCollectorService = new peerCollectorService(config);
+    cronServices.priceService = new priceService();
     cronServices.hashrateCollectorService = new hashrateCollectorService(config);
   }
 });
