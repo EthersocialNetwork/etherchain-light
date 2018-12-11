@@ -5,13 +5,13 @@ const configConstant = require('../config/configConstant');
 
 var nodeStatus = function (config) {
   var self = this;
-  this.VersionAndPeers = [];
-  this.idx = 0;
-  this.port = '';
-  this.ip = '';
-  this.arrParity = [];
-  this.arrParity.push(configConstant.localRPCaddress);
-  this.web3 = new Web3();
+  self.VersionAndPeers = [];
+  self.idx = 0;
+  self.port = '';
+  self.ip = '';
+  self.arrParity = [];
+  self.arrParity.push(configConstant.localRPCaddress);
+  self.web3 = new Web3();
 
   if (config.getArrParity() && config.getArrParity().length > 0) {
     config.getArrParity().forEach(function (address) {
@@ -27,9 +27,10 @@ var nodeStatus = function (config) {
     self.arrParity.splice(0, 0, configConstant.localRPCaddress);
   }
 
-  this.updateStatus = function () {
+  self.updateStatus = function () {
     if (self.idx > self.arrParity.length - 1) {
       self.idx = 0;
+      self.arrParity = uniqIP(self.arrParity);
     }
 
     var parity = self.arrParity[self.idx];
@@ -115,11 +116,19 @@ var nodeStatus = function (config) {
             }
           }
         }
+
         self.idx = self.idx + 1;
       });
     }
     setTimeout(self.updateStatus, 1000 * Math.floor(30 / self.arrParity.length));
   };
-  this.updateStatus();
+  self.updateStatus();
 };
+
+function uniqIP(ips) {
+  return ips.reduce(function (a, b) {
+    if (a.indexOf(b) < 0) a.push(b);
+    return a;
+  }, []);
+}
 module.exports = nodeStatus;
