@@ -2,26 +2,30 @@ extends layout
 
 block content
   h3 Supply summary 공급 요약
-  p Total Create Accounts 전체계정수 : #{totalAccounts} (전체 생성)
-  p Total Active Accounts 유효계정수 : #{activeAccounts} (보유량 0.00000001ESN 미만 제외)
-  p Total Supply 전체발행량 : #{totalSupply}
-  p Total Long-term holding 전체장기보유량 : #{specialSupply}
-  p Total Circulating supply 전체유통공급량 : #{normalSupply}
-  p Data update progress status 데이터 업데이트 진행 상태 : #{nowAccounts} / #{totalAccounts} ( #{perProgress}% )
-  p Last Update Account 마지막 업데이트 계정 : #{lastAccount}
-  p Data Generation Time 데이터 갱신시간 : #{accounts_create_time}
+  | Total Create Accounts 전체계정수 : #{totalAccounts} (전체 생성)
+  br/ Total Active Accounts 유효계정수 : #{activeAccounts} (보유량 0.00000001ESN 미만 제외)
+  br/ Total Supply 전체발행량 : #{totalSupply}
+  br/ Total Long-term holding 전체장기보유량 : #{specialSupply}
+  br/ Total Circulating supply 전체유통공급량 : #{normalSupply}
+  br/ Data update progress status 데이터 업데이트 진행 상태 : #{nowAccounts} / #{totalAccounts} ( #{perProgress}% )
+  br/ Last Update Account 마지막 업데이트 계정 : #{lastAccount}
+  br/ Data Generation Time 데이터 갱신시간 : #{accounts_create_time}
+  br/
   div
-    ul.nav.nav-tabs(role='tablist')
+    ul.nav.nav-pills.nav-fill(role='tablist')
       if contracts
-        li.active(role='presentation')
-          a(href='#contracts', aria-controls='contracts', role='tab', data-toggle='tab') Contract address 컨트렉트 주소
-      li(role='presentation')
-        a(href='#accounts_special', aria-controls='accounts_special', role='tab', data-toggle='tab') Long-term holding address 장기 보유 주소
-      li(role='presentation')
-        a(href='#accounts_normal', aria-controls='accounts_normal', role='tab', data-toggle='tab') Circulating Supply address 공급되어 유통중인 주소
+        li.nav-item.active(role='presentation')
+          a.nav-link.active(href='#contracts', aria-controls='contracts', role='tab', data-toggle='tab') Contract address 컨트렉트 주소
+        li.nav-item(role='presentation')
+          a.nav-link(href='#accounts_special', aria-controls='accounts_special', role='tab', data-toggle='tab') Long-term holding address 장기 보유 주소
+      else
+        li.nav-item.active(role='presentation')
+          a.nav-link.active(href='#accounts_special', aria-controls='accounts_special', role='tab', data-toggle='tab') Long-term holding address 장기 보유 주소        
+      li.nav-item(role='presentation')
+        a.nav-link(href='#accounts_normal', aria-controls='accounts_normal', role='tab', data-toggle='tab') Circulating Supply address 공급되어 유통중인 주소
   .tab-content
     if contracts
-      #contracts.tab-pane.active(role='tabpanel')
+      #contracts.tab-pane.fade.show.active(role='tabpanel')
         h3 Contract address list 컨트렉트 주소
         .divTable.top100
           .divTableHeading
@@ -50,7 +54,7 @@ block content
                     | #{account.transfercount}
                   else
                     | 0
-    #accounts_special.tab-pane(role='tabpanel')
+    #accounts_special.tab-pane.fade(role='tabpanel')
       h3 Long-term holding address list 장기 보유 주소 목록
       .divTable.top100
         .divTableHeading
@@ -70,7 +74,7 @@ block content
                 a(href="/account/" + account.address) #{account.address}
               .divTableCell #{account.type}
               .divTableCell #{account.balance}
-    #accounts_normal.tab-pane(role='tabpanel')
+    #accounts_normal.tab-pane.fade(role='tabpanel')
       h3 Circulating Supply address list 공급되어 유통중인 주소 목록
       .divTable.top100
         .divTableHeading

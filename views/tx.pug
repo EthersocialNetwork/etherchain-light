@@ -104,9 +104,13 @@ block content
                             td #{event.value}
                   td #{log.address}
     tr
-      td Data:
+      td Input(UTF-8):
       td
-        pre #{tx.input}
+        textarea.form-control(rows="5") #{tx.inputToUtf8}
+    tr
+      td Input(raw):
+      td
+        textarea.form-control(rows="5") #{tx.input}
     
   a(href="/tx/raw/" + tx.hash) Raw Trace
   h4 Internal Transactions

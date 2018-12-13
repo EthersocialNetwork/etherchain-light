@@ -3,17 +3,17 @@ extends layout
 block content
   h3 APIs
   div
-    ul.nav.nav-tabs(role='tablist')
-      li.active(role='presentation')
-        a(href='#proxy', aria-controls='proxy', role='tab', data-toggle='tab') Proxy 중개
-      li(role='presentation')
-        a(href='#parity', aria-controls='parity', role='tab', data-toggle='tab') Parity-Proxy 패리티 중개
-      li(role='presentation')
-        a(href='#realtime', aria-controls='realtime', role='tab', data-toggle='tab') Real-time 실시간
-      li(role='presentation')
-        a(href='#webtojson', aria-controls='webtojson', role='tab', data-toggle='tab') Web to Json 웹 데이터
+    ul.nav.nav-pills.nav-fill(role='tablist')
+      li.nav-item(role='presentation')
+        a.nav-link.active(href='#proxy', aria-controls='proxy', role='tab', data-toggle='tab') Proxy 중개
+      li.nav-item(role='presentation')
+        a.nav-link(href='#parity', aria-controls='parity', role='tab', data-toggle='tab') Parity-Proxy 패리티 중개
+      li.nav-item(role='presentation')
+        a.nav-link(href='#realtime', aria-controls='realtime', role='tab', data-toggle='tab') Real-time 실시간
+      li.nav-item(role='presentation')
+        a.nav-link(href='#webtojson', aria-controls='webtojson', role='tab', data-toggle='tab') Web to Json 웹 데이터
     .tab-content
-      #proxy.tab-pane.active(role='tabpanel')
+      #proxy.tab-pane.fade.show.active(role='tabpanel')
         h3 Proxy APIs web3.eth 중개 API 목록
         | ex) #[strong http://!{hostname}/api_proxy/eth_blockNumber]
         table.table
@@ -159,7 +159,7 @@ block content
                 br
                 | #[strong gas]: Hex}
               td /eth_estimateGas/0x5811590907050746b897efe65fea7b65710e1a2c/100/0x051da038cc/0xffffff
-      #parity.tab-pane(role='tabpanel')
+      #parity.tab-pane.fade(role='tabpanel')
         h3 "Parity" Proxy APIs 중개 API 목록
         | ex) #[strong http://!{hostname}/api_parity/eth_blockNumber]
         table.table
@@ -247,7 +247,7 @@ block content
                 br
                 | #[strong gas]: Hex}
               td http://!{hostname}/api_parity/eth_estimateGas/0x5811590907050746b897efe65fea7b65710e1a2c/100/0x051da038cc/0xffffff
-      #realtime.tab-pane(role='tabpanel')
+      #realtime.tab-pane.fade(role='tabpanel')
         h3 Real-time response APIs 실시간 응답 API 목록
         | ex) #[strong http://!{hostname}/api_account/eth_balancemulti/0x5811590907050746b897efe65fea7b65710e1a2c,0xe3ec5ebd3e822c972d802a0ee4e0ec080b8237ba/1522934]
         table.table
@@ -313,7 +313,7 @@ block content
                 br
                 | #[strong count]: Number(min:1/max:1,000)
               td https://!{hostname}/account/transactions/0xe3ec5ebd3e822c972d802a0ee4e0ec080b8237ba/json/1/10
-      #webtojson.tab-pane(role='tabpanel')
+      #webtojson.tab-pane.fade(role='tabpanel')
         h3 Web to Json 웹을 데이터로 제공하는 API 목록
         table.table
           thead

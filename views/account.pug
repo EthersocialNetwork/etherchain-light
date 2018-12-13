@@ -1,11 +1,11 @@
 extends layout
 
 block content
-  link(rel='stylesheet', href='https://cdnjs.cloudflare.com/ajax/libs/datatables/1.10.19/css/dataTables.bootstrap.min.css')
+  link(rel='stylesheet', href='https://cdnjs.cloudflare.com/ajax/libs/datatables/1.10.19/css/dataTables.bootstrap4.css')
   script(type='text/javascript', src='https://cdnjs.cloudflare.com/ajax/libs/gojs/1.8.32/go.js')
   script(type='text/javascript', src='/GoJS-1.8.32/extensions/HyperlinkText.js')
-  script(type='text/javascript', src='https://cdnjs.cloudflare.com/ajax/libs/datatables/1.10.19/js/jquery.dataTables.min.js')
-  script(type='text/javascript', src='https://cdnjs.cloudflare.com/ajax/libs/datatables/1.10.19/js/dataTables.bootstrap.min.js')
+  script(type='text/javascript', src='https://cdnjs.cloudflare.com/ajax/libs/datatables/1.10.19/js/jquery.dataTables.js')
+  script(type='text/javascript', src='https://cdnjs.cloudflare.com/ajax/libs/datatables/1.10.19/js/dataTables.bootstrap4.js')
   if account.isContract
     h3 Contract #{account.address}
   else
@@ -56,39 +56,39 @@ block content
         td
           h5 No transactions within that block range. 해당 블록 범위 내에서 트랜잭션이 없습니다.
   div
-    ul.nav.nav-tabs(role='tablist')
+    ul.nav.nav-pills.nav-fill(role='tablist')
       if account.isContract
-        li.active(role='presentation')
-          a(href='#transactions', aria-controls='transactions', role='tab', data-toggle='tab') Transactions
-        li(role='presentation')
-          a(href='#code', aria-controls='code', role='tab', data-toggle='tab') Code
-        li(role='presentation')
-          a(href='#contractState', aria-controls='source', role='tab', data-toggle='tab') Contract State
+        li.nav-item(role='presentation')
+          a.nav-link.active(href='#transactions', aria-controls='transactions', role='tab', data-toggle='tab') Transactions
+        li.nav-item(role='presentation')
+          a.nav-link(href='#code', aria-controls='code', role='tab', data-toggle='tab') Code
+        li.nav-item(role='presentation')
+          a.nav-link(href='#contractState', aria-controls='source', role='tab', data-toggle='tab') Contract State
       else
-        li.active(role='presentation')
-          a(href='#tracemap', aria-controls='tracemap', role='tab', data-toggle='tab') Transactions Tracing
-        li(role='presentation')
-          a(href='#transactions', aria-controls='transactions', role='tab', data-toggle='tab') Transactions
+        li.nav-item(role='presentation')
+          a.nav-link.active(href='#tracemap', aria-controls='tracemap', role='tab', data-toggle='tab') Transactions Tracing
+        li.nav-item(role='presentation')
+          a.nav-link(href='#transactions', aria-controls='transactions', role='tab', data-toggle='tab') Transactions
       if account.isContract
         //
       else
-        li(role='presentation')
-          a(href='#txlist', aria-controls='txlist', role='tab', data-toggle='tab') All transactions
+        li.nav-item(role='presentation')
+          a.nav-link(href='#txlist', aria-controls='txlist', role='tab', data-toggle='tab') All transactions
       if account.tokens
-        li(role='presentation')
-          a(href='#tokens', aria-controls='tokens', role='tab', data-toggle='tab') Token Balance
+        li.nav-item(role='presentation')
+          a.nav-link(href='#tokens', aria-controls='tokens', role='tab', data-toggle='tab') Token Balance
       if account.tokenBlocks
-        li(role='presentation')
-          a(href='#tokentransactions', aria-controls='tokentransactions', role='tab', data-toggle='tab') Token Transactions
+        li.nav-item(role='presentation')
+          a.nav-link(href='#tokentransactions', aria-controls='tokentransactions', role='tab', data-toggle='tab') Token Transactions
     .tab-content
       if account.isContract
         //
       else
-        #tracemap.tab-pane.active(role='tabpanel')
+        #tracemap.tab-pane.fade.show.active(role='tabpanel')
           #sample
             #myDiagramDiv(style='border: solid 1px black; width: 100%; height: 1000px')
       if account.tokens
-        #tokens.tab-pane(role='tabpanel')
+        #tokens.tab-pane.fade(role='tabpanel')
           h4 Token Balance
           table.table
             thead
@@ -105,7 +105,7 @@ block content
                     td
                       a(href="/account/" + item.account target='_blank') #{item.account}
       if account.isContract
-        #transactions.tab-pane.active(role='tabpanel')
+        #transactions.tab-pane.fade.show.active(role='tabpanel')
           h3 Recent Activity 최근 활동 내역
           table.table
             thead
@@ -153,7 +153,7 @@ block content
                         a(href="/account/" + event.args._spender) #{event.args._spender}
                       td(align="right") #{tokenformatter.format(event.args._value, account.token_decimals, account.token_symbol)}
       else
-        #transactions.tab-pane(role='tabpanel')
+        #transactions.tab-pane.fade(role='tabpanel')
           h3 Recent Activity 최근 활동 내역
           table.table
             thead
@@ -238,7 +238,7 @@ block content
                         td(align="right") #{ethformatter(trace.action.balance)}
                         td #{trace.isContract}
         if account.tokenBlocks
-          #tokentransactions.tab-pane(role='tabpanel')
+          #tokentransactions.tab-pane.fade(role='tabpanel')
             h3 Recent Token Activity 최근 토큰 활동 내역
             table.table
               thead
@@ -278,7 +278,7 @@ block content
         if account.isContract
           //
         else
-          #txlist.tab-pane(role='tabpanel')
+          #txlist.tab-pane.fade(role='tabpanel')
             h3 All transactions 모든 활동 내역
             div(style='width:95%')
               table#txlisttable.table.table-striped.table-bordered(style='width:100%')
@@ -293,7 +293,7 @@ block content
                     th Amount
                     //th isContract
       if account.isContract
-        #code.tab-pane(role='tabpanel')
+        #code.tab-pane.fade(role='tabpanel')
           h3 Code
           //if !account.source
             a(href="/contract/verify") Upload source
@@ -303,7 +303,7 @@ block content
             pre #{account.wast}
           h3 Storage
           pre #{JSON.stringify(account.storage)}
-        #contractState.tab-pane(role='tabpanel')
+        #contractState.tab-pane.fade(role='tabpanel')
           h4 Current contract state
           table.table
             thead
@@ -316,7 +316,7 @@ block content
                   td #{item.name}
                   td #{item.result}
       if account.source
-        #source.tab-pane(role='tabpanel')
+        #source.tab-pane.fade(role='tabpanel')
           h4 Source
           pre #{account.source.source}
           h4 ABI
