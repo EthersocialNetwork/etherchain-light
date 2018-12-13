@@ -3,8 +3,33 @@ var router = express.Router();
 
 var async = require('async');
 var Web3 = require('web3');
+var utf8 = require('utf8');
 //var abi = require('ethereumjs-abi');
 //var abiDecoder = require('abi-decoder');
+/**
+ * Should be called to get utf8 from it's hex representation
+ *
+ * @method toUtf8
+ * @param {String} string in hex
+ * @returns {String} ascii string representation of hex value
+ */
+var toUtf8 = function (hex) {
+  // Find termination
+  var str = "";
+  var i = 0,
+    l = hex.length;
+  if (hex.substring(0, 2) === '0x') {
+    i = 2;
+  }
+  for (; i < l; i += 2) {
+    var code = parseInt(hex.substr(i, 2), 16);
+    if (code === 0)
+      break;
+    str += String.fromCharCode(code);
+  }
+
+  return utf8.decode(str);
+};
 
 router.get('/pending', function (req, res, next) {
 
@@ -218,6 +243,12 @@ router.get('/:tx', function (req, res, next) {
             console.log("============== [ tx.traces.length > 1 ] ==============");
           }*/
         }
+
+        if (tx && tx.input) {
+          //tx.inputToAscii = web3.toAscii(tx.input);
+          tx.inputToUtf8 = toUtf8(tx.input);
+        }
+
         res.render('tx', {
           tx: tx
         });

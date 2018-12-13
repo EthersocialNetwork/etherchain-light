@@ -8,19 +8,19 @@ block content
   script(defer=jsload_defer async=jsload_async type='text/javascript', src="https://cdnjs.cloudflare.com/ajax/libs/highcharts/6.2.0/modules/treemap.js")
   script(defer=jsload_defer async=jsload_async type='text/javascript', src="https://cdnjs.cloudflare.com/ajax/libs/highcharts/6.2.0/modules/series-label.js")
   div
-    ul.nav.nav-tabs(role='tablist')
-      li.active(role='presentation')
-        a(href='#blockchain', aria-controls='blockchain', role='tab', data-toggle='tab') BlockChainSummary
-      li(role='presentation')
-        a(href='#exchange', aria-controls='exchange', role='tab', data-toggle='tab') ExchangeSummary
-      li(role='presentation')
-        a(href='#miners', aria-controls='miners', role='tab', data-toggle='tab') MinersSummary
-      li(role='presentation')
-        a(href='#blocks', aria-controls='blocks', role='tab', data-toggle='tab') RecentBlocks
-      li(role='presentation')
-        a(href='#txs', aria-controls='txs', role='tab', data-toggle='tab') RecentTXs
+    ul.nav.nav-pills.nav-fill(role='tablist')
+      li.nav-item(role='presentation')
+        a.nav-link.active(href='#blockchain', aria-controls='blockchain', role='tab', data-toggle='tab') BlockChainSummary
+      li.nav-item(role='presentation')
+        a.nav-link(href='#exchange', aria-controls='exchange', role='tab', data-toggle='tab') ExchangeSummary
+      li.nav-item(role='presentation')
+        a.nav-link(href='#miners', aria-controls='miners', role='tab', data-toggle='tab') MinersSummary
+      li.nav-item(role='presentation')
+        a.nav-link(href='#blocks', aria-controls='blocks', role='tab', data-toggle='tab') RecentBlocks
+      li.nav-item(role='presentation')
+        a.nav-link(href='#txs', aria-controls='txs', role='tab', data-toggle='tab') RecentTXs
     .tab-content
-      #blockchain.tab-pane.active(role='tabpanel')
+      #blockchain.tab-pane.fade.show.active(role='tabpanel')
         h3 Block Chain Summary
         //h6 (last #{blockCount} blocks)
         table.table
@@ -60,7 +60,7 @@ block content
           tr
             td(colspan="4", style="border-top-style: none;")
               div#chart_BlockTime(style="min-width: 480px; max-width: 1200px; height: 400px; margin: 0 auto")
-      #exchange.tab-pane(role='tabpanel')
+      #exchange.tab-pane.fade(role='tabpanel')
         h3 Exchange Summary
         if bimax || bimax.nowPrice
           table.table
@@ -171,9 +171,9 @@ block content
                   span(style="font-size:1.5em; color:#008cba")
                     br/
                     strong PriceChange(24h)
-      #miners.tab-pane(role='tabpanel')
+      #miners.tab-pane.fade(role='tabpanel')
         div#chart_Miners(style="min-width: 480px; max-width: 1200px; height: 400px; margin: 0 auto")
-      #blocks.tab-pane(role='tabpanel')
+      #blocks.tab-pane.fade(role='tabpanel')
         table
           tr
             td
@@ -201,7 +201,7 @@ block content
                 td #{block.transactionsCount}
                 td #{block.unclesCount}
                 td #{block.isDB}
-      #txs.tab-pane(role='tabpanel')
+      #txs.tab-pane.fade(role='tabpanel')
         table
           tr
             td

@@ -3,37 +3,37 @@ extends layout
 block content
   h3 Raw transaction traces for #{tx.hash}
   div
-    ul.nav.nav-tabs(role='tablist')
+    ul.nav.nav-pills.nav-fill(role='tablist')
       if tx.raw
-        li.active(role='presentation')
-          a(href='#raw', aria-controls='raw', role='tab', data-toggle='tab') raw
+        li.nav-item(role='presentation')
+          a.nav-link.active(href='#raw', aria-controls='raw', role='tab', data-toggle='tab') raw
       if tx.input
-        li(role='presentation')
-          a(href='#input', aria-controls='input', role='tab', data-toggle='tab') input
+        li.nav-item(role='presentation')
+          a.nav-link(href='#input', aria-controls='input', role='tab', data-toggle='tab') input
       if tx.traces
         if tx.traces.trace
-          li(role='presentation')
-            a(href='#trace', aria-controls='trace', role='tab', data-toggle='tab') Trace
+          li.nav-item(role='presentation')
+            a.nav-link(href='#trace', aria-controls='trace', role='tab', data-toggle='tab') Trace
         if tx.traces.vmTrace
-          li(role='presentation')
-            a(href='#vmTrace', aria-controls='vmTrace', role='tab', data-toggle='tab') VM Trace
+          li.nav-item(role='presentation')
+            a.nav-link(href='#vmTrace', aria-controls='vmTrace', role='tab', data-toggle='tab') VM Trace
         if tx.traces.stateDiff
-          li(role='presentation')
-            a(href='#stateDiff', aria-controls='stateDiff', role='tab', data-toggle='tab') State Diff
+          li.nav-item(role='presentation')
+            a.nav-link(href='#stateDiff', aria-controls='stateDiff', role='tab', data-toggle='tab') State Diff
     .tab-content
       if tx.raw
-        #raw.tab-pane.active(role='tabpanel')
+        #raw.tab-pane.fade.show.active(role='tabpanel')
           pre #{JSON.stringify(tx.raw, null, 4)}
       if tx.input
-        #input.tab-pane(role='tabpanel')
+        #input.tab-pane.fade(role='tabpanel')
           pre #{JSON.stringify(tx.input, null, 4)}
       if tx.traces
         if tx.traces.trace
-          #trace.tab-pane(role='tabpanel')
+          #trace.tab-pane.fade(role='tabpanel')
             pre #{JSON.stringify(tx.traces.trace, null, 4)}
         if tx.traces.vmTrace
-          #vmTrace.tab-pane(role='tabpanel')
+          #vmTrace.tab-pane.fade(role='tabpanel')
             pre #{JSON.stringify(tx.traces.vmTrace, null, 4)}
         if tx.traces.stateDiff
-          #stateDiff.tab-pane(role='tabpanel')
+          #stateDiff.tab-pane.fade(role='tabpanel')
             pre #{JSON.stringify(tx.traces.stateDiff, null, 4)}
